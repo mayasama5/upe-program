@@ -24,8 +24,9 @@ async def populate_database():
     
     print("🚀 Poblando TechHub UPE con datos de ejemplo...")
     
-    # Sample courses based on provided sources
+    # Sample courses including tech and other professional areas
     courses = [
+        # Tech Courses
         {
             "id": "course-1",
             "title": "Desarrollo Web Full Stack con JavaScript",
@@ -91,10 +92,11 @@ async def populate_database():
             "image_url": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=250&fit=crop",
             "created_at": datetime.now(timezone.utc)
         },
+        # Marketing & Business Courses
         {
             "id": "course-6",
-            "title": "Marketing Digital para Desarrolladores",
-            "description": "Aprende a promocionar tus proyectos tech y construir tu marca personal como desarrollador.",
+            "title": "Marketing Digital Completo",
+            "description": "Domina Google Ads, Facebook Ads, SEO, email marketing y analytics para hacer crecer tu negocio.",
             "provider": "Meta Blueprint",
             "url": "https://www.facebookblueprint.com/student/catalog?locale=es",
             "language": "es",
@@ -102,6 +104,87 @@ async def populate_database():
             "category": "Marketing Digital",
             "is_free": True,
             "image_url": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=250&fit=crop",
+            "created_at": datetime.now(timezone.utc)
+        },
+        {
+            "id": "course-7",
+            "title": "Fundamentos de Administración de Empresas",
+            "description": "Aprende los conceptos esenciales de gestión empresarial, liderazgo y toma de decisiones estratégicas.",
+            "provider": "Coursera Business",
+            "url": "https://www.coursera.org/courses?query=administracion+empresas+español",
+            "language": "es",
+            "has_spanish_subtitles": True,
+            "category": "Administración",
+            "is_free": True,
+            "image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop",
+            "created_at": datetime.now(timezone.utc)
+        },
+        {
+            "id": "course-8",
+            "title": "Gestión de Recursos Humanos",
+            "description": "Curso completo sobre reclutamiento, selección, desarrollo de talento y gestión del capital humano.",
+            "provider": "IBM SkillsBuild",
+            "url": "https://skillsbuild.org/es/",
+            "language": "es",
+            "has_spanish_subtitles": True,
+            "category": "Recursos Humanos",
+            "is_free": True,
+            "image_url": "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=400&h=250&fit=crop",
+            "created_at": datetime.now(timezone.utc)
+        },
+        # Design Courses
+        {
+            "id": "course-9",
+            "title": "Diseño Gráfico con Adobe Creative Suite",
+            "description": "Domina Photoshop, Illustrator e InDesign para crear diseños profesionales e impactantes.",
+            "provider": "Adobe Education",
+            "url": "https://www.adobe.com/la/education.html",
+            "language": "es",
+            "has_spanish_subtitles": True,
+            "category": "Diseño Gráfico",
+            "is_free": True,
+            "image_url": "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=400&h=250&fit=crop",
+            "created_at": datetime.now(timezone.utc)
+        },
+        {
+            "id": "course-10",
+            "title": "UX/UI Design Fundamentals",
+            "description": "Aprende a diseñar experiencias de usuario intuitivas y interfaces atractivas para aplicaciones y websites.",
+            "provider": "Google UX Design",
+            "url": "https://grow.google/intl/es/courses-and-tools/",
+            "language": "es",
+            "has_spanish_subtitles": True,
+            "category": "UX/UI Design",
+            "is_free": True,
+            "image_url": "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=250&fit=crop",
+            "created_at": datetime.now(timezone.utc)
+        },
+        # Finance & Accounting
+        {
+            "id": "course-11",
+            "title": "Contabilidad y Finanzas para No Financieros",
+            "description": "Comprende los estados financieros, presupuestos y análisis financiero básico para cualquier profesional.",
+            "provider": "Coursera Finance",
+            "url": "https://www.coursera.org/courses?query=contabilidad+finanzas+español",
+            "language": "es",
+            "has_spanish_subtitles": True,
+            "category": "Contabilidad",
+            "is_free": True,
+            "image_url": "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=250&fit=crop",
+            "created_at": datetime.now(timezone.utc)
+        },
+        # Communication & Languages
+        {
+            "id": "course-12",
+            "title": "Inglés de Negocios Intermedio",
+            "description": "Mejora tu inglés profesional para presentaciones, emails, reuniones y negociaciones internacionales.",
+            "provider": "British Council",
+            "url": "https://learnenglish.britishcouncil.org/business-english",
+            "language": "es",
+            "has_spanish_subtitles": True,
+            "category": "Idiomas",
+            "is_free": True,
+            "image_url": "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=250&fit=crop",
             "created_at": datetime.now(timezone.utc)
         }
     ]
