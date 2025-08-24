@@ -237,6 +237,53 @@ class TechHubAPITester:
             404
         )
 
+    def test_profile_update_endpoint(self):
+        """Test profile update endpoint (critical for role bug fix)"""
+        print("\n" + "="*50)
+        print("TESTING PROFILE UPDATE ENDPOINT")
+        print("="*50)
+        
+        # Test profile update without authentication (should fail)
+        profile_data = {
+            "role": "empresa",
+            "company_name": "Test Company",
+            "company_document": "12345678-9"
+        }
+        
+        self.run_test(
+            "Update Profile (Unauthenticated)",
+            "PUT",
+            "users/profile",
+            401,
+            data=profile_data
+        )
+        
+        print("ℹ️  Profile update requires authentication - this is expected behavior")
+
+    def test_job_creation_endpoint(self):
+        """Test job creation endpoint (for company functionality)"""
+        print("\n" + "="*50)
+        print("TESTING JOB CREATION ENDPOINT")
+        print("="*50)
+        
+        # Test job creation without authentication (should fail)
+        job_data = {
+            "title": "Test Developer Position",
+            "description": "Test job description",
+            "modality": "remoto",
+            "job_type": "junior"
+        }
+        
+        self.run_test(
+            "Create Job (Unauthenticated)",
+            "POST",
+            "jobs",
+            401,
+            data=job_data
+        )
+        
+        print("ℹ️  Job creation requires company authentication - this is expected behavior")
+
 def main():
     print("🚀 Starting TechHub UPE API Testing")
     print("="*60)
