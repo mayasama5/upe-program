@@ -300,6 +300,8 @@ def main():
     jobs_success = tester.test_jobs_endpoint()
     auth_success = tester.test_auth_endpoints()
     tester.test_individual_job_endpoint()
+    tester.test_profile_update_endpoint()
+    tester.test_job_creation_endpoint()
     
     # Print final results
     print("\n" + "="*60)
