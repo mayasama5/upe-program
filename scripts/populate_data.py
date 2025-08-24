@@ -189,8 +189,9 @@ async def populate_database():
         }
     ]
     
-    # Sample events
+    # Sample events including tech and other professional areas
     events = [
+        # Tech Events
         {
             "id": "event-1",
             "title": "Google DevFest Asunción 2024",
@@ -241,6 +242,61 @@ async def populate_database():
             "is_online": True,
             "category": "Inteligencia Artificial",
             "image_url": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&h=250&fit=crop",
+            "created_at": datetime.now(timezone.utc)
+        },
+        # Business & Marketing Events
+        {
+            "id": "event-5",
+            "title": "Congreso de Marketing Digital Paraguay 2024",
+            "description": "Las últimas tendencias en marketing digital, redes sociales, e-commerce y growth marketing.",
+            "organizer": "Cámara de Marketing Digital Paraguay",
+            "url": "https://www.eventbrite.es/d/paraguay/marketing/",
+            "event_date": datetime.now(timezone.utc) + timedelta(days=25),
+            "location": "Hotel Sheraton Asunción",
+            "is_online": False,
+            "category": "Marketing",
+            "image_url": "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=250&fit=crop",
+            "created_at": datetime.now(timezone.utc)
+        },
+        {
+            "id": "event-6",
+            "title": "Seminario: Finanzas para Emprendedores",
+            "description": "Aprende a gestionar las finanzas de tu startup: presupuestos, inversión y crecimiento sostenible.",
+            "organizer": "USAID Paraguay Emprendedor",
+            "url": "https://www.eventbrite.es/d/paraguay/emprendimiento/",
+            "event_date": datetime.now(timezone.utc) + timedelta(days=12),
+            "location": "Online",
+            "is_online": True,
+            "category": "Finanzas",
+            "image_url": "https://images.unsplash.com/photo-1590479773265-7464-e5d3a27b-2799?w=400&h=250&fit=crop",
+            "created_at": datetime.now(timezone.utc)
+        },
+        # Design Events
+        {
+            "id": "event-7",
+            "title": "Workshop: Diseño UX para Productos Digitales",
+            "description": "Taller práctico de 8 horas sobre investigación de usuarios, wireframes y testing de usabilidad.",
+            "organizer": "Design Paraguay",
+            "url": "https://www.eventbrite.es/d/paraguay/design/",
+            "event_date": datetime.now(timezone.utc) + timedelta(days=18),
+            "location": "Impact Hub Asunción",
+            "is_online": False,
+            "category": "Diseño",
+            "image_url": "https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=400&h=250&fit=crop",
+            "created_at": datetime.now(timezone.utc)
+        },
+        # HR & Administration Events
+        {
+            "id": "event-8",
+            "title": "Foro de Recursos Humanos: Futuro del Trabajo",
+            "description": "Tendencias en HR, trabajo remoto, desarrollo de talento y cultura organizacional post-pandemia.",
+            "organizer": "Asociación Paraguaya de RRHH",
+            "url": "https://www.eventbrite.es/d/paraguay/recursos-humanos/",
+            "event_date": datetime.now(timezone.utc) + timedelta(days=35),
+            "location": "Centro de Convenciones Mariscal López",
+            "is_online": False,
+            "category": "Recursos Humanos",
+            "image_url": "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=400&h=250&fit=crop",
             "created_at": datetime.now(timezone.utc)
         }
     ]
