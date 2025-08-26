@@ -239,6 +239,63 @@ class TechHubAPITester:
             404
         )
 
+    def test_job_locations(self):
+        """Test job locations for geographic requirements"""
+        print("\n" + "="*50)
+        print("TESTING JOB LOCATIONS (Geographic Requirements)")
+        print("="*50)
+        
+        # Get all jobs to check locations
+        success, jobs_response = self.run_test(
+            "Get All Jobs for Location Analysis",
+            "GET",
+            "jobs",
+            200
+        )
+        
+        if success and jobs_response:
+            print(f"\n📍 LOCATION ANALYSIS:")
+            print(f"Total jobs found: {len(jobs_response)}")
+            
+            location_stats = {}
+            modality_stats = {}
+            
+            for job in jobs_response:
+                city = job.get('city', 'No city specified')
+                modality = job.get('modality', 'Unknown')
+                
+                location_stats[city] = location_stats.get(city, 0) + 1
+                modality_stats[modality] = modality_stats.get(modality, 0) + 1
+                
+                print(f"   Job: {job['title'][:30]}... | City: {city} | Modality: {modality}")
+            
+            print(f"\n📊 LOCATION SUMMARY:")
+            for city, count in location_stats.items():
+                print(f"   {city}: {count} jobs")
+            
+            print(f"\n📊 MODALITY SUMMARY:")
+            for modality, count in modality_stats.items():
+                print(f"   {modality}: {count} jobs")
+            
+            # Check for Ciudad del Este requirement
+            ciudad_del_este_jobs = [job for job in jobs_response if job.get('city') == 'Ciudad del Este']
+            print(f"\n🏢 Ciudad del Este jobs: {len(ciudad_del_este_jobs)}")
+            
+            # Check presencial jobs outside Ciudad del Este
+            problematic_jobs = [
+                job for job in jobs_response 
+                if job.get('modality') == 'presencial' and job.get('city') != 'Ciudad del Este'
+            ]
+            
+            if problematic_jobs:
+                print(f"⚠️  ISSUE: {len(problematic_jobs)} presencial jobs found outside Ciudad del Este:")
+                for job in problematic_jobs:
+                    print(f"   - {job['title']} in {job.get('city', 'Unknown city')}")
+            else:
+                print("✅ All presencial jobs are correctly located in Ciudad del Este")
+        
+        return success
+
     def test_saved_items_endpoints(self):
         """Test saved items functionality (critical bug reported)"""
         print("\n" + "="*50)
