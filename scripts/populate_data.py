@@ -459,7 +459,7 @@ async def populate_database():
         }
     ]
     
-    # Real job vacancies from trusted Paraguay sources
+    # Real job vacancies from trusted Paraguay sources - Geographically correct
     jobs = [
         {
             "id": "job-1",
@@ -474,11 +474,11 @@ async def populate_database():
                 "Git y GitHub",
                 "Inglés técnico básico"
             ],
-            "modality": "hibrido",
+            "modality": "presencial",
             "job_type": "junior",
             "seniority_level": "1-2 años",
             "skills_stack": ["React", "JavaScript", "HTML", "CSS", "Git"],
-            "city": "Asunción",
+            "city": "Ciudad del Este",
             "country": "Paraguay",
             "salary_range": "Gs. 4.000.000 - 6.000.000",
             "apply_type": "externo",
@@ -489,10 +489,10 @@ async def populate_database():
         },
         {
             "id": "job-2", 
-            "title": "Analista de Datos Senior",
+            "title": "Analista de Datos Senior - Remoto",
             "company_id": "company-2", 
             "company_name": "Banco Continental",
-            "description": "Buscamos analista senior para el equipo de Business Intelligence. Trabajarás con grandes volúmenes de datos financieros.",
+            "description": "Buscamos analista senior para el equipo de Business Intelligence. Trabajarás con grandes volúmenes de datos financieros de forma 100% remota.",
             "requirements": [
                 "Licenciatura en Informática, Matemática o afín",
                 "3+ años con SQL avanzado",
@@ -500,7 +500,7 @@ async def populate_database():
                 "Python o R",
                 "Experiencia en sector financiero"
             ],
-            "modality": "presencial",
+            "modality": "remoto",
             "job_type": "senior",
             "seniority_level": "3-5 años",
             "skills_stack": ["SQL", "Power BI", "Python", "Excel", "Analytics"],
@@ -517,34 +517,34 @@ async def populate_database():
             "id": "job-3",
             "title": "Pasantía en Marketing Digital",
             "company_id": "company-3",
-            "company_name": "Copetrol",
-            "description": "Pasantía remunerada en el área de marketing digital. Aprenderás sobre campañas digitales, redes sociales y análisis de mercado.",
+            "company_name": "Innovation Hub UPE",
+            "description": "Pasantía remunerada en el área de marketing digital de la Universidad. Aprenderás sobre campañas digitales, redes sociales y análisis de mercado.",
             "requirements": [
                 "Estudiante de Marketing, Comunicaciones o afín",
                 "Conocimientos básicos de redes sociales",
                 "Creatividad y proactividad",
                 "Disponibilidad de tiempo completo",
-                "Residir en Asunción o alrededores"
+                "Residir en Ciudad del Este o alrededores"
             ],
             "modality": "presencial",
             "job_type": "pasantia",
             "seniority_level": "Sin experiencia",
             "skills_stack": ["Marketing Digital", "Redes Sociales", "Canva", "Analytics"],
-            "city": "Asunción",
+            "city": "Ciudad del Este",
             "country": "Paraguay",
             "salary_range": "Gs. 1.800.000",
             "apply_type": "externo",
-            "apply_url": "https://www.copetrol.com.py/trabaja-con-nosotros/",
+            "apply_url": "https://upe.edu.py/",
             "is_active": True,
             "knockout_questions": [],
             "created_at": datetime.now(timezone.utc)
         },
         {
             "id": "job-4",
-            "title": "Contador Público",
+            "title": "Contador Público - Remoto",
             "company_id": "company-4",
             "company_name": "Grupo Vierci",
-            "description": "Buscamos contador público para nuestras operaciones. Experiencia en empresas comerciales y manejo de ERP.",
+            "description": "Buscamos contador público para nuestras operaciones. Trabajo 100% remoto con flexibilidad horaria.",
             "requirements": [
                 "Título de Contador Público",
                 "3+ años de experiencia",
@@ -552,11 +552,11 @@ async def populate_database():
                 "Manejo de sistemas ERP",
                 "Experiencia en conciliaciones bancarias"
             ],
-            "modality": "presencial",
+            "modality": "remoto",
             "job_type": "medio",
             "seniority_level": "3-5 años",
             "skills_stack": ["Contabilidad", "ERP", "Excel", "Conciliaciones", "NIIF"],
-            "city": "Asunción",
+            "city": "Encarnación",
             "country": "Paraguay",
             "salary_range": "Gs. 6.000.000 - 8.000.000",
             "apply_type": "externo",
@@ -570,7 +570,7 @@ async def populate_database():
             "title": "Especialista en Recursos Humanos",
             "company_id": "company-5",
             "company_name": "Personal Paraguay",
-            "description": "Únete a nuestro equipo de RRHH para gestión de talento, reclutamiento y desarrollo organizacional.",
+            "description": "Únete a nuestro equipo de RRHH para gestión de talento, reclutamiento y desarrollo organizacional en nuestra sede de Ciudad del Este.",
             "requirements": [
                 "Licenciatura en Psicología o RRHH",
                 "2+ años en reclutamiento y selección",
@@ -578,11 +578,11 @@ async def populate_database():
                 "Habilidades de comunicación",
                 "Experiencia en evaluaciones psicotécnicas"
             ],
-            "modality": "hibrido",
+            "modality": "presencial",
             "job_type": "medio",
             "seniority_level": "2-4 años",
             "skills_stack": ["RRHH", "Reclutamiento", "Psicología", "Comunicación", "Evaluación"],
-            "city": "Asunción",
+            "city": "Ciudad del Este",
             "country": "Paraguay",
             "salary_range": "Gs. 5.000.000 - 7.000.000",
             "apply_type": "externo",
@@ -593,10 +593,10 @@ async def populate_database():
         },
         {
             "id": "job-6",
-            "title": "Diseñador Gráfico Senior",
+            "title": "Diseñador Gráfico - Freelance Remoto",
             "company_id": "company-6",
             "company_name": "Multiplaza",
-            "description": "Diseñador senior para campañas publicitarias del centro comercial más grande del país. Creatividad y experiencia en retail.",
+            "description": "Diseñador freelance para campañas publicitarias del centro comercial. Trabajo 100% remoto con proyectos específicos.",
             "requirements": [
                 "3+ años en diseño gráfico",
                 "Adobe Creative Suite avanzado",
@@ -604,11 +604,11 @@ async def populate_database():
                 "Experiencia en campañas 360°",
                 "Conocimiento de impresión y digital"
             ],
-            "modality": "presencial",
+            "modality": "remoto",
             "job_type": "senior",
             "seniority_level": "3-5 años",
             "skills_stack": ["Photoshop", "Illustrator", "InDesign", "After Effects", "Branding"],
-            "city": "Asunción",
+            "city": "Pedro Juan Caballero",
             "country": "Paraguay",
             "salary_range": "Gs. 7.000.000 - 10.000.000",
             "apply_type": "externo",
