@@ -73,7 +73,7 @@ class User(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserCreate(BaseModel):
-    role: UserRole = UserRole.STUDENT
+    role: Optional[UserRole] = None  # Changed to allow explicit role assignment
     github_url: Optional[str] = None
     linkedin_url: Optional[str] = None
     portfolio_url: Optional[str] = None
