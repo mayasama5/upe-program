@@ -288,6 +288,63 @@ async def update_profile(profile_data: UserCreate, user: User = Depends(require_
     
     return User(**updated_user)
 
+# File upload endpoints
+@api_router.post("/upload-file")
+async def upload_file(
+    file: UploadFile = File(...),
+    file_type: str = "cv",  # cv, certificate, degree
+    user: User = Depends(require_auth)
+):
+    if not file.filename.endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+    
+    # Create uploads directory if it doesn't exist
+    uploads_dir = Path("uploads") / user.id
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Generate unique filename
+    file_extension = file.filename.split('.')[-1]
+    unique_filename = f"{file_type}_{uuid.uuid4()}.{file_extension}"
+    file_path = uploads_dir / unique_filename
+    
+    # Save file
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+    
+    # Update user profile with file path
+    file_field = f"{file_type}_file_path"
+    if file_type == "certificate":
+        # For certificates, we store an array
+        existing_user = await db.users.find_one({"id": user.id})
+        certificates = existing_user.get("certificate_files", [])
+        certificates.append({
+            "filename": file.filename,
+            "file_path": str(file_path),
+            "uploaded_at": datetime.now(timezone.utc)
+        })
+        await db.users.update_one({"id": user.id}, {"$set": {"certificate_files": certificates}})
+    elif file_type == "degree":
+        # For degrees, we store an array
+        existing_user = await db.users.find_one({"id": user.id})
+        degrees = existing_user.get("degree_files", [])
+        degrees.append({
+            "filename": file.filename,
+            "file_path": str(file_path),
+            "uploaded_at": datetime.now(timezone.utc)
+        })
+        await db.users.update_one({"id": user.id}, {"$set": {"degree_files": degrees}})
+    else:
+        # For CV, single file
+        await db.users.update_one({"id": user.id}, {"$set": {"cv_file_path": str(file_path)}})
+    
+    return {
+        "message": "File uploaded successfully",
+        "filename": file.filename,
+        "file_type": file_type,
+        "file_path": str(file_path)
+    }
+
 # Saved items endpoints
 @api_router.post("/saved-items")
 async def save_item(
