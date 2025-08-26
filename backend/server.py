@@ -135,6 +135,14 @@ class JobVacancy(BaseModel):
     knockout_questions: List[str] = []
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class SavedItem(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    item_id: str
+    item_type: str  # 'course', 'event', 'job'
+    item_data: Dict[str, Any]  # Store the full item data
+    saved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class JobApplication(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     job_id: str
