@@ -33,6 +33,8 @@ class TechHubAPITester:
                 response = self.session.post(url, json=data, headers=test_headers)
             elif method == 'PUT':
                 response = self.session.put(url, json=data, headers=test_headers)
+            elif method == 'DELETE':
+                response = self.session.delete(url, headers=test_headers)
 
             print(f"   Status Code: {response.status_code}")
             
