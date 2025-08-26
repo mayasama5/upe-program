@@ -24,9 +24,9 @@ async def populate_database():
     
     print("🚀 Poblando TechHub UPE con datos de ejemplo...")
     
-    # Sample courses including tech and other professional areas
+    # Comprehensive courses including all professional areas with real sources
     courses = [
-        # Tech Courses
+        # Technology Courses
         {
             "id": "course-1",
             "title": "Desarrollo Web Full Stack con JavaScript",
@@ -35,7 +35,7 @@ async def populate_database():
             "url": "https://www.freecodecamp.org/espanol/learn/responsive-web-design/",
             "language": "es",
             "has_spanish_subtitles": True,
-            "category": "Desarrollo Web",
+            "category": "Tecnología",
             "is_free": True,
             "image_url": "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=250&fit=crop",
             "created_at": datetime.now(timezone.utc)
@@ -48,7 +48,7 @@ async def populate_database():
             "url": "https://grow.google/intl/es/courses-and-tools/",
             "language": "es",
             "has_spanish_subtitles": True,
-            "category": "Cloud Computing",
+            "category": "Tecnología",
             "is_free": True,
             "image_url": "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=400&h=250&fit=crop",
             "created_at": datetime.now(timezone.utc)
@@ -61,7 +61,7 @@ async def populate_database():
             "url": "https://skillsbuild.org/es/",
             "language": "es", 
             "has_spanish_subtitles": True,
-            "category": "Inteligencia Artificial",
+            "category": "Tecnología",
             "is_free": True,
             "image_url": "https://images.unsplash.com/photo-1555255707-c07966088b7b?w=400&h=250&fit=crop",
             "created_at": datetime.now(timezone.utc)
@@ -74,7 +74,7 @@ async def populate_database():
             "url": "https://www.netacad.com/es",
             "language": "es",
             "has_spanish_subtitles": True,
-            "category": "Ciberseguridad",
+            "category": "Tecnología",
             "is_free": True,
             "image_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=250&fit=crop",
             "created_at": datetime.now(timezone.utc)
@@ -87,27 +87,93 @@ async def populate_database():
             "url": "https://learn.microsoft.com/es-es/training/",
             "language": "es",
             "has_spanish_subtitles": True,
-            "category": "Ciencia de Datos",
+            "category": "Tecnología",
             "is_free": True,
             "image_url": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=250&fit=crop",
             "created_at": datetime.now(timezone.utc)
         },
-        # Marketing & Business Courses
         {
             "id": "course-6",
+            "title": "Cursos Gratuitos de Programación",
+            "description": "Accede a cientos de cursos gratuitos de programación, desarrollo web, móvil y más en español.",
+            "provider": "Claseflix",
+            "url": "https://claseflix.com/",
+            "language": "es",
+            "has_spanish_subtitles": True,
+            "category": "Tecnología",
+            "is_free": True,
+            "image_url": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=250&fit=crop",
+            "created_at": datetime.now(timezone.utc)
+        },
+        {
+            "id": "course-7",
+            "title": "Programación Desde Cero",
+            "description": "Aprende a programar desde cero con ejercicios prácticos y proyectos reales.",
+            "provider": "Programación ATS",
+            "url": "https://www.programacionats.com/",
+            "language": "es",
+            "has_spanish_subtitles": True,
+            "category": "Tecnología",
+            "is_free": True,
+            "image_url": "https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?w=400&h=250&fit=crop",
+            "created_at": datetime.now(timezone.utc)
+        },
+        {
+            "id": "course-8",
+            "title": "Diseño UX/UI Completo",
+            "description": "Aprende a diseñar experiencias de usuario intuitivas y interfaces atractivas para aplicaciones y websites.",
+            "provider": "Google UX Design",
+            "url": "https://grow.google/intl/es/courses-and-tools/",
+            "language": "es",
+            "has_spanish_subtitles": True,
+            "category": "Diseño",
+            "is_free": True,
+            "image_url": "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=250&fit=crop",
+            "created_at": datetime.now(timezone.utc)
+        },
+        {
+            "id": "course-9",
+            "title": "Diseño Gráfico con Adobe Creative Suite",
+            "description": "Domina Photoshop, Illustrator e InDesign para crear diseños profesionales e impactantes.",
+            "provider": "Adobe Education",
+            "url": "https://www.adobe.com/la/education.html",
+            "language": "es",
+            "has_spanish_subtitles": True,
+            "category": "Diseño",
+            "is_free": True,
+            "image_url": "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=400&h=250&fit=crop",
+            "created_at": datetime.now(timezone.utc)
+        },
+        # Marketing Courses
+        {
+            "id": "course-10",
             "title": "Marketing Digital Completo",
             "description": "Domina Google Ads, Facebook Ads, SEO, email marketing y analytics para hacer crecer tu negocio.",
             "provider": "Meta Blueprint",
             "url": "https://www.facebookblueprint.com/student/catalog?locale=es",
             "language": "es",
             "has_spanish_subtitles": True,
-            "category": "Marketing Digital",
+            "category": "Marketing",
             "is_free": True,
             "image_url": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=250&fit=crop",
             "created_at": datetime.now(timezone.utc)
         },
         {
-            "id": "course-7",
+            "id": "course-11",
+            "title": "Google Analytics 4 Certificación",
+            "description": "Aprende a medir y analizar el rendimiento de tu sitio web con Google Analytics 4.",
+            "provider": "Google Skillshop",
+            "url": "https://skillshop.withgoogle.com/",
+            "language": "es",
+            "has_spanish_subtitles": True,
+            "category": "Marketing",
+            "is_free": True,
+            "image_url": "https://images.unsplash.com/photo-1553028826-f4804151e65f?w=400&h=250&fit=crop",
+            "created_at": datetime.now(timezone.utc)
+        },
+        # Administration Courses
+        {
+            "id": "course-12",
             "title": "Fundamentos de Administración de Empresas",
             "description": "Aprende los conceptos esenciales de gestión empresarial, liderazgo y toma de decisiones estratégicas.",
             "provider": "Coursera Business",
@@ -120,7 +186,21 @@ async def populate_database():
             "created_at": datetime.now(timezone.utc)
         },
         {
-            "id": "course-8",
+            "id": "course-13",
+            "title": "Gestión de Proyectos con Metodologías Ágiles",
+            "description": "Domina Scrum, Kanban y metodologías ágiles para gestionar proyectos de manera eficiente.",
+            "provider": "Project Management Institute",
+            "url": "https://www.pmi.org/learning/training-development",
+            "language": "es",
+            "has_spanish_subtitles": True,
+            "category": "Administración",
+            "is_free": True,
+            "image_url": "https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=250&fit=crop",
+            "created_at": datetime.now(timezone.utc)
+        },
+        # Human Resources Courses
+        {
+            "id": "course-14",
             "title": "Gestión de Recursos Humanos",
             "description": "Curso completo sobre reclutamiento, selección, desarrollo de talento y gestión del capital humano.",
             "provider": "IBM SkillsBuild",
@@ -132,36 +212,22 @@ async def populate_database():
             "image_url": "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=400&h=250&fit=crop",
             "created_at": datetime.now(timezone.utc)
         },
-        # Design Courses
         {
-            "id": "course-9",
-            "title": "Diseño Gráfico con Adobe Creative Suite",
-            "description": "Domina Photoshop, Illustrator e InDesign para crear diseños profesionales e impactantes.",
-            "provider": "Adobe Education",
-            "url": "https://www.adobe.com/la/education.html",
+            "id": "course-15",
+            "title": "Psicología Organizacional",
+            "description": "Comprende el comportamiento humano en las organizaciones y técnicas de motivación laboral.",
+            "provider": "Universidad Virtual de Paraguay",
+            "url": "https://www.uvp.edu.py/",
             "language": "es",
             "has_spanish_subtitles": True,
-            "category": "Diseño Gráfico",
+            "category": "Recursos Humanos",
             "is_free": True,
-            "image_url": "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=400&h=250&fit=crop",
+            "image_url": "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=250&fit=crop",
             "created_at": datetime.now(timezone.utc)
         },
+        # Accounting & Finance
         {
-            "id": "course-10",
-            "title": "UX/UI Design Fundamentals",
-            "description": "Aprende a diseñar experiencias de usuario intuitivas y interfaces atractivas para aplicaciones y websites.",
-            "provider": "Google UX Design",
-            "url": "https://grow.google/intl/es/courses-and-tools/",
-            "language": "es",
-            "has_spanish_subtitles": True,
-            "category": "UX/UI Design",
-            "is_free": True,
-            "image_url": "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=250&fit=crop",
-            "created_at": datetime.now(timezone.utc)
-        },
-        # Finance & Accounting
-        {
-            "id": "course-11",
+            "id": "course-16",
             "title": "Contabilidad y Finanzas para No Financieros",
             "description": "Comprende los estados financieros, presupuestos y análisis financiero básico para cualquier profesional.",
             "provider": "Coursera Finance",
@@ -173,9 +239,22 @@ async def populate_database():
             "image_url": "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=250&fit=crop",
             "created_at": datetime.now(timezone.utc)
         },
-        # Communication & Languages
         {
-            "id": "course-12",
+            "id": "course-17",
+            "title": "Excel Financiero Avanzado",
+            "description": "Domina las funciones financieras de Excel para análisis, presupuestos y reportes empresariales.",
+            "provider": "Microsoft Learn",
+            "url": "https://learn.microsoft.com/es-es/training/",
+            "language": "es",
+            "has_spanish_subtitles": True,
+            "category": "Contabilidad",
+            "is_free": True,
+            "image_url": "https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=400&h=250&fit=crop",
+            "created_at": datetime.now(timezone.utc)
+        },
+        # Languages
+        {
+            "id": "course-18",
             "title": "Inglés de Negocios Intermedio",
             "description": "Mejora tu inglés profesional para presentaciones, emails, reuniones y negociaciones internacionales.",
             "provider": "British Council",
@@ -185,6 +264,33 @@ async def populate_database():
             "category": "Idiomas",
             "is_free": True,
             "image_url": "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=250&fit=crop",
+            "created_at": datetime.now(timezone.utc)
+        },
+        {
+            "id": "course-19",
+            "title": "Portugués para Negocios",
+            "description": "Aprende portugués empresarial para expandir oportunidades en Brasil y el mercado lusófono.",
+            "provider": "Duolingo for Business",
+            "url": "https://www.duolingo.com/business",
+            "language": "es",
+            "has_spanish_subtitles": True,
+            "category": "Idiomas",
+            "is_free": True,
+            "image_url": "https://images.unsplash.com/photo-1516414447565-b14be0adf13e?w=400&h=250&fit=crop",
+            "created_at": datetime.now(timezone.utc)
+        },
+        # Business Management
+        {
+            "id": "course-20",
+            "title": "Emprendimiento y Startups",
+            "description": "Aprende a crear, validar y escalar tu startup desde la idea hasta la ejecución exitosa.",
+            "provider": "USAID Paraguay Emprendedor",
+            "url": "https://www.usaid.gov/paraguay",
+            "language": "es",
+            "has_spanish_subtitles": True,
+            "category": "Gestión de Empresas",
+            "is_free": True,
+            "image_url": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=250&fit=crop",
             "created_at": datetime.now(timezone.utc)
         }
     ]
