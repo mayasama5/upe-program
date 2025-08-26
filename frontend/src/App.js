@@ -599,33 +599,57 @@ const ProfilePage = ({ user, setUser }) => {
     }));
   };
 
-  const handleFileChange = (type, event) => {
+  const handleFileUpload = async (type, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('file_type', type);
+
+    try {
+      const response = await axios.post(`${API}/upload-file`, formData, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      toast({
+        title: "Archivo subido",
+        description: `${type === 'cv' ? 'CV' : type === 'certificate' ? 'Certificado' : 'Título'} subido exitosamente`,
+      });
+
+      // Refresh user data to show uploaded file
+      const userResponse = await axios.get(`${API}/auth/me`, { withCredentials: true });
+      setUser(userResponse.data);
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Error",
+        description: "Error al subir el archivo",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleFileChange = async (type, event) => {
     const file = event.target.files[0];
     if (file && file.type === 'application/pdf') {
+      // Upload file immediately
+      await handleFileUpload(type, file);
+      
+      // Update local state for UI feedback
       if (type === 'cv') {
         setFiles(prev => ({ ...prev, cv: file }));
-        toast({
-          title: "Archivo cargado",
-          description: `CV cargado: ${file.name}`,
-        });
       } else if (type === 'certificate') {
         setFiles(prev => ({ 
           ...prev, 
           certificates: [...prev.certificates, file] 
         }));
-        toast({
-          title: "Certificado cargado",
-          description: `Certificado agregado: ${file.name}`,
-        });
       } else if (type === 'degree') {
         setFiles(prev => ({ 
           ...prev, 
           degrees: [...prev.degrees, file] 
         }));
-        toast({
-          title: "Título cargado",
-          description: `Título agregado: ${file.name}`,
-        });
       }
     } else {
       toast({
