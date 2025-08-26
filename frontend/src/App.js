@@ -542,6 +542,10 @@ const DashboardHeader = ({ user, logout, activeSection, setActiveSection }) => {
     navigate('/profile');
   };
 
+  const handleSavedClick = () => {
+    navigate('/saved');
+  };
+
   return (
     <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -592,6 +596,10 @@ const DashboardHeader = ({ user, logout, activeSection, setActiveSection }) => {
             <Badge variant="outline" className={user.role === 'empresa' ? 'text-orange-400 border-orange-400/30' : 'text-cyan-400 border-cyan-400/30'}>
               {user.role === 'empresa' ? 'Empresa' : 'Estudiante'}
             </Badge>
+            <Button variant="ghost" size="sm" onClick={handleSavedClick} className="text-gray-300 hover:text-white">
+              <User className="w-4 h-4 mr-2" />
+              Guardados
+            </Button>
             <Button variant="ghost" size="sm" onClick={handleProfileClick} className="text-gray-300 hover:text-white">
               <User className="w-4 h-4 mr-2" />
               Mi Perfil
