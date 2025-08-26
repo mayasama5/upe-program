@@ -844,16 +844,16 @@ const ProfilePage = ({ user, setUser }) => {
               <div>
                 <Label className="text-white mb-2 block">Curriculum Vitae (CV)</Label>
                 <div className="border-2 border-dashed border-slate-600 rounded-lg p-4">
-                  {files.cv ? (
+                  {user.cv_file_path ? (
                     <div className="flex items-center justify-between bg-slate-700 p-3 rounded">
                       <div className="flex items-center gap-2">
                         <ExternalLink className="w-4 h-4 text-cyan-400" />
-                        <span className="text-white text-sm">{files.cv.name}</span>
+                        <span className="text-white text-sm">CV subido</span>
                       </div>
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        onClick={() => removeFile('cv')}
+                        onClick={() => {/* TODO: implement delete */}}
                         className="text-red-400 hover:text-red-300"
                       >
                         Eliminar
