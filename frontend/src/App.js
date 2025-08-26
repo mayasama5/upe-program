@@ -1697,17 +1697,20 @@ const Dashboard = ({ user, logout }) => {
   const [courses, setCourses] = useState([]);
   const [events, setEvents] = useState([]);
   const [jobs, setJobs] = useState([]);
+  const [savedItems, setSavedItems] = useState({ courses: [], events: [], jobs: [] });
   const [activeSection, setActiveSection] = useState('inicio');
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchContent();
+    fetchSavedItems();
   }, []);
 
   const fetchContent = async () => {
     try {
       const [coursesRes, eventsRes, jobsRes] = await Promise.all([
-        axios.get(`${API}/courses?limit=12`),
-        axios.get(`${API}/events?limit=8`),
+        axios.get(`${API}/courses?limit=20`),
+        axios.get(`${API}/events?limit=12`),
         axios.get(`${API}/jobs?limit=12`)
       ]);
       
@@ -1719,16 +1722,81 @@ const Dashboard = ({ user, logout }) => {
     }
   };
 
+  const fetchSavedItems = async () => {
+    try {
+      const response = await axios.get(`${API}/saved-items`, { withCredentials: true });
+      setSavedItems(response.data);
+    } catch (error) {
+      console.error('Error fetching saved items:', error);
+    }
+  };
+
+  const handleSaveItem = async (itemId, itemType) => {
+    try {
+      await axios.post(`${API}/saved-items?item_id=${itemId}&item_type=${itemType}`, {}, { withCredentials: true });
+      await fetchSavedItems(); // Refresh saved items
+      toast({
+        title: "Guardado",
+        description: "Item guardado exitosamente",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al guardar el item",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleUnsaveItem = async (itemId, itemType) => {
+    try {
+      await axios.delete(`${API}/saved-items/${itemId}?item_type=${itemType}`, { withCredentials: true });
+      await fetchSavedItems(); // Refresh saved items
+      toast({
+        title: "Eliminado",
+        description: "Item eliminado de guardados",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al eliminar el item",
+        variant: "destructive"
+      });
+    }
+  };
+
   const renderContent = () => {
     switch (activeSection) {
       case 'inicio':
         return <DashboardHome user={user} />;
       case 'cursos':
-        return <CoursesSection courses={courses} />;
+        return (
+          <CoursesSection 
+            courses={courses} 
+            savedItems={savedItems}
+            onSaveItem={handleSaveItem}
+            onUnsaveItem={handleUnsaveItem}
+          />
+        );
       case 'eventos':
-        return <EventsSection events={events} />;
+        return (
+          <EventsSection 
+            events={events} 
+            savedItems={savedItems}
+            onSaveItem={handleSaveItem}
+            onUnsaveItem={handleUnsaveItem}
+          />
+        );
       case 'vacantes':
-        return <JobsSection jobs={jobs} user={user} />;
+        return (
+          <JobsSection 
+            jobs={jobs} 
+            user={user} 
+            savedItems={savedItems}
+            onSaveItem={handleSaveItem}
+            onUnsaveItem={handleUnsaveItem}
+          />
+        );
       default:
         return <DashboardHome user={user} />;
     }
