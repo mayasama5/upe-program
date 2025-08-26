@@ -239,14 +239,14 @@ async def complete_auth(request: Request, response: Response):
         )
         await db.sessions.insert_one(session.dict())
         
-        # Set cookie
+        # Set cookie with proper development settings
         response.set_cookie(
             key="session_token",
             value=session.session_token,
             path="/",
             httponly=True,
-            secure=True,
-            samesite="none",
+            secure=False,  # Set to False for development (HTTP)
+            samesite="lax",  # Changed from "none" to "lax" for same-origin requests
             max_age=7*24*60*60
         )
         
