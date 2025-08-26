@@ -101,3 +101,146 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: |
+  TechHub UPE es una plataforma web en español que agrega contenido de terceros (cursos, eventos, becas, noticias, certificaciones) y permite publicaciones nativas de trabajo con seguimiento de aplicaciones. Se enfoca principalmente en carreras tecnológicas pero también incluye otros campos profesionales.
+  
+  Problemas críticos reportados por el usuario:
+  1. Botones no funcionales: "eventos", "guardados", "todas las categorías", "todas las vacantes"
+  2. Ubicaciones de vacantes: deben ser Ciudad del Este para presencial, otras ciudades solo para online
+  3. Creación de cuenta empresarial sigue defaulteando a estudiante
+  4. UI cards desiguales en márgenes, espacios, tamaños
+  5. Falta sección de carga de archivos PDF (CV, certificados) en perfil de estudiantes
+
+backend:
+  - task: "API endpoints para cursos, eventos, jobs"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Todos los endpoints están implementados y funcionando correctamente"
+
+  - task: "Autenticación con Google OAuth y roles"
+    implemented: true
+    working: false
+    file: "/app/backend/server.py"
+    stuck_count: 2
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "Usuario reporta que la creación de cuenta empresa sigue defaulteando a estudiante"
+
+  - task: "Sistema de usuarios y perfiles"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Endpoints de perfil funcionando correctamente"
+
+  - task: "Sistema de guardados (saved items)"
+    implemented: true
+    working: false
+    file: "/app/backend/server.py"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "Usuario reporta que el botón de guardados no funciona"
+
+frontend:
+  - task: "Navegación y routing"
+    implemented: true
+    working: false
+    file: "/app/frontend/src/App.js"
+    stuck_count: 3
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "Botones eventos, guardados, filtros de categorías no funcionan"
+
+  - task: "Componente de creación de cuenta (empresa vs estudiante)"
+    implemented: true
+    working: false
+    file: "/app/frontend/src/App.js"
+    stuck_count: 4
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "Sigue creando solo cuentas de estudiante, no empresas"
+
+  - task: "Filtros de contenido (categorías, vacantes)"
+    implemented: true
+    working: false
+    file: "/app/frontend/src/App.js"
+    stuck_count: 2
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "Filtros todas las categorías y todas las vacantes no funcionan"
+
+  - task: "Consistencia UI de cards"
+    implemented: false
+    working: false
+    file: "/app/frontend/src/App.js"
+    stuck_count: 2
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "Cards tienen márgenes, espacios y tamaños desiguales"
+
+  - task: "Sección de carga de archivos en perfil"
+    implemented: false
+    working: false
+    file: "/app/frontend/src/App.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "Falta funcionalidad completa de carga de PDF (CV, certificados)"
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 0
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Navegación y routing"
+    - "Componente de creación de cuenta (empresa vs estudiante)"
+    - "Filtros de contenido (categorías, vacantes)"
+    - "Sección de carga de archivos en perfil"
+  stuck_tasks:
+    - "Componente de creación de cuenta (empresa vs estudiante)"
+    - "Navegación y routing"
+    - "Filtros de contenido (categorías, vacantes)"
+  test_all: false
+  test_priority: "stuck_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Usuario reportó 5 problemas críticos después de rewrite reciente de App.js. Necesito verificar si los cambios realmente funcionaron y arreglar los problemas persistentes. Comenzaré con testing del backend para verificar que la base funciona correctamente."
