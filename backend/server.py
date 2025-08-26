@@ -275,6 +275,12 @@ async def update_profile(profile_data: UserCreate, user: User = Depends(require_
     print(f"Current user role: {user.role}")
     print(f"Update data: {update_data}")
     
+    # If no role is provided in update, preserve current role
+    if 'role' not in update_data or update_data['role'] is None:
+        print(f"No role in update data, preserving current role: {user.role}")
+    else:
+        print(f"Changing role from {user.role} to {update_data['role']}")
+    
     await db.users.update_one({"id": user.id}, {"$set": update_data})
     
     updated_user = await db.users.find_one({"id": user.id})
