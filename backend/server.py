@@ -265,7 +265,7 @@ async def logout(request: Request, response: Response):
     if session_token:
         await db.sessions.delete_one({"session_token": session_token})
     
-    response.delete_cookie("session_token", path="/")
+    response.delete_cookie("session_token", path="/", samesite="lax")
     return {"message": "Logged out successfully"}
 
 # User endpoints
