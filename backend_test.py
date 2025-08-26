@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 class TechHubAPITester:
-    def __init__(self, base_url="https://tech-talent-hub-5.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://jobhub-paraguay.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.session_token = None
         self.tests_run = 0
