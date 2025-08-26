@@ -351,6 +351,13 @@ def main():
     print(f"✅ Events API: {'Working' if events_success else 'Failed'}")
     print(f"✅ Jobs API: {'Working' if jobs_success else 'Failed'}")
     print(f"⚠️  Auth API: Expected failures (no valid session)")
+    print(f"⚠️  Saved Items API: Expected failures (requires authentication)")
+    print(f"⚠️  Profile Update API: Expected failures (requires authentication)")
+    
+    print("\n🔍 CRITICAL ISSUES TO INVESTIGATE:")
+    print("1. ❌ Company role creation defaulting to student (needs authenticated testing)")
+    print("2. ❌ Saved items button not working (needs authenticated testing)")
+    print("3. ✅ Basic API endpoints working correctly")
     
     if tester.tests_passed >= tester.tests_run * 0.7:  # 70% pass rate
         print("\n🎉 Overall API Status: HEALTHY")
