@@ -1476,6 +1476,222 @@ const JobsSection = ({ jobs, user, savedItems, onSaveItem, onUnsaveItem }) => {
   );
 };
 
+// Saved Items Page
+const SavedItemsPage = ({ user }) => {
+  const navigate = useNavigate();
+  const [savedItems, setSavedItems] = useState({ courses: [], events: [], jobs: [] });
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchSavedItems();
+  }, []);
+
+  const fetchSavedItems = async () => {
+    try {
+      const response = await axios.get(`${API}/saved-items`, { withCredentials: true });
+      setSavedItems(response.data);
+    } catch (error) {
+      console.error('Error fetching saved items:', error);
+    }
+    setLoading(false);
+  };
+
+  const handleUnsaveItem = async (itemId, itemType) => {
+    try {
+      await axios.delete(`${API}/saved-items/${itemId}?item_type=${itemType}`, { withCredentials: true });
+      await fetchSavedItems(); // Refresh the list
+      toast({
+        title: "Eliminado",
+        description: "Item eliminado de guardados",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al eliminar el item",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (!user) return <Navigate to="/" />;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="text-white">Cargando guardados...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-950">
+      <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <Button variant="ghost" onClick={() => navigate('/dashboard')} className="text-cyan-400 hover:text-cyan-300">
+            ← Volver al Dashboard
+          </Button>
+          <Badge variant="outline" className={user.role === 'empresa' ? 'text-orange-400 border-orange-400/30' : 'text-cyan-400 border-cyan-400/30'}>
+            {user.role === 'empresa' ? 'Empresa' : 'Estudiante'}
+          </Badge>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-white mb-8">Mis Guardados</h1>
+        
+        <Tabs defaultValue="cursos" className="space-y-6">
+          <TabsList className="bg-slate-800 border-slate-700">
+            <TabsTrigger value="cursos" className="text-white data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
+              Cursos ({savedItems.courses.length})
+            </TabsTrigger>
+            <TabsTrigger value="eventos" className="text-white data-[state=active]:bg-purple-500 data-[state=active]:text-white">
+              Eventos ({savedItems.events.length})
+            </TabsTrigger>
+            <TabsTrigger value="vacantes" className="text-white data-[state=active]:bg-orange-500 data-[state=active]:text-white">
+              Vacantes ({savedItems.jobs.length})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="cursos">
+            {savedItems.courses.length === 0 ? (
+              <Card className="bg-slate-800 border-slate-700">
+                <CardContent className="py-12 text-center">
+                  <BookOpen className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+                  <p className="text-gray-400">No tienes cursos guardados aún</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {savedItems.courses.map(course => (
+                  <Card key={course.id} className="bg-slate-800 border-slate-700">
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start mb-2">
+                        <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-400 text-xs">
+                          {course.category}
+                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleUnsaveItem(course.id, 'course')}
+                          className="text-yellow-400 hover:text-yellow-300"
+                        >
+                          ★
+                        </Button>
+                      </div>
+                      <CardTitle className="text-white text-base leading-tight">{course.title}</CardTitle>
+                      <CardDescription className="text-gray-400 text-sm">{course.provider}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <Button 
+                        size="sm"
+                        className="w-full bg-cyan-500 hover:bg-cyan-600 text-black"
+                        onClick={() => window.open(course.url, '_blank')}
+                      >
+                        Ir al Curso <ExternalLink className="w-3 h-3 ml-2" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="eventos">
+            {savedItems.events.length === 0 ? (
+              <Card className="bg-slate-800 border-slate-700">
+                <CardContent className="py-12 text-center">
+                  <Calendar className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+                  <p className="text-gray-400">No tienes eventos guardados aún</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {savedItems.events.map(event => (
+                  <Card key={event.id} className="bg-slate-800 border-slate-700">
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start mb-2">
+                        <Badge variant="secondary" className="bg-purple-500/20 text-purple-400 text-xs">
+                          {event.category}
+                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleUnsaveItem(event.id, 'event')}
+                          className="text-yellow-400 hover:text-yellow-300"
+                        >
+                          ★
+                        </Button>
+                      </div>
+                      <CardTitle className="text-white text-base leading-tight">{event.title}</CardTitle>
+                      <CardDescription className="text-gray-400 text-sm">
+                        {new Date(event.event_date).toLocaleDateString('es-ES')}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <Button 
+                        size="sm"
+                        className="w-full bg-purple-500 hover:bg-purple-600 text-white"
+                        onClick={() => window.open(event.url, '_blank')}
+                      >
+                        Registrarse <ExternalLink className="w-3 h-3 ml-2" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="vacantes">
+            {savedItems.jobs.length === 0 ? (
+              <Card className="bg-slate-800 border-slate-700">
+                <CardContent className="py-12 text-center">
+                  <Briefcase className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+                  <p className="text-gray-400">No tienes vacantes guardadas aún</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {savedItems.jobs.map(job => (
+                  <Card key={job.id} className="bg-slate-800 border-slate-700">
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start mb-2">
+                        <Badge variant="secondary" className="bg-orange-500/20 text-orange-400 text-xs">
+                          {job.job_type}
+                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleUnsaveItem(job.id, 'job')}
+                          className="text-yellow-400 hover:text-yellow-300"
+                        >
+                          ★
+                        </Button>
+                      </div>
+                      <CardTitle className="text-white text-base leading-tight">{job.title}</CardTitle>
+                      <CardDescription className="text-gray-400 text-sm">{job.company_name}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <Button 
+                        size="sm"
+                        className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                        onClick={() => window.open(job.apply_url, '_blank')}
+                      >
+                        Aplicar <ExternalLink className="w-3 h-3 ml-2" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+};
+
 // Dashboard Page (Protected)
 const Dashboard = ({ user, logout }) => {
   const [courses, setCourses] = useState([]);
