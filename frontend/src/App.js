@@ -13,7 +13,7 @@ import { Textarea } from "./components/ui/textarea";
 import { Label } from "./components/ui/label";
 import { useToast } from "./hooks/use-toast";
 import { Toaster } from "./components/ui/toaster";
-import { Search, BookOpen, Calendar, Briefcase, MapPin, Clock, ExternalLink, User, Building, LogOut, Plus, Filter, UserCheck, Users, Newspaper, TrendingUp, Target, Lightbulb } from "lucide-react";
+import { Search, BookOpen, Calendar, Briefcase, MapPin, Clock, ExternalLink, User, Building, LogOut, Plus, Filter, UserCheck, Users, Newspaper, TrendingUp, Target, Lightbulb, Upload } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -75,6 +75,7 @@ const useAuth = () => {
     // Store the intended role in sessionStorage to use after auth
     if (mode) {
       sessionStorage.setItem('intended_role', mode);
+      console.log('Stored intended role:', mode); // Debug log
     }
     const redirectUrl = encodeURIComponent(`${window.location.origin}/onboarding`);
     window.location.href = `https://auth.emergentagent.com/?redirect=${redirectUrl}`;
@@ -101,6 +102,7 @@ const useAuth = () => {
 // Auth & Landing Page
 const AuthLandingPage = ({ startGoogleAuth }) => {
   const handleAuthAction = (mode) => {
+    console.log('Auth action clicked:', mode); // Debug log
     startGoogleAuth(mode);
   };
 
@@ -307,9 +309,10 @@ const OnboardingPage = ({ user, setUser }) => {
 
     // Set the intended role if it was stored during auth initiation
     const intendedRole = sessionStorage.getItem('intended_role');
+    console.log('Retrieved intended role from storage:', intendedRole); // Debug log
     if (intendedRole) {
       setFormData(prev => ({ ...prev, role: intendedRole }));
-      sessionStorage.removeItem('intended_role'); // Clean up
+      // Don't clear immediately, keep for form submission
     }
   }, [user]);
 
@@ -372,6 +375,10 @@ const OnboardingPage = ({ user, setUser }) => {
       
       console.log('Profile update response:', response.data); // Debug log
       setUser(response.data);
+      
+      // Clear the intended role from storage after successful submission
+      sessionStorage.removeItem('intended_role');
+      
       toast({
         title: "¡Perfil completado!",
         description: "Tu cuenta ha sido configurada exitosamente",
@@ -534,88 +541,7 @@ const OnboardingPage = ({ user, setUser }) => {
   );
 };
 
-// Header Component for Dashboard
-const DashboardHeader = ({ user, logout, activeSection, setActiveSection }) => {
-  const navigate = useNavigate();
-
-  const handleProfileClick = () => {
-    navigate('/profile');
-  };
-
-  const handleSavedClick = () => {
-    navigate('/saved');
-  };
-
-  return (
-    <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
-            <span className="text-black font-bold text-sm">TH</span>
-          </div>
-          <h1 className="text-xl font-bold text-white">TechHub UPE</h1>
-        </div>
-        
-        <nav className="hidden md:flex space-x-6">
-          <Button 
-            variant={activeSection === 'inicio' ? 'default' : 'ghost'}
-            onClick={() => setActiveSection('inicio')}
-            className={activeSection === 'inicio' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
-          >
-            Inicio
-          </Button>
-          <Button 
-            variant={activeSection === 'cursos' ? 'default' : 'ghost'}
-            onClick={() => setActiveSection('cursos')}
-            className={activeSection === 'cursos' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
-          >
-            <BookOpen className="w-4 h-4 mr-2" />
-            Cursos
-          </Button>
-          <Button 
-            variant={activeSection === 'eventos' ? 'default' : 'ghost'}
-            onClick={() => setActiveSection('eventos')}
-            className={activeSection === 'eventos' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
-          >
-            <Calendar className="w-4 h-4 mr-2" />
-            Eventos
-          </Button>
-          <Button 
-            variant={activeSection === 'vacantes' ? 'default' : 'ghost'}
-            onClick={() => setActiveSection('vacantes')}
-            className={activeSection === 'vacantes' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
-          >
-            <Briefcase className="w-4 h-4 mr-2" />
-            Vacantes
-          </Button>
-        </nav>
-
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-3">
-            <span className="text-gray-300">¡Hola, {user.name}!</span>
-            <Badge variant="outline" className={user.role === 'empresa' ? 'text-orange-400 border-orange-400/30' : 'text-cyan-400 border-cyan-400/30'}>
-              {user.role === 'empresa' ? 'Empresa' : 'Estudiante'}
-            </Badge>
-            <Button variant="ghost" size="sm" onClick={handleSavedClick} className="text-gray-300 hover:text-white">
-              <User className="w-4 h-4 mr-2" />
-              Guardados
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleProfileClick} className="text-gray-300 hover:text-white">
-              <User className="w-4 h-4 mr-2" />
-              Mi Perfil
-            </Button>
-            <Button variant="ghost" size="sm" onClick={logout} className="text-gray-300 hover:text-white">
-              <LogOut className="w-4 h-4 mr-2" />
-              Salir
-            </Button>
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-};
-
-// Profile Page
+// Profile Page with File Upload
 const ProfilePage = ({ user, setUser }) => {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
@@ -629,6 +555,11 @@ const ProfilePage = ({ user, setUser }) => {
     company_document: user?.company_document || ''
   });
   const [skillInput, setSkillInput] = useState('');
+  const [files, setFiles] = useState({
+    cv: null,
+    certificates: [],
+    degrees: []
+  });
   const { toast } = useToast();
 
   if (!user) return <Navigate to="/" />;
@@ -668,6 +599,59 @@ const ProfilePage = ({ user, setUser }) => {
     }));
   };
 
+  const handleFileChange = (type, event) => {
+    const file = event.target.files[0];
+    if (file && file.type === 'application/pdf') {
+      if (type === 'cv') {
+        setFiles(prev => ({ ...prev, cv: file }));
+        toast({
+          title: "Archivo cargado",
+          description: `CV cargado: ${file.name}`,
+        });
+      } else if (type === 'certificate') {
+        setFiles(prev => ({ 
+          ...prev, 
+          certificates: [...prev.certificates, file] 
+        }));
+        toast({
+          title: "Certificado cargado",
+          description: `Certificado agregado: ${file.name}`,
+        });
+      } else if (type === 'degree') {
+        setFiles(prev => ({ 
+          ...prev, 
+          degrees: [...prev.degrees, file] 
+        }));
+        toast({
+          title: "Título cargado",
+          description: `Título agregado: ${file.name}`,
+        });
+      }
+    } else {
+      toast({
+        title: "Archivo inválido",
+        description: "Solo se permiten archivos PDF",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const removeFile = (type, index = null) => {
+    if (type === 'cv') {
+      setFiles(prev => ({ ...prev, cv: null }));
+    } else if (type === 'certificate' && index !== null) {
+      setFiles(prev => ({ 
+        ...prev, 
+        certificates: prev.certificates.filter((_, i) => i !== index)
+      }));
+    } else if (type === 'degree' && index !== null) {
+      setFiles(prev => ({ 
+        ...prev, 
+        degrees: prev.degrees.filter((_, i) => i !== index)
+      }));
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950">
       <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3">
@@ -681,7 +665,8 @@ const ProfilePage = ({ user, setUser }) => {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+        {/* Basic Profile Info */}
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader>
             <div className="flex justify-between items-center">
@@ -820,8 +805,224 @@ const ProfilePage = ({ user, setUser }) => {
             </div>
           </CardContent>
         </Card>
+
+        {/* File Upload Section - Only for students */}
+        {user.role === 'estudiante' && (
+          <Card className="bg-slate-800 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white">Documentos y Certificaciones</CardTitle>
+              <CardDescription className="text-gray-400">
+                Sube tu CV, certificados y títulos universitarios (solo archivos PDF)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* CV Upload */}
+              <div>
+                <Label className="text-white mb-2 block">Curriculum Vitae (CV)</Label>
+                <div className="border-2 border-dashed border-slate-600 rounded-lg p-4">
+                  {files.cv ? (
+                    <div className="flex items-center justify-between bg-slate-700 p-3 rounded">
+                      <div className="flex items-center gap-2">
+                        <ExternalLink className="w-4 h-4 text-cyan-400" />
+                        <span className="text-white text-sm">{files.cv.name}</span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => removeFile('cv')}
+                        className="text-red-400 hover:text-red-300"
+                      >
+                        Eliminar
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <label htmlFor="cv-upload" className="cursor-pointer">
+                        <span className="text-cyan-400 hover:text-cyan-300">Haz clic para subir tu CV</span>
+                        <p className="text-gray-400 text-sm mt-1">Solo archivos PDF</p>
+                        <input 
+                          id="cv-upload" 
+                          type="file" 
+                          accept=".pdf" 
+                          onChange={(e) => handleFileChange('cv', e)}
+                          className="hidden" 
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Certificates Upload */}
+              <div>
+                <Label className="text-white mb-2 block">Certificaciones</Label>
+                <div className="border-2 border-dashed border-slate-600 rounded-lg p-4">
+                  <div className="text-center mb-4">
+                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <label htmlFor="cert-upload" className="cursor-pointer">
+                      <span className="text-cyan-400 hover:text-cyan-300">Subir certificado</span>
+                      <p className="text-gray-400 text-sm mt-1">Solo archivos PDF</p>
+                      <input 
+                        id="cert-upload" 
+                        type="file" 
+                        accept=".pdf" 
+                        onChange={(e) => handleFileChange('certificate', e)}
+                        className="hidden" 
+                      />
+                    </label>
+                  </div>
+                  
+                  {files.certificates.length > 0 && (
+                    <div className="space-y-2">
+                      {files.certificates.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between bg-slate-700 p-3 rounded">
+                          <div className="flex items-center gap-2">
+                            <ExternalLink className="w-4 h-4 text-purple-400" />
+                            <span className="text-white text-sm">{file.name}</span>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => removeFile('certificate', index)}
+                            className="text-red-400 hover:text-red-300"
+                          >
+                            Eliminar
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Degrees Upload */}
+              <div>
+                <Label className="text-white mb-2 block">Títulos Universitarios</Label>
+                <div className="border-2 border-dashed border-slate-600 rounded-lg p-4">
+                  <div className="text-center mb-4">
+                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <label htmlFor="degree-upload" className="cursor-pointer">
+                      <span className="text-cyan-400 hover:text-cyan-300">Subir título</span>
+                      <p className="text-gray-400 text-sm mt-1">Solo archivos PDF</p>
+                      <input 
+                        id="degree-upload" 
+                        type="file" 
+                        accept=".pdf" 
+                        onChange={(e) => handleFileChange('degree', e)}
+                        className="hidden" 
+                      />
+                    </label>
+                  </div>
+                  
+                  {files.degrees.length > 0 && (
+                    <div className="space-y-2">
+                      {files.degrees.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between bg-slate-700 p-3 rounded">
+                          <div className="flex items-center gap-2">
+                            <ExternalLink className="w-4 h-4 text-orange-400" />
+                            <span className="text-white text-sm">{file.name}</span>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => removeFile('degree', index)}
+                            className="text-red-400 hover:text-red-300"
+                          >
+                            Eliminar
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
+  );
+};
+
+// Header Component for Dashboard
+const DashboardHeader = ({ user, logout, activeSection, setActiveSection }) => {
+  const navigate = useNavigate();
+
+  const handleProfileClick = () => {
+    navigate('/profile');
+  };
+
+  const handleSavedClick = () => {
+    navigate('/saved');
+  };
+
+  return (
+    <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto flex justify-between items-center">
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
+            <span className="text-black font-bold text-sm">TH</span>
+          </div>
+          <h1 className="text-xl font-bold text-white">TechHub UPE</h1>
+        </div>
+        
+        <nav className="hidden md:flex space-x-6">
+          <Button 
+            variant={activeSection === 'inicio' ? 'default' : 'ghost'}
+            onClick={() => setActiveSection('inicio')}
+            className={activeSection === 'inicio' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
+          >
+            Inicio
+          </Button>
+          <Button 
+            variant={activeSection === 'cursos' ? 'default' : 'ghost'}
+            onClick={() => setActiveSection('cursos')}
+            className={activeSection === 'cursos' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
+          >
+            <BookOpen className="w-4 h-4 mr-2" />
+            Cursos
+          </Button>
+          <Button 
+            variant={activeSection === 'eventos' ? 'default' : 'ghost'}
+            onClick={() => setActiveSection('eventos')}
+            className={activeSection === 'eventos' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
+          >
+            <Calendar className="w-4 h-4 mr-2" />
+            Eventos
+          </Button>
+          <Button 
+            variant={activeSection === 'vacantes' ? 'default' : 'ghost'}
+            onClick={() => setActiveSection('vacantes')}
+            className={activeSection === 'vacantes' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
+          >
+            <Briefcase className="w-4 h-4 mr-2" />
+            Vacantes
+          </Button>
+        </nav>
+
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
+            <span className="text-gray-300">¡Hola, {user.name}!</span>
+            <Badge variant="outline" className={user.role === 'empresa' ? 'text-orange-400 border-orange-400/30' : 'text-cyan-400 border-cyan-400/30'}>
+              {user.role === 'empresa' ? 'Empresa' : 'Estudiante'}
+            </Badge>
+            <Button variant="ghost" size="sm" onClick={handleSavedClick} className="text-gray-300 hover:text-white">
+              <User className="w-4 h-4 mr-2" />
+              Guardados
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleProfileClick} className="text-gray-300 hover:text-white">
+              <User className="w-4 h-4 mr-2" />
+              Mi Perfil
+            </Button>
+            <Button variant="ghost" size="sm" onClick={logout} className="text-gray-300 hover:text-white">
+              <LogOut className="w-4 h-4 mr-2" />
+              Salir
+            </Button>
+          </div>
+        </div>
+      </div>
+    </header>
   );
 };
 
@@ -842,117 +1043,114 @@ const DashboardHome = ({ user }) => {
             }
           </p>
 
-          {/* Resource Cards */}
+          {/* Resource Cards - Fixed dimensions */}
           <div className="grid md:grid-cols-4 gap-4">
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardContent className="p-4 text-center">
+            <Card className="bg-slate-800/50 border-slate-700 h-32">
+              <CardContent className="p-4 text-center h-full flex flex-col justify-center">
                 <TrendingUp className="w-8 h-8 text-green-400 mx-auto mb-2" />
-                <h3 className="text-white font-semibold mb-1">Crecimiento</h3>
-                <p className="text-gray-400 text-sm">+150% estudiantes activos este mes</p>
+                <h3 className="text-white font-semibold mb-1 text-sm">Crecimiento</h3>
+                <p className="text-gray-400 text-xs">+150% estudiantes activos</p>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardContent className="p-4 text-center">
+            <Card className="bg-slate-800/50 border-slate-700 h-32">
+              <CardContent className="p-4 text-center h-full flex flex-col justify-center">
                 <Target className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-                <h3 className="text-white font-semibold mb-1">Oportunidades</h3>
-                <p className="text-gray-400 text-sm">+50 vacantes publicadas esta semana</p>
+                <h3 className="text-white font-semibold mb-1 text-sm">Oportunidades</h3>
+                <p className="text-gray-400 text-xs">+50 vacantes nuevas</p>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardContent className="p-4 text-center">
+            <Card className="bg-slate-800/50 border-slate-700 h-32">
+              <CardContent className="p-4 text-center h-full flex flex-col justify-center">
                 <Lightbulb className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-                <h3 className="text-white font-semibold mb-1">Recursos</h3>
-                <p className="text-gray-400 text-sm">+200 cursos gratuitos disponibles</p>
+                <h3 className="text-white font-semibold mb-1 text-sm">Recursos</h3>
+                <p className="text-gray-400 text-xs">+200 cursos disponibles</p>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardContent className="p-4 text-center">
+            <Card className="bg-slate-800/50 border-slate-700 h-32">
+              <CardContent className="p-4 text-center h-full flex flex-col justify-center">
                 <Users className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-                <h3 className="text-white font-semibold mb-1">Comunidad</h3>
-                <p className="text-gray-400 text-sm">+5,000 profesionales conectados</p>
+                <h3 className="text-white font-semibold mb-1 text-sm">Comunidad</h3>
+                <p className="text-gray-400 text-xs">+5,000 profesionales</p>
               </CardContent>
             </Card>
           </div>
         </div>
       </section>
 
-      {/* News & Tips Section */}
+      {/* News & Tips Section - Fixed dimensions */}
       <div className="grid lg:grid-cols-3 gap-8">
-        {/* Educational News */}
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-slate-800 border-slate-700 h-96">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
+            <CardTitle className="text-white flex items-center gap-2 text-lg">
               <Newspaper className="w-5 h-5 text-cyan-400" />
               Noticias Educativas
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 overflow-y-auto" style={{ maxHeight: '280px' }}>
             <div className="p-3 bg-slate-700/50 rounded-lg">
-              <h4 className="text-white font-medium mb-1">SNPP lanza nuevos cursos técnicos</h4>
-              <p className="text-gray-400 text-sm">El Servicio Nacional de Promoción Profesional amplía su oferta educativa con 15 nuevos programas.</p>
+              <h4 className="text-white font-medium mb-1 text-sm">SNPP lanza nuevos cursos técnicos</h4>
+              <p className="text-gray-400 text-xs">El Servicio Nacional de Promoción Profesional amplía su oferta educativa.</p>
             </div>
             <div className="p-3 bg-slate-700/50 rounded-lg">
-              <h4 className="text-white font-medium mb-1">Becas 100% Paraguay 2024</h4>
-              <p className="text-gray-400 text-sm">Abierta convocatoria para 500 becas de estudio en universidades del país.</p>
+              <h4 className="text-white font-medium mb-1 text-sm">Becas 100% Paraguay 2024</h4>
+              <p className="text-gray-400 text-xs">Abierta convocatoria para 500 becas de estudio en universidades.</p>
             </div>
             <div className="p-3 bg-slate-700/50 rounded-lg">
-              <h4 className="text-white font-medium mb-1">UPE inaugura nuevo campus</h4>
-              <p className="text-gray-400 text-sm">La Universidad Privada del Este expande sus instalaciones en Ciudad del Este.</p>
+              <h4 className="text-white font-medium mb-1 text-sm">UPE inaugura nuevo campus</h4>
+              <p className="text-gray-400 text-xs">La Universidad expande sus instalaciones en Ciudad del Este.</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Career Tips */}
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-slate-800 border-slate-700 h-96">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
+            <CardTitle className="text-white flex items-center gap-2 text-lg">
               <TrendingUp className="w-5 h-5 text-green-400" />
               Tips de Crecimiento
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 overflow-y-auto" style={{ maxHeight: '280px' }}>
             <div className="p-3 bg-slate-700/50 rounded-lg">
-              <h4 className="text-white font-medium mb-1">Networking Digital</h4>
-              <p className="text-gray-400 text-sm">Construye conexiones profesionales efectivas usando LinkedIn y eventos virtuales.</p>
+              <h4 className="text-white font-medium mb-1 text-sm">Networking Digital</h4>
+              <p className="text-gray-400 text-xs">Construye conexiones profesionales efectivas usando LinkedIn.</p>
             </div>
             <div className="p-3 bg-slate-700/50 rounded-lg">
-              <h4 className="text-white font-medium mb-1">Portafolio Profesional</h4>
-              <p className="text-gray-400 text-sm">Crea un portafolio que destaque tus mejores proyectos y habilidades.</p>
+              <h4 className="text-white font-medium mb-1 text-sm">Portafolio Profesional</h4>
+              <p className="text-gray-400 text-xs">Crea un portafolio que destaque tus mejores proyectos.</p>
             </div>
             <div className="p-3 bg-slate-700/50 rounded-lg">
-              <h4 className="text-white font-medium mb-1">Entrevistas Remotas</h4>
-              <p className="text-gray-400 text-sm">Domina las entrevistas virtuales: tecnología, presencia y preparación.</p>
+              <h4 className="text-white font-medium mb-1 text-sm">Entrevistas Remotas</h4>
+              <p className="text-gray-400 text-xs">Domina las entrevistas virtuales con preparación.</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Platform Resources */}
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-slate-800 border-slate-700 h-96">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
+            <CardTitle className="text-white flex items-center gap-2 text-lg">
               <Target className="w-5 h-5 text-blue-400" />
               Recursos TechHub
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 overflow-y-auto" style={{ maxHeight: '280px' }}>
             <div className="p-3 bg-slate-700/50 rounded-lg">
-              <h4 className="text-white font-medium mb-1">
+              <h4 className="text-white font-medium mb-1 text-sm">
                 {user.role === 'empresa' ? 'Encuentra Talento' : 'Encuentra Oportunidades'}
               </h4>
-              <p className="text-gray-400 text-sm">
+              <p className="text-gray-400 text-xs">
                 {user.role === 'empresa' ? 
-                  'Accede a una base de datos de candidatos calificados y en constante crecimiento.' :
-                  'Descubre vacantes que se ajusten a tu perfil y objetivos profesionales.'
+                  'Accede a candidatos calificados en constante crecimiento.' :
+                  'Descubre vacantes que se ajusten a tu perfil profesional.'
                 }
               </p>
             </div>
             <div className="p-3 bg-slate-700/50 rounded-lg">
-              <h4 className="text-white font-medium mb-1">Educación Continua</h4>
-              <p className="text-gray-400 text-sm">Cursos gratuitos de las mejores plataformas mundiales, todos en español.</p>
+              <h4 className="text-white font-medium mb-1 text-sm">Educación Continua</h4>
+              <p className="text-gray-400 text-xs">Cursos gratuitos de las mejores plataformas mundiales.</p>
             </div>
             <div className="p-3 bg-slate-700/50 rounded-lg">
-              <h4 className="text-white font-medium mb-1">Eventos Profesionales</h4>
-              <p className="text-gray-400 text-sm">Conecta con la comunidad profesional en eventos, webinars y conferencias.</p>
+              <h4 className="text-white font-medium mb-1 text-sm">Eventos Profesionales</h4>
+              <p className="text-gray-400 text-xs">Conecta con la comunidad en eventos y conferencias.</p>
             </div>
           </CardContent>
         </Card>
@@ -973,22 +1171,22 @@ const DashboardHome = ({ user }) => {
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2"></div>
                   <div>
-                    <h4 className="text-white font-medium">Técnica Pomodoro</h4>
-                    <p className="text-gray-400 text-sm">25 minutos de estudio intenso + 5 minutos de descanso</p>
+                    <h4 className="text-white font-medium text-sm">Técnica Pomodoro</h4>
+                    <p className="text-gray-400 text-xs">25 minutos de estudio intenso + 5 minutos de descanso</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2"></div>
                   <div>
-                    <h4 className="text-white font-medium">Práctica Activa</h4>
-                    <p className="text-gray-400 text-sm">Aplica lo aprendido en proyectos reales</p>
+                    <h4 className="text-white font-medium text-sm">Práctica Activa</h4>
+                    <p className="text-gray-400 text-xs">Aplica lo aprendido en proyectos reales</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2"></div>
                   <div>
-                    <h4 className="text-white font-medium">Comunidad de Estudio</h4>
-                    <p className="text-gray-400 text-sm">Únete a grupos de estudio online</p>
+                    <h4 className="text-white font-medium text-sm">Comunidad de Estudio</h4>
+                    <p className="text-gray-400 text-xs">Únete a grupos de estudio online</p>
                   </div>
                 </div>
               </div>
@@ -996,22 +1194,22 @@ const DashboardHome = ({ user }) => {
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2"></div>
                   <div>
-                    <h4 className="text-white font-medium">Metas SMART</h4>
-                    <p className="text-gray-400 text-sm">Específicas, Medibles, Alcanzables, Relevantes, Temporales</p>
+                    <h4 className="text-white font-medium text-sm">Metas SMART</h4>
+                    <p className="text-gray-400 text-xs">Específicas, Medibles, Alcanzables, Relevantes, Temporales</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2"></div>
                   <div>
-                    <h4 className="text-white font-medium">Documentar Progreso</h4>
-                    <p className="text-gray-400 text-sm">Mantén un diario de aprendizaje</p>
+                    <h4 className="text-white font-medium text-sm">Documentar Progreso</h4>
+                    <p className="text-gray-400 text-xs">Mantén un diario de aprendizaje</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2"></div>
                   <div>
-                    <h4 className="text-white font-medium">Descanso Adecuado</h4>
-                    <p className="text-gray-400 text-sm">7-8 horas de sueño para mejor retención</p>
+                    <h4 className="text-white font-medium text-sm">Descanso Adecuado</h4>
+                    <p className="text-gray-400 text-xs">7-8 horas de sueño para mejor retención</p>
                   </div>
                 </div>
               </div>
@@ -1023,6 +1221,7 @@ const DashboardHome = ({ user }) => {
   );
 };
 
+// Fixed dimensions for all content cards
 const CoursesSection = ({ courses, savedItems, onSaveItem, onUnsaveItem }) => {
   const [filteredCourses, setFilteredCourses] = useState(courses);
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -1069,10 +1268,11 @@ const CoursesSection = ({ courses, savedItems, onSaveItem, onUnsaveItem }) => {
         </div>
       </div>
       
+      {/* Fixed grid with uniform card dimensions */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredCourses.map(course => (
-          <Card key={course.id} className="bg-slate-800 border-slate-700 hover:border-cyan-500/50 transition-all">
-            <CardHeader className="pb-3">
+          <Card key={course.id} className="bg-slate-800 border-slate-700 hover:border-cyan-500/50 transition-all h-80 flex flex-col">
+            <CardHeader className="pb-3 flex-shrink-0">
               <div className="flex justify-between items-start mb-2">
                 <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-400 text-xs">
                   {course.category}
@@ -1085,23 +1285,23 @@ const CoursesSection = ({ courses, savedItems, onSaveItem, onUnsaveItem }) => {
                     size="sm"
                     variant="ghost"
                     onClick={() => isSaved(course.id) ? onUnsaveItem(course.id, 'course') : onSaveItem(course.id, 'course')}
-                    className={isSaved(course.id) ? "text-yellow-400 hover:text-yellow-300" : "text-gray-400 hover:text-yellow-400"}
+                    className={isSaved(course.id) ? "text-yellow-400 hover:text-yellow-300 p-1" : "text-gray-400 hover:text-yellow-400 p-1"}
                   >
                     {isSaved(course.id) ? '★' : '☆'}
                   </Button>
                 </div>
               </div>
-              <CardTitle className="text-white text-base leading-tight">{course.title}</CardTitle>
-              <CardDescription className="text-gray-400 text-sm">{course.provider}</CardDescription>
+              <CardTitle className="text-white text-sm leading-tight line-clamp-2 h-10">{course.title}</CardTitle>
+              <CardDescription className="text-gray-400 text-xs">{course.provider}</CardDescription>
             </CardHeader>
-            <CardContent className="pt-0">
-              <p className="text-gray-300 text-sm mb-4 line-clamp-2">{course.description}</p>
+            <CardContent className="pt-0 flex flex-col justify-between flex-grow">
+              <p className="text-gray-300 text-xs mb-4 line-clamp-3 flex-grow">{course.description}</p>
               <Button 
                 size="sm"
-                className="w-full bg-cyan-500 hover:bg-cyan-600 text-black"
+                className="w-full bg-cyan-500 hover:bg-cyan-600 text-black text-xs"
                 onClick={() => window.open(course.url, '_blank')}
               >
-                Ir al Curso <ExternalLink className="w-3 h-3 ml-2" />
+                Ir al Curso <ExternalLink className="w-3 h-3 ml-1" />
               </Button>
             </CardContent>
           </Card>
@@ -1165,10 +1365,11 @@ const EventsSection = ({ events, savedItems, onSaveItem, onUnsaveItem }) => {
         </div>
       </div>
       
+      {/* Fixed grid with uniform card dimensions */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredEvents.map(event => (
-          <Card key={event.id} className="bg-slate-800 border-slate-700 hover:border-cyan-500/50 transition-all">
-            <CardHeader className="pb-3">
+          <Card key={event.id} className="bg-slate-800 border-slate-700 hover:border-cyan-500/50 transition-all h-80 flex flex-col">
+            <CardHeader className="pb-3 flex-shrink-0">
               <div className="flex justify-between items-start mb-2">
                 <Badge variant="secondary" className="bg-purple-500/20 text-purple-400 text-xs">
                   {event.category}
@@ -1182,25 +1383,25 @@ const EventsSection = ({ events, savedItems, onSaveItem, onUnsaveItem }) => {
                     size="sm"
                     variant="ghost"
                     onClick={() => isSaved(event.id) ? onUnsaveItem(event.id, 'event') : onSaveItem(event.id, 'event')}
-                    className={isSaved(event.id) ? "text-yellow-400 hover:text-yellow-300" : "text-gray-400 hover:text-yellow-400"}
+                    className={isSaved(event.id) ? "text-yellow-400 hover:text-yellow-300 p-1" : "text-gray-400 hover:text-yellow-400 p-1"}
                   >
                     {isSaved(event.id) ? '★' : '☆'}
                   </Button>
                 </div>
               </div>
-              <CardTitle className="text-white text-base leading-tight">{event.title}</CardTitle>
-              <CardDescription className="text-gray-400 text-sm">
+              <CardTitle className="text-white text-sm leading-tight line-clamp-2 h-10">{event.title}</CardTitle>
+              <CardDescription className="text-gray-400 text-xs">
                 {event.organizer} • {event.is_online ? 'Online' : event.location}
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-0">
-              <p className="text-gray-300 text-sm mb-4 line-clamp-2">{event.description}</p>
+            <CardContent className="pt-0 flex flex-col justify-between flex-grow">
+              <p className="text-gray-300 text-xs mb-4 line-clamp-3 flex-grow">{event.description}</p>
               <Button 
                 size="sm"
-                className="w-full bg-purple-500 hover:bg-purple-600 text-white"
+                className="w-full bg-purple-500 hover:bg-purple-600 text-white text-xs"
                 onClick={() => window.open(event.url, '_blank')}
               >
-                Registrarse <ExternalLink className="w-3 h-3 ml-2" />
+                Registrarse <ExternalLink className="w-3 h-3 ml-1" />
               </Button>
             </CardContent>
           </Card>
@@ -1261,7 +1462,6 @@ const JobsSection = ({ jobs, user, savedItems, onSaveItem, onUnsaveItem }) => {
         apply_url: '',
         knockout_questions: []
       });
-      // Refresh jobs list
       window.location.reload();
     } catch (error) {
       toast({
@@ -1312,10 +1512,11 @@ const JobsSection = ({ jobs, user, savedItems, onSaveItem, onUnsaveItem }) => {
         </div>
       </div>
       
+      {/* Fixed grid with uniform card dimensions */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredJobs.map(job => (
-          <Card key={job.id} className="bg-slate-800 border-slate-700 hover:border-cyan-500/50 transition-all">
-            <CardHeader className="pb-3">
+          <Card key={job.id} className="bg-slate-800 border-slate-700 hover:border-cyan-500/50 transition-all h-80 flex flex-col">
+            <CardHeader className="pb-3 flex-shrink-0">
               <div className="flex justify-between items-start mb-2">
                 <Badge variant="secondary" className="bg-orange-500/20 text-orange-400 text-xs">
                   {job.job_type}
@@ -1329,39 +1530,41 @@ const JobsSection = ({ jobs, user, savedItems, onSaveItem, onUnsaveItem }) => {
                       size="sm"
                       variant="ghost"
                       onClick={() => isSaved(job.id) ? onUnsaveItem(job.id, 'job') : onSaveItem(job.id, 'job')}
-                      className={isSaved(job.id) ? "text-yellow-400 hover:text-yellow-300" : "text-gray-400 hover:text-yellow-400"}
+                      className={isSaved(job.id) ? "text-yellow-400 hover:text-yellow-300 p-1" : "text-gray-400 hover:text-yellow-400 p-1"}
                     >
                       {isSaved(job.id) ? '★' : '☆'}
                     </Button>
                   )}
                 </div>
               </div>
-              <CardTitle className="text-white text-base leading-tight">{job.title}</CardTitle>
-              <CardDescription className="text-gray-400 text-sm">
+              <CardTitle className="text-white text-sm leading-tight line-clamp-2 h-10">{job.title}</CardTitle>
+              <CardDescription className="text-gray-400 text-xs">
                 {job.company_name}
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-0">
-              <div className="flex items-center text-gray-400 text-sm mb-2">
-                <MapPin className="w-3 h-3 mr-1" />
-                {job.city || job.country}
+            <CardContent className="pt-0 flex flex-col justify-between flex-grow">
+              <div className="flex-grow">
+                <div className="flex items-center text-gray-400 text-xs mb-2">
+                  <MapPin className="w-3 h-3 mr-1" />
+                  {job.city || job.country}
+                </div>
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {job.skills_stack.slice(0, 2).map((skill, i) => (
+                    <Badge key={i} variant="outline" className="text-xs">
+                      {skill}
+                    </Badge>
+                  ))}
+                </div>
+                {job.salary_range && (
+                  <p className="text-cyan-400 text-xs font-medium mb-2">{job.salary_range}</p>
+                )}
               </div>
-              <div className="flex flex-wrap gap-1 mb-4">
-                {job.skills_stack.slice(0, 3).map((skill, i) => (
-                  <Badge key={i} variant="outline" className="text-xs">
-                    {skill}
-                  </Badge>
-                ))}
-              </div>
-              {job.salary_range && (
-                <p className="text-cyan-400 text-sm font-medium mb-3">{job.salary_range}</p>
-              )}
               <Button 
                 size="sm"
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white text-xs"
                 onClick={() => window.open(job.apply_url, '_blank')}
               >
-                Aplicar en Sitio <ExternalLink className="w-3 h-3 ml-2" />
+                Aplicar en Sitio <ExternalLink className="w-3 h-3 ml-1" />
               </Button>
             </CardContent>
           </Card>
@@ -1564,8 +1767,8 @@ const SavedItemsPage = ({ user }) => {
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {savedItems.courses.map(course => (
-                  <Card key={course.id} className="bg-slate-800 border-slate-700">
-                    <CardHeader className="pb-3">
+                  <Card key={course.id} className="bg-slate-800 border-slate-700 h-80 flex flex-col">
+                    <CardHeader className="pb-3 flex-shrink-0">
                       <div className="flex justify-between items-start mb-2">
                         <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-400 text-xs">
                           {course.category}
@@ -1574,21 +1777,22 @@ const SavedItemsPage = ({ user }) => {
                           size="sm"
                           variant="ghost"
                           onClick={() => handleUnsaveItem(course.id, 'course')}
-                          className="text-yellow-400 hover:text-yellow-300"
+                          className="text-yellow-400 hover:text-yellow-300 p-1"
                         >
                           ★
                         </Button>
                       </div>
-                      <CardTitle className="text-white text-base leading-tight">{course.title}</CardTitle>
-                      <CardDescription className="text-gray-400 text-sm">{course.provider}</CardDescription>
+                      <CardTitle className="text-white text-sm leading-tight line-clamp-2 h-10">{course.title}</CardTitle>
+                      <CardDescription className="text-gray-400 text-xs">{course.provider}</CardDescription>
                     </CardHeader>
-                    <CardContent className="pt-0">
+                    <CardContent className="pt-0 flex flex-col justify-between flex-grow">
+                      <div className="flex-grow"></div>
                       <Button 
                         size="sm"
-                        className="w-full bg-cyan-500 hover:bg-cyan-600 text-black"
+                        className="w-full bg-cyan-500 hover:bg-cyan-600 text-black text-xs"
                         onClick={() => window.open(course.url, '_blank')}
                       >
-                        Ir al Curso <ExternalLink className="w-3 h-3 ml-2" />
+                        Ir al Curso <ExternalLink className="w-3 h-3 ml-1" />
                       </Button>
                     </CardContent>
                   </Card>
@@ -1608,8 +1812,8 @@ const SavedItemsPage = ({ user }) => {
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {savedItems.events.map(event => (
-                  <Card key={event.id} className="bg-slate-800 border-slate-700">
-                    <CardHeader className="pb-3">
+                  <Card key={event.id} className="bg-slate-800 border-slate-700 h-80 flex flex-col">
+                    <CardHeader className="pb-3 flex-shrink-0">
                       <div className="flex justify-between items-start mb-2">
                         <Badge variant="secondary" className="bg-purple-500/20 text-purple-400 text-xs">
                           {event.category}
@@ -1618,23 +1822,24 @@ const SavedItemsPage = ({ user }) => {
                           size="sm"
                           variant="ghost"
                           onClick={() => handleUnsaveItem(event.id, 'event')}
-                          className="text-yellow-400 hover:text-yellow-300"
+                          className="text-yellow-400 hover:text-yellow-300 p-1"
                         >
                           ★
                         </Button>
                       </div>
-                      <CardTitle className="text-white text-base leading-tight">{event.title}</CardTitle>
-                      <CardDescription className="text-gray-400 text-sm">
+                      <CardTitle className="text-white text-sm leading-tight line-clamp-2 h-10">{event.title}</CardTitle>
+                      <CardDescription className="text-gray-400 text-xs">
                         {new Date(event.event_date).toLocaleDateString('es-ES')}
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="pt-0">
+                    <CardContent className="pt-0 flex flex-col justify-between flex-grow">
+                      <div className="flex-grow"></div>
                       <Button 
                         size="sm"
-                        className="w-full bg-purple-500 hover:bg-purple-600 text-white"
+                        className="w-full bg-purple-500 hover:bg-purple-600 text-white text-xs"
                         onClick={() => window.open(event.url, '_blank')}
                       >
-                        Registrarse <ExternalLink className="w-3 h-3 ml-2" />
+                        Registrarse <ExternalLink className="w-3 h-3 ml-1" />
                       </Button>
                     </CardContent>
                   </Card>
@@ -1654,8 +1859,8 @@ const SavedItemsPage = ({ user }) => {
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {savedItems.jobs.map(job => (
-                  <Card key={job.id} className="bg-slate-800 border-slate-700">
-                    <CardHeader className="pb-3">
+                  <Card key={job.id} className="bg-slate-800 border-slate-700 h-80 flex flex-col">
+                    <CardHeader className="pb-3 flex-shrink-0">
                       <div className="flex justify-between items-start mb-2">
                         <Badge variant="secondary" className="bg-orange-500/20 text-orange-400 text-xs">
                           {job.job_type}
@@ -1664,21 +1869,22 @@ const SavedItemsPage = ({ user }) => {
                           size="sm"
                           variant="ghost"
                           onClick={() => handleUnsaveItem(job.id, 'job')}
-                          className="text-yellow-400 hover:text-yellow-300"
+                          className="text-yellow-400 hover:text-yellow-300 p-1"
                         >
                           ★
                         </Button>
                       </div>
-                      <CardTitle className="text-white text-base leading-tight">{job.title}</CardTitle>
-                      <CardDescription className="text-gray-400 text-sm">{job.company_name}</CardDescription>
+                      <CardTitle className="text-white text-sm leading-tight line-clamp-2 h-10">{job.title}</CardTitle>
+                      <CardDescription className="text-gray-400 text-xs">{job.company_name}</CardDescription>
                     </CardHeader>
-                    <CardContent className="pt-0">
+                    <CardContent className="pt-0 flex flex-col justify-between flex-grow">
+                      <div className="flex-grow"></div>
                       <Button 
                         size="sm"
-                        className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                        className="w-full bg-orange-500 hover:bg-orange-600 text-white text-xs"
                         onClick={() => window.open(job.apply_url, '_blank')}
                       >
-                        Aplicar <ExternalLink className="w-3 h-3 ml-2" />
+                        Aplicar <ExternalLink className="w-3 h-3 ml-1" />
                       </Button>
                     </CardContent>
                   </Card>
