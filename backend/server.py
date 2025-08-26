@@ -70,6 +70,9 @@ class User(BaseModel):
     bio: Optional[str] = None
     company_name: Optional[str] = None
     company_document: Optional[str] = None
+    cv_file_path: Optional[str] = None
+    certificate_files: List[Dict[str, Any]] = []
+    degree_files: List[Dict[str, Any]] = []
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserCreate(BaseModel):
