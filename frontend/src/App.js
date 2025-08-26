@@ -940,18 +940,19 @@ const ProfilePage = ({ user, setUser }) => {
                     </label>
                   </div>
                   
-                  {files.degrees.length > 0 && (
+                  {/* Show existing degrees from user data */}
+                  {user.degree_files && user.degree_files.length > 0 && (
                     <div className="space-y-2">
-                      {files.degrees.map((file, index) => (
+                      {user.degree_files.map((degree, index) => (
                         <div key={index} className="flex items-center justify-between bg-slate-700 p-3 rounded">
                           <div className="flex items-center gap-2">
                             <ExternalLink className="w-4 h-4 text-orange-400" />
-                            <span className="text-white text-sm">{file.name}</span>
+                            <span className="text-white text-sm">{degree.filename}</span>
                           </div>
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            onClick={() => removeFile('degree', index)}
+                            onClick={() => {/* TODO: implement delete */}}
                             className="text-red-400 hover:text-red-300"
                           >
                             Eliminar
