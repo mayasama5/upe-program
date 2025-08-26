@@ -269,10 +269,92 @@ async def logout(request: Request, response: Response):
 @api_router.put("/users/profile")
 async def update_profile(profile_data: UserCreate, user: User = Depends(require_auth)):
     update_data = profile_data.dict(exclude_unset=True)
+    
+    # Debug logs
+    print(f"Updating profile for user {user.id}")
+    print(f"Current user role: {user.role}")
+    print(f"Update data: {update_data}")
+    
     await db.users.update_one({"id": user.id}, {"$set": update_data})
     
     updated_user = await db.users.find_one({"id": user.id})
+    print(f"Updated user role: {updated_user.get('role')}")
+    
     return User(**updated_user)
+
+# Saved items endpoints
+@api_router.post("/saved-items")
+async def save_item(
+    item_id: str,
+    item_type: str,
+    user: User = Depends(require_auth)
+):
+    # Check if already saved
+    existing = await db.saved_items.find_one({
+        "user_id": user.id,
+        "item_id": item_id,
+        "item_type": item_type
+    })
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Item already saved")
+    
+    # Get the item data
+    if item_type == "course":
+        item_data = await db.courses.find_one({"id": item_id})
+    elif item_type == "event":
+        item_data = await db.events.find_one({"id": item_id})
+    elif item_type == "job":
+        item_data = await db.job_vacancies.find_one({"id": item_id})
+    else:
+        raise HTTPException(status_code=400, detail="Invalid item type")
+    
+    if not item_data:
+        raise HTTPException(status_code=404, detail="Item not found")
+    
+    saved_item = SavedItem(
+        user_id=user.id,
+        item_id=item_id,
+        item_type=item_type,
+        item_data=item_data
+    )
+    
+    await db.saved_items.insert_one(saved_item.dict())
+    return {"message": "Item saved successfully"}
+
+@api_router.delete("/saved-items/{item_id}")
+async def unsave_item(item_id: str, item_type: str, user: User = Depends(require_auth)):
+    result = await db.saved_items.delete_one({
+        "user_id": user.id,
+        "item_id": item_id,
+        "item_type": item_type
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Saved item not found")
+    
+    return {"message": "Item removed from saved"}
+
+@api_router.get("/saved-items")
+async def get_saved_items(user: User = Depends(require_auth)):
+    saved_items = await db.saved_items.find({"user_id": user.id}).to_list(length=None)
+    
+    # Group by type
+    result = {
+        "courses": [],
+        "events": [],
+        "jobs": []
+    }
+    
+    for item in saved_items:
+        if item["item_type"] == "course":
+            result["courses"].append(item["item_data"])
+        elif item["item_type"] == "event":
+            result["events"].append(item["item_data"])
+        elif item["item_type"] == "job":
+            result["jobs"].append(item["item_data"])
+    
+    return result
 
 # Courses endpoints
 @api_router.get("/courses", response_model=List[Course])
