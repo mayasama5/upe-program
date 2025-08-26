@@ -1103,37 +1103,81 @@ const CoursesSection = ({ courses, savedItems, onSaveItem, onUnsaveItem }) => {
   );
 };
 
-const EventsSection = ({ events }) => {
+const EventsSection = ({ events, savedItems, onSaveItem, onUnsaveItem }) => {
+  const [filteredEvents, setFilteredEvents] = useState(events);
+  const [selectedFilter, setSelectedFilter] = useState("all");
+
+  useEffect(() => {
+    if (selectedFilter === "all") {
+      setFilteredEvents(events);
+    } else if (selectedFilter === "online") {
+      setFilteredEvents(events.filter(event => event.is_online));
+    } else if (selectedFilter === "presencial") {
+      setFilteredEvents(events.filter(event => !event.is_online));
+    } else if (selectedFilter === "paraguay") {
+      setFilteredEvents(events.filter(event => !event.is_online && event.location.toLowerCase().includes('paraguay')));
+    } else {
+      setFilteredEvents(events.filter(event => event.category === selectedFilter));
+    }
+  }, [events, selectedFilter]);
+
+  const filters = [
+    { value: "all", label: "Todos los eventos" },
+    { value: "online", label: "Solo Online" },
+    { value: "presencial", label: "Solo Presencial" },
+    { value: "paraguay", label: "En Paraguay" },
+    { value: "Tecnología", label: "Tecnología" },
+    { value: "Marketing", label: "Marketing" },
+    { value: "Diseño", label: "Diseño" },
+    { value: "Administración", label: "Administración" },
+    { value: "Recursos Humanos", label: "Recursos Humanos" },
+    { value: "Contabilidad", label: "Contabilidad" },
+    { value: "Gestión de Empresas", label: "Gestión de Empresas" }
+  ];
+
+  const isSaved = (itemId) => {
+    return savedItems?.events?.some(item => item.id === itemId) || false;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-white">Todos los Eventos</h2>
+        <h2 className="text-2xl font-bold text-white">Todos los Eventos ({filteredEvents.length})</h2>
         <div className="flex items-center gap-4">
-          <Select>
+          <Select value={selectedFilter} onValueChange={setSelectedFilter}>
             <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-48">
-              <SelectValue placeholder="Filtrar por tipo" />
+              <SelectValue placeholder="Filtrar eventos" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos los eventos</SelectItem>
-              <SelectItem value="online">Solo Online</SelectItem>
-              <SelectItem value="presencial">Solo Presencial</SelectItem>
-              <SelectItem value="paraguay">En Paraguay</SelectItem>
+              {filters.map(filter => (
+                <SelectItem key={filter.value} value={filter.value}>{filter.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
       </div>
       
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {events.map(event => (
+        {filteredEvents.map(event => (
           <Card key={event.id} className="bg-slate-800 border-slate-700 hover:border-cyan-500/50 transition-all">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start mb-2">
                 <Badge variant="secondary" className="bg-purple-500/20 text-purple-400 text-xs">
                   {event.category}
                 </Badge>
-                <div className="flex items-center text-gray-400 text-xs">
-                  <Clock className="w-3 h-3 mr-1" />
-                  {new Date(event.event_date).toLocaleDateString('es-ES')}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center text-gray-400 text-xs">
+                    <Clock className="w-3 h-3 mr-1" />
+                    {new Date(event.event_date).toLocaleDateString('es-ES')}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => isSaved(event.id) ? onUnsaveItem(event.id, 'event') : onSaveItem(event.id, 'event')}
+                    className={isSaved(event.id) ? "text-yellow-400 hover:text-yellow-300" : "text-gray-400 hover:text-yellow-400"}
+                  >
+                    {isSaved(event.id) ? '★' : '☆'}
+                  </Button>
                 </div>
               </div>
               <CardTitle className="text-white text-base leading-tight">{event.title}</CardTitle>
