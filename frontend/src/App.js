@@ -897,18 +897,19 @@ const ProfilePage = ({ user, setUser }) => {
                     </label>
                   </div>
                   
-                  {files.certificates.length > 0 && (
+                  {/* Show existing certificates from user data */}
+                  {user.certificate_files && user.certificate_files.length > 0 && (
                     <div className="space-y-2">
-                      {files.certificates.map((file, index) => (
+                      {user.certificate_files.map((cert, index) => (
                         <div key={index} className="flex items-center justify-between bg-slate-700 p-3 rounded">
                           <div className="flex items-center gap-2">
                             <ExternalLink className="w-4 h-4 text-purple-400" />
-                            <span className="text-white text-sm">{file.name}</span>
+                            <span className="text-white text-sm">{cert.filename}</span>
                           </div>
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            onClick={() => removeFile('certificate', index)}
+                            onClick={() => {/* TODO: implement delete */}}
                             className="text-red-400 hover:text-red-300"
                           >
                             Eliminar
