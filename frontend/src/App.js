@@ -1860,6 +1860,14 @@ function App() {
                 <Navigate to="/" />
             } 
           />
+          <Route 
+            path="/saved" 
+            element={
+              user && (user.role === 'estudiante' || user.role === 'empresa') ? 
+                <SavedItemsPage user={user} /> : 
+                <Navigate to="/" />
+            } 
+          />
         </Routes>
         <Toaster />
       </BrowserRouter>
