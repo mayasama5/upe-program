@@ -1202,8 +1202,10 @@ const EventsSection = ({ events, savedItems, onSaveItem, onUnsaveItem }) => {
   );
 };
 
-const JobsSection = ({ jobs, user }) => {
+const JobsSection = ({ jobs, user, savedItems, onSaveItem, onUnsaveItem }) => {
   const [showJobForm, setShowJobForm] = useState(false);
+  const [filteredJobs, setFilteredJobs] = useState(jobs);
+  const [selectedFilter, setSelectedFilter] = useState("all");
   const [jobForm, setJobForm] = useState({
     title: '',
     description: '',
@@ -1214,11 +1216,19 @@ const JobsSection = ({ jobs, user }) => {
     skills_stack: [],
     city: '',
     salary_range: '',
-    apply_type: 'interno',
+    apply_type: 'externo',
     apply_url: '',
     knockout_questions: []
   });
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (selectedFilter === "all") {
+      setFilteredJobs(jobs);
+    } else {
+      setFilteredJobs(jobs.filter(job => job.modality === selectedFilter));
+    }
+  }, [jobs, selectedFilter]);
 
   const handleCreateJob = async (e) => {
     e.preventDefault();
@@ -1239,7 +1249,7 @@ const JobsSection = ({ jobs, user }) => {
         skills_stack: [],
         city: '',
         salary_range: '',
-        apply_type: 'interno',
+        apply_type: 'externo',
         apply_url: '',
         knockout_questions: []
       });
@@ -1254,11 +1264,22 @@ const JobsSection = ({ jobs, user }) => {
     }
   };
 
+  const isSaved = (itemId) => {
+    return savedItems?.jobs?.some(item => item.id === itemId) || false;
+  };
+
+  const filters = [
+    { value: "all", label: "Todas las vacantes" },
+    { value: "remoto", label: "Remoto" },
+    { value: "presencial", label: "Presencial" },
+    { value: "hibrido", label: "Híbrido" }
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-white">
-          {user.role === 'empresa' ? 'Gestionar Vacantes' : 'Oportunidades Laborales'}
+          {user.role === 'empresa' ? 'Gestionar Vacantes' : 'Oportunidades Laborales'} ({filteredJobs.length})
         </h2>
         <div className="flex items-center gap-4">
           {user.role === 'empresa' && (
@@ -1270,31 +1291,42 @@ const JobsSection = ({ jobs, user }) => {
               Publicar Vacante
             </Button>
           )}
-          <Select>
+          <Select value={selectedFilter} onValueChange={setSelectedFilter}>
             <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-48">
               <SelectValue placeholder="Filtrar vacantes" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas las vacantes</SelectItem>
-              <SelectItem value="remoto">Remoto</SelectItem>
-              <SelectItem value="presencial">Presencial</SelectItem>
-              <SelectItem value="hibrido">Híbrido</SelectItem>
+              {filters.map(filter => (
+                <SelectItem key={filter.value} value={filter.value}>{filter.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
       </div>
       
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {jobs.map(job => (
+        {filteredJobs.map(job => (
           <Card key={job.id} className="bg-slate-800 border-slate-700 hover:border-cyan-500/50 transition-all">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start mb-2">
                 <Badge variant="secondary" className="bg-orange-500/20 text-orange-400 text-xs">
                   {job.job_type}
                 </Badge>
-                <Badge variant="outline" className="text-cyan-400 border-cyan-400/30 text-xs">
-                  {job.modality}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-cyan-400 border-cyan-400/30 text-xs">
+                    {job.modality}
+                  </Badge>
+                  {user.role === 'estudiante' && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => isSaved(job.id) ? onUnsaveItem(job.id, 'job') : onSaveItem(job.id, 'job')}
+                      className={isSaved(job.id) ? "text-yellow-400 hover:text-yellow-300" : "text-gray-400 hover:text-yellow-400"}
+                    >
+                      {isSaved(job.id) ? '★' : '☆'}
+                    </Button>
+                  )}
+                </div>
               </div>
               <CardTitle className="text-white text-base leading-tight">{job.title}</CardTitle>
               <CardDescription className="text-gray-400 text-sm">
@@ -1319,9 +1351,9 @@ const JobsSection = ({ jobs, user }) => {
               <Button 
                 size="sm"
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                onClick={() => window.open(job.apply_url, '_blank')}
               >
-                {job.apply_type === 'interno' ? 'Postularme' : 'Aplicar en Sitio'}
-                <ExternalLink className="w-3 h-3 ml-2" />
+                Aplicar en Sitio <ExternalLink className="w-3 h-3 ml-2" />
               </Button>
             </CardContent>
           </Card>
@@ -1398,6 +1430,17 @@ const JobsSection = ({ jobs, user }) => {
                   className="bg-slate-700 border-slate-600 text-white"
                 />
               </div>
+            </div>
+
+            <div>
+              <Label className="text-white">URL de aplicación *</Label>
+              <Input
+                value={jobForm.apply_url}
+                onChange={(e) => setJobForm({...jobForm, apply_url: e.target.value})}
+                className="bg-slate-700 border-slate-600 text-white"
+                placeholder="https://empresa.com/vacante"
+                required
+              />
             </div>
 
             <div>
