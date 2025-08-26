@@ -1015,40 +1015,73 @@ const DashboardHome = ({ user }) => {
   );
 };
 
-const CoursesSection = ({ courses }) => {
+const CoursesSection = ({ courses, savedItems, onSaveItem, onUnsaveItem }) => {
+  const [filteredCourses, setFilteredCourses] = useState(courses);
+  const [selectedCategory, setSelectedCategory] = useState("all");
+
+  useEffect(() => {
+    if (selectedCategory === "all") {
+      setFilteredCourses(courses);
+    } else {
+      setFilteredCourses(courses.filter(course => course.category === selectedCategory));
+    }
+  }, [courses, selectedCategory]);
+
+  const categories = [
+    { value: "all", label: "Todas las categorías" },
+    { value: "Tecnología", label: "Tecnología" },
+    { value: "Marketing", label: "Marketing" },
+    { value: "Diseño", label: "Diseño" },
+    { value: "Administración", label: "Administración" },
+    { value: "Recursos Humanos", label: "Recursos Humanos" },
+    { value: "Contabilidad", label: "Contabilidad" },
+    { value: "Idiomas", label: "Idiomas" },
+    { value: "Gestión de Empresas", label: "Gestión de Empresas" }
+  ];
+
+  const isSaved = (itemId) => {
+    return savedItems?.courses?.some(item => item.id === itemId) || false;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-white">Todos los Cursos</h2>
+        <h2 className="text-2xl font-bold text-white">Todos los Cursos ({filteredCourses.length})</h2>
         <div className="flex items-center gap-4">
-          <Select>
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
             <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-48">
               <SelectValue placeholder="Filtrar por categoría" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas las categorías</SelectItem>
-              <SelectItem value="desarrollo">Desarrollo Web</SelectItem>
-              <SelectItem value="cloud">Cloud Computing</SelectItem>
-              <SelectItem value="ia">Inteligencia Artificial</SelectItem>
-              <SelectItem value="marketing">Marketing Digital</SelectItem>
-              <SelectItem value="administracion">Administración</SelectItem>
-              <SelectItem value="diseno">Diseño</SelectItem>
+              {categories.map(cat => (
+                <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
       </div>
       
       <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {courses.map(course => (
+        {filteredCourses.map(course => (
           <Card key={course.id} className="bg-slate-800 border-slate-700 hover:border-cyan-500/50 transition-all">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start mb-2">
                 <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-400 text-xs">
                   {course.category}
                 </Badge>
-                <Badge variant="outline" className="text-green-400 border-green-400/30 text-xs">
-                  Gratis
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-green-400 border-green-400/30 text-xs">
+                    Gratis
+                  </Badge>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => isSaved(course.id) ? onUnsaveItem(course.id, 'course') : onSaveItem(course.id, 'course')}
+                    className={isSaved(course.id) ? "text-yellow-400 hover:text-yellow-300" : "text-gray-400 hover:text-yellow-400"}
+                  >
+                    {isSaved(course.id) ? '★' : '☆'}
+                  </Button>
+                </div>
               </div>
               <CardTitle className="text-white text-base leading-tight">{course.title}</CardTitle>
               <CardDescription className="text-gray-400 text-sm">{course.provider}</CardDescription>
