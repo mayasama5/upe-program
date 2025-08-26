@@ -274,9 +274,12 @@ async def update_profile(profile_data: UserCreate, user: User = Depends(require_
     update_data = profile_data.dict(exclude_unset=True)
     
     # Debug logs
+    print(f"=== PROFILE UPDATE DEBUG ===")
     print(f"Updating profile for user {user.id}")
     print(f"Current user role: {user.role}")
-    print(f"Update data: {update_data}")
+    print(f"Raw profile_data received: {profile_data}")
+    print(f"Update data (exclude_unset): {update_data}")
+    print(f"Role in update_data: {update_data.get('role', 'NOT PRESENT')}")
     
     # If no role is provided in update, preserve current role
     if 'role' not in update_data or update_data['role'] is None:
@@ -284,10 +287,13 @@ async def update_profile(profile_data: UserCreate, user: User = Depends(require_
     else:
         print(f"Changing role from {user.role} to {update_data['role']}")
     
-    await db.users.update_one({"id": user.id}, {"$set": update_data})
+    # Perform the update
+    result = await db.users.update_one({"id": user.id}, {"$set": update_data})
+    print(f"Update result: {result.modified_count} documents modified")
     
     updated_user = await db.users.find_one({"id": user.id})
-    print(f"Updated user role: {updated_user.get('role')}")
+    print(f"Updated user role after database update: {updated_user.get('role')}")
+    print(f"=== END PROFILE UPDATE DEBUG ===")
     
     return User(**updated_user)
 
