@@ -237,6 +237,39 @@ class TechHubAPITester:
             404
         )
 
+    def test_saved_items_endpoints(self):
+        """Test saved items functionality (critical bug reported)"""
+        print("\n" + "="*50)
+        print("TESTING SAVED ITEMS ENDPOINTS")
+        print("="*50)
+        
+        # Test get saved items without authentication (should fail)
+        self.run_test(
+            "Get Saved Items (Unauthenticated)",
+            "GET",
+            "saved-items",
+            401
+        )
+        
+        # Test save item without authentication (should fail)
+        self.run_test(
+            "Save Item (Unauthenticated)",
+            "POST",
+            "saved-items?item_id=test-id&item_type=course",
+            401
+        )
+        
+        # Test unsave item without authentication (should fail)
+        self.run_test(
+            "Unsave Item (Unauthenticated)",
+            "DELETE",
+            "saved-items/test-id?item_type=course",
+            401
+        )
+        
+        print("ℹ️  Saved items require authentication - this is expected behavior")
+        print("⚠️  CRITICAL: User reports saved button not working - needs authenticated testing")
+
     def test_profile_update_endpoint(self):
         """Test profile update endpoint (critical for role bug fix)"""
         print("\n" + "="*50)
@@ -259,6 +292,7 @@ class TechHubAPITester:
         )
         
         print("ℹ️  Profile update requires authentication - this is expected behavior")
+        print("⚠️  CRITICAL: User reports company account creation defaults to student role")
 
     def test_job_creation_endpoint(self):
         """Test job creation endpoint (for company functionality)"""
