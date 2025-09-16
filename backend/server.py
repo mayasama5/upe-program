@@ -270,24 +270,40 @@ async def logout(request: Request, response: Response):
 
 # User endpoints
 @api_router.put("/users/profile")
-async def update_profile(profile_data: UserCreate, user: User = Depends(require_auth)):
-    # Get raw request data to debug
+async def update_profile(request: Request, user: User = Depends(require_auth)):
+    # Get raw request body to debug
+    body = await request.body()
+    print(f"=== RAW REQUEST BODY ===")
+    print(f"Raw body: {body}")
+    
+    # Parse JSON manually to see exact data
+    import json
+    raw_data = json.loads(body)
+    print(f"Parsed JSON: {raw_data}")
+    print(f"Role in raw JSON: {raw_data.get('role', 'NOT PRESENT')}")
+    
+    # Try to create UserCreate object
+    try:
+        profile_data = UserCreate(**raw_data)
+        print(f"UserCreate object created successfully: {profile_data}")
+        print(f"Role in UserCreate: {profile_data.role}")
+    except Exception as e:
+        print(f"Error creating UserCreate: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid data: {str(e)}")
+    
     update_data = profile_data.dict(exclude_unset=True)
     
     # Debug logs
     print(f"=== PROFILE UPDATE DEBUG ===")
     print(f"Updating profile for user {user.id}")
     print(f"Current user role: {user.role}")
-    print(f"Raw profile_data received: {profile_data}")
-    print(f"Raw profile_data dict: {profile_data.dict()}")
     print(f"Update data (exclude_unset): {update_data}")
     print(f"Role in update_data: {update_data.get('role', 'NOT PRESENT')}")
     
     # FORCE role processing if it exists in the raw data
-    raw_dict = profile_data.dict()
-    if 'role' in raw_dict and raw_dict['role'] is not None:
-        update_data['role'] = raw_dict['role']
-        print(f"FORCING role assignment: {raw_dict['role']}")
+    if 'role' in raw_data and raw_data['role'] is not None:
+        update_data['role'] = raw_data['role']
+        print(f"FORCING role assignment: {raw_data['role']}")
     
     # If no role is provided in update, preserve current role
     if 'role' not in update_data or update_data['role'] is None:
