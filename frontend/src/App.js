@@ -984,71 +984,88 @@ const DashboardHeader = ({ user, logout, activeSection, setActiveSection }) => {
   };
 
   return (
-    <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
-            <span className="text-black font-bold text-sm">TH</span>
+    <div>
+      {/* Top bar with logos */}
+      <div className="bg-slate-800 border-b border-slate-700 px-4 py-2">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center">
+            <span className="text-gray-400 text-xs">Facultad</span>
+            {/* Placeholder for faculty logo */}
           </div>
-          <h1 className="text-xl font-bold text-white">TechHub UPE</h1>
-        </div>
-        
-        <nav className="hidden md:flex space-x-6">
-          <Button 
-            variant={activeSection === 'inicio' ? 'default' : 'ghost'}
-            onClick={() => setActiveSection('inicio')}
-            className={activeSection === 'inicio' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
-          >
-            Inicio
-          </Button>
-          <Button 
-            variant={activeSection === 'cursos' ? 'default' : 'ghost'}
-            onClick={() => setActiveSection('cursos')}
-            className={activeSection === 'cursos' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
-          >
-            <BookOpen className="w-4 h-4 mr-2" />
-            Cursos
-          </Button>
-          <Button 
-            variant={activeSection === 'eventos' ? 'default' : 'ghost'}
-            onClick={() => setActiveSection('eventos')}
-            className={activeSection === 'eventos' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
-          >
-            <Calendar className="w-4 h-4 mr-2" />
-            Eventos
-          </Button>
-          <Button 
-            variant={activeSection === 'vacantes' ? 'default' : 'ghost'}
-            onClick={() => setActiveSection('vacantes')}
-            className={activeSection === 'vacantes' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
-          >
-            <Briefcase className="w-4 h-4 mr-2" />
-            Vacantes
-          </Button>
-        </nav>
-
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-3">
-            <span className="text-gray-300">¡Hola, {user.name}!</span>
-            <Badge variant="outline" className={user.role === 'empresa' ? 'text-orange-400 border-orange-400/30' : 'text-cyan-400 border-cyan-400/30'}>
-              {user.role === 'empresa' ? 'Empresa' : 'Estudiante'}
-            </Badge>
-            <Button variant="ghost" size="sm" onClick={handleSavedClick} className="text-gray-300 hover:text-white">
-              <User className="w-4 h-4 mr-2" />
-              Guardados
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleProfileClick} className="text-gray-300 hover:text-white">
-              <User className="w-4 h-4 mr-2" />
-              Mi Perfil
-            </Button>
-            <Button variant="ghost" size="sm" onClick={logout} className="text-gray-300 hover:text-white">
-              <LogOut className="w-4 h-4 mr-2" />
-              Salir
-            </Button>
+          
+          <div className="flex items-center space-x-2">
+            <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
+              <span className="text-black font-bold text-lg">TH</span>
+            </div>
+            <h1 className="text-2xl font-bold text-white">TechHub UPE</h1>
+          </div>
+          
+          <div className="flex items-center">
+            <span className="text-gray-400 text-xs">Universidad</span>
+            {/* Placeholder for university logo */}
           </div>
         </div>
       </div>
-    </header>
+
+      {/* Navigation menu */}
+      <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <nav className="hidden md:flex space-x-6">
+            <Button 
+              variant={activeSection === 'inicio' ? 'default' : 'ghost'}
+              onClick={() => setActiveSection('inicio')}
+              className={activeSection === 'inicio' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
+            >
+              Inicio
+            </Button>
+            <Button 
+              variant={activeSection === 'cursos' ? 'default' : 'ghost'}
+              onClick={() => setActiveSection('cursos')}
+              className={activeSection === 'cursos' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
+            >
+              <BookOpen className="w-4 h-4 mr-2" />
+              Cursos
+            </Button>
+            <Button 
+              variant={activeSection === 'eventos' ? 'default' : 'ghost'}
+              onClick={() => setActiveSection('eventos')}
+              className={activeSection === 'eventos' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              Eventos
+            </Button>
+            <Button 
+              variant={activeSection === 'vacantes' ? 'default' : 'ghost'}
+              onClick={() => setActiveSection('vacantes')}
+              className={activeSection === 'vacantes' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
+            >
+              <Briefcase className="w-4 h-4 mr-2" />
+              Vacantes
+            </Button>
+          </nav>
+
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
+              <Badge variant="outline" className={user.role === 'empresa' ? 'text-orange-400 border-orange-400/30' : 'text-cyan-400 border-cyan-400/30'}>
+                {user.role === 'empresa' ? 'Empresa' : 'Estudiante'}
+              </Badge>
+              <Button variant="ghost" size="sm" onClick={handleSavedClick} className="text-gray-300 hover:text-white">
+                <User className="w-4 h-4 mr-2" />
+                Guardados
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleProfileClick} className="text-gray-300 hover:text-white">
+                <User className="w-4 h-4 mr-2" />
+                Mi Perfil
+              </Button>
+              <Button variant="ghost" size="sm" onClick={logout} className="text-gray-300 hover:text-white">
+                <LogOut className="w-4 h-4 mr-2" />
+                Salir
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+    </div>
   );
 };
 
