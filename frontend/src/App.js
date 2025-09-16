@@ -984,7 +984,7 @@ const DashboardHeader = ({ user, logout, activeSection, setActiveSection }) => {
   };
 
   return (
-    <div>
+    <>
       {/* Top bar with logos */}
       <div className="bg-slate-800 border-b border-slate-700 px-4 py-2">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -1012,6 +1012,7 @@ const DashboardHeader = ({ user, logout, activeSection, setActiveSection }) => {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <nav className="hidden md:flex space-x-6">
             <Button 
+              key="inicio-btn"
               variant={activeSection === 'inicio' ? 'default' : 'ghost'}
               onClick={() => setActiveSection('inicio')}
               className={activeSection === 'inicio' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
@@ -1019,6 +1020,7 @@ const DashboardHeader = ({ user, logout, activeSection, setActiveSection }) => {
               Inicio
             </Button>
             <Button 
+              key="cursos-btn"
               variant={activeSection === 'cursos' ? 'default' : 'ghost'}
               onClick={() => setActiveSection('cursos')}
               className={activeSection === 'cursos' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
@@ -1027,6 +1029,7 @@ const DashboardHeader = ({ user, logout, activeSection, setActiveSection }) => {
               Cursos
             </Button>
             <Button 
+              key="eventos-btn"
               variant={activeSection === 'eventos' ? 'default' : 'ghost'}
               onClick={() => setActiveSection('eventos')}
               className={activeSection === 'eventos' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
@@ -1035,6 +1038,7 @@ const DashboardHeader = ({ user, logout, activeSection, setActiveSection }) => {
               Eventos
             </Button>
             <Button 
+              key="vacantes-btn"
               variant={activeSection === 'vacantes' ? 'default' : 'ghost'}
               onClick={() => setActiveSection('vacantes')}
               className={activeSection === 'vacantes' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
@@ -1049,15 +1053,15 @@ const DashboardHeader = ({ user, logout, activeSection, setActiveSection }) => {
               <Badge variant="outline" className={user.role === 'empresa' ? 'text-orange-400 border-orange-400/30' : 'text-cyan-400 border-cyan-400/30'}>
                 {user.role === 'empresa' ? 'Empresa' : 'Estudiante'}
               </Badge>
-              <Button variant="ghost" size="sm" onClick={handleSavedClick} className="text-gray-300 hover:text-white">
+              <Button key="saved-btn" variant="ghost" size="sm" onClick={handleSavedClick} className="text-gray-300 hover:text-white">
                 <User className="w-4 h-4 mr-2" />
                 Guardados
               </Button>
-              <Button variant="ghost" size="sm" onClick={handleProfileClick} className="text-gray-300 hover:text-white">
+              <Button key="profile-btn" variant="ghost" size="sm" onClick={handleProfileClick} className="text-gray-300 hover:text-white">
                 <User className="w-4 h-4 mr-2" />
                 Mi Perfil
               </Button>
-              <Button variant="ghost" size="sm" onClick={logout} className="text-gray-300 hover:text-white">
+              <Button key="logout-btn" variant="ghost" size="sm" onClick={logout} className="text-gray-300 hover:text-white">
                 <LogOut className="w-4 h-4 mr-2" />
                 Salir
               </Button>
@@ -1065,7 +1069,7 @@ const DashboardHeader = ({ user, logout, activeSection, setActiveSection }) => {
           </div>
         </div>
       </header>
-    </div>
+    </>
   );
 };
 
