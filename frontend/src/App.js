@@ -1441,6 +1441,8 @@ const JobsSection = ({ jobs, user, savedItems, onSaveItem, onUnsaveItem }) => {
   const [showJobForm, setShowJobForm] = useState(false);
   const [filteredJobs, setFilteredJobs] = useState(jobs);
   const [selectedFilter, setSelectedFilter] = useState("all");
+  const [userPostedJobs, setUserPostedJobs] = useState([]); // Jobs posted by companies
+  const [loadingUserJobs, setLoadingUserJobs] = useState(false);
   const [jobForm, setJobForm] = useState({
     title: '',
     description: '',
@@ -1451,7 +1453,7 @@ const JobsSection = ({ jobs, user, savedItems, onSaveItem, onUnsaveItem }) => {
     skills_stack: [],
     city: '',
     salary_range: '',
-    apply_type: 'externo',
+    apply_type: 'interno',
     apply_url: '',
     knockout_questions: []
   });
@@ -1465,15 +1467,47 @@ const JobsSection = ({ jobs, user, savedItems, onSaveItem, onUnsaveItem }) => {
     }
   }, [jobs, selectedFilter]);
 
+  // Load user-posted jobs (company feed)
+  useEffect(() => {
+    if (user) {
+      fetchUserPostedJobs();
+    }
+  }, [user]);
+
+  const fetchUserPostedJobs = async () => {
+    setLoadingUserJobs(true);
+    try {
+      // Fetch jobs posted by all companies (for feed view)
+      const response = await axios.get(`${API}/company/jobs/feed`, { withCredentials: true });
+      setUserPostedJobs(response.data);
+    } catch (error) {
+      console.error('Error fetching user jobs:', error);
+    }
+    setLoadingUserJobs(false);
+  };
+
   const handleCreateJob = async (e) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!jobForm.title || !jobForm.description || !jobForm.modality) {
+      toast({
+        title: "Error",
+        description: "Por favor completa todos los campos obligatorios",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       await axios.post(`${API}/jobs`, jobForm, { withCredentials: true });
       toast({
         title: "¡Vacante publicada!",
-        description: "Tu vacante ha sido publicada exitosamente",
+        description: "Tu vacante ha sido publicada exitosamente en el feed",
       });
       setShowJobForm(false);
+      
+      // Reset form
       setJobForm({
         title: '',
         description: '',
@@ -1484,11 +1518,14 @@ const JobsSection = ({ jobs, user, savedItems, onSaveItem, onUnsaveItem }) => {
         skills_stack: [],
         city: '',
         salary_range: '',
-        apply_type: 'externo',
+        apply_type: 'interno',
         apply_url: '',
         knockout_questions: []
       });
-      window.location.reload();
+      
+      // Refresh both feeds
+      fetchUserPostedJobs();
+      window.location.reload(); // Reload to get updated jobs from parent
     } catch (error) {
       toast({
         title: "Error",
@@ -1496,6 +1533,22 @@ const JobsSection = ({ jobs, user, savedItems, onSaveItem, onUnsaveItem }) => {
         variant: "destructive"
       });
     }
+  };
+
+  const addRequirement = (req) => {
+    if (req.trim() && !jobForm.requirements.includes(req.trim())) {
+      setJobForm(prev => ({
+        ...prev,
+        requirements: [...prev.requirements, req.trim()]
+      }));
+    }
+  };
+
+  const removeRequirement = (req) => {
+    setJobForm(prev => ({
+      ...prev,
+      requirements: prev.requirements.filter(r => r !== req)
+    }));
   };
 
   const isSaved = (itemId) => {
@@ -1510,24 +1563,22 @@ const JobsSection = ({ jobs, user, savedItems, onSaveItem, onUnsaveItem }) => {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-white">
-          {user.role === 'empresa' ? 'Gestionar Vacantes' : 'Oportunidades Laborales'} ({filteredJobs.length})
-        </h2>
+    <div className="space-y-8">
+      {/* Header with filters and post button */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-white">
+            Oportunidades Laborales
+          </h2>
+          <p className="text-gray-400 text-sm">
+            {user?.role === 'empresa' ? 'Publica tus vacantes y encuentra talento' : 'Descubre oportunidades de empleo'}
+          </p>
+        </div>
+        
         <div className="flex items-center gap-4">
-          {user.role === 'empresa' && (
-            <Button 
-              onClick={() => setShowJobForm(true)}
-              className="bg-orange-500 hover:bg-orange-600 text-white"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Publicar Vacante
-            </Button>
-          )}
           <Select value={selectedFilter} onValueChange={setSelectedFilter}>
             <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-48">
-              <SelectValue placeholder="Filtrar vacantes" />
+              <SelectValue placeholder="Filtrar por modalidad" />
             </SelectTrigger>
             <SelectContent>
               {filters.map(filter => (
@@ -1535,172 +1586,261 @@ const JobsSection = ({ jobs, user, savedItems, onSaveItem, onUnsaveItem }) => {
               ))}
             </SelectContent>
           </Select>
+          
+          {user?.role === 'empresa' && (
+            <Button 
+              onClick={() => setShowJobForm(true)}
+              className="bg-orange-500 hover:bg-orange-600 text-white flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Publicar Vacante
+            </Button>
+          )}
         </div>
       </div>
-      
-      {/* Fixed grid with uniform card dimensions */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredJobs.map(job => (
-          <Card key={job.id} className="bg-slate-800 border-slate-700 hover:border-cyan-500/50 transition-all h-80 flex flex-col">
-            <CardHeader className="pb-3 flex-shrink-0">
-              <div className="flex justify-between items-start mb-2">
-                <Badge variant="secondary" className="bg-orange-500/20 text-orange-400 text-xs">
-                  {job.job_type}
-                </Badge>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-cyan-400 border-cyan-400/30 text-xs">
-                    {job.modality}
-                  </Badge>
-                  {user.role === 'estudiante' && (
+
+      {/* Opportunities Cards Section (Top) - Static opportunities */}
+      <div>
+        <div className="flex items-center gap-3 mb-4">
+          <TrendingUp className="w-5 h-5 text-orange-400" />
+          <h3 className="text-lg font-semibold text-white">Oportunidades Destacadas</h3>
+          <Badge className="bg-orange-500/20 text-orange-400 text-xs">Patrocinado</Badge>
+        </div>
+        
+        {/* Horizontal scrolling cards */}
+        <div className="overflow-x-auto pb-4">
+          <div className="flex gap-4 w-max">
+            {filteredJobs.slice(0, 5).map(job => (
+              <Card key={job.id} className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border-orange-500/30 hover:border-orange-400 transition-all w-80 flex-shrink-0">
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start mb-2">
+                    <Badge variant="secondary" className="bg-orange-500/20 text-orange-400 text-xs">
+                      {job.job_type}
+                    </Badge>
                     <Button
-                      size="sm"
                       variant="ghost"
-                      onClick={() => isSaved(job.id) ? onUnsaveItem(job.id, 'job') : onSaveItem(job.id, 'job')}
-                      className={isSaved(job.id) ? "text-yellow-400 hover:text-yellow-300 p-1" : "text-gray-400 hover:text-yellow-400 p-1"}
+                      size="sm"
+                      onClick={() => isSaved(job.id) ? onUnsaveItem(job.id, 'jobs') : onSaveItem(job.id, 'jobs', job)}
+                      className="text-orange-400 hover:text-orange-300 p-1"
                     >
                       {isSaved(job.id) ? '★' : '☆'}
                     </Button>
-                  )}
-                </div>
-              </div>
-              <CardTitle className="text-white text-sm leading-tight line-clamp-2 h-10">{job.title}</CardTitle>
-              <CardDescription className="text-gray-400 text-xs">
-                {job.company_name}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0 flex flex-col justify-between flex-grow">
-              <div className="flex-grow">
-                <div className="flex items-center text-gray-400 text-xs mb-2">
-                  <MapPin className="w-3 h-3 mr-1" />
-                  {job.city || job.country}
-                </div>
-                <div className="flex flex-wrap gap-1 mb-2">
-                  {job.skills_stack.slice(0, 2).map((skill, i) => (
-                    <Badge key={i} variant="outline" className="text-xs">
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-                {job.salary_range && (
-                  <p className="text-cyan-400 text-xs font-medium mb-2">{job.salary_range}</p>
-                )}
-              </div>
-              <Button 
-                size="sm"
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white text-xs"
-                onClick={() => window.open(job.apply_url, '_blank')}
-              >
-                Aplicar en Sitio <ExternalLink className="w-3 h-3 ml-1" />
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+                  </div>
+                  <CardTitle className="text-white text-base leading-tight">{job.title}</CardTitle>
+                  <CardDescription className="text-gray-300 text-sm">
+                    {job.company_name} • {job.city}, {job.country}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-gray-300 text-sm mb-4 line-clamp-2">{job.description}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-cyan-400 font-semibold text-sm">{job.salary_range}</span>
+                    <Button 
+                      size="sm"
+                      className="bg-orange-500 hover:bg-orange-600 text-white"
+                      onClick={() => job.apply_type === 'externo' ? window.open(job.apply_url, '_blank') : alert('Aplicar internamente')}
+                    >
+                      Aplicar <ExternalLink className="w-3 h-3 ml-1" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Job Creation Dialog */}
-      <Dialog open={showJobForm} onOpenChange={setShowJobForm}>
-        <DialogContent className="bg-slate-800 border-slate-700 max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-white">Publicar Nueva Vacante</DialogTitle>
-            <DialogDescription className="text-gray-400">
-              Completa la información de la vacante que deseas publicar
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleCreateJob} className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-white">Título del puesto *</Label>
-                <Input
-                  value={jobForm.title}
-                  onChange={(e) => setJobForm({...jobForm, title: e.target.value})}
-                  className="bg-slate-700 border-slate-600 text-white"
-                  required
-                />
-              </div>
-              <div>
-                <Label className="text-white">Modalidad *</Label>
-                <Select value={jobForm.modality} onValueChange={(value) => setJobForm({...jobForm, modality: value})}>
-                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                    <SelectValue placeholder="Seleccionar modalidad" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="remoto">Remoto</SelectItem>
-                    <SelectItem value="presencial">Presencial</SelectItem>
-                    <SelectItem value="hibrido">Híbrido</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+      {/* Company Feed Section (Bottom) */}
+      <div>
+        <div className="flex items-center gap-3 mb-6">
+          <Users className="w-5 h-5 text-cyan-400" />
+          <h3 className="text-lg font-semibold text-white">Feed de Empresas</h3>
+          <Badge className="bg-cyan-500/20 text-cyan-400 text-xs">En vivo</Badge>
+        </div>
+        
+        {loadingUserJobs ? (
+          <div className="text-center text-gray-400 py-8">Cargando publicaciones...</div>
+        ) : userPostedJobs.length > 0 ? (
+          <div className="space-y-4">
+            {userPostedJobs.map(job => (
+              <Card key={job.id} className="bg-slate-800 border-slate-700 hover:border-cyan-500/50 transition-all">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
+                        <Building className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-white font-semibold">{job.company_name}</h4>
+                        <p className="text-gray-400 text-sm">Publicó una nueva vacante • hace 2h</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => isSaved(job.id) ? onUnsaveItem(job.id, 'jobs') : onSaveItem(job.id, 'jobs', job)}
+                      className="text-cyan-400 hover:text-cyan-300"
+                    >
+                      {isSaved(job.id) ? '★' : '☆'}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold text-white mb-2">{job.title}</h3>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <Badge variant="outline" className="text-cyan-400 border-cyan-400/30">{job.modality}</Badge>
+                      <Badge variant="outline" className="text-purple-400 border-purple-400/30">{job.job_type}</Badge>
+                      <Badge variant="outline" className="text-green-400 border-green-400/30">{job.city}</Badge>
+                    </div>
+                    <p className="text-gray-300 mb-4">{job.description}</p>
+                    
+                    {job.requirements && job.requirements.length > 0 && (
+                      <div className="mb-4">
+                        <h5 className="text-white font-semibold mb-2 text-sm">Requisitos:</h5>
+                        <ul className="list-disc list-inside text-gray-400 text-sm space-y-1">
+                          {job.requirements.slice(0, 3).map((req, idx) => (
+                            <li key={idx}>{req}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-cyan-400 font-semibold">{job.salary_range}</span>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          className="text-cyan-400 border-cyan-400/30 hover:bg-cyan-500/10"
+                        >
+                          Más info
+                        </Button>
+                        <Button 
+                          size="sm"
+                          className="bg-cyan-500 hover:bg-cyan-600 text-black"
+                          onClick={() => job.apply_type === 'externo' ? window.open(job.apply_url, '_blank') : alert('Aplicar internamente')}
+                        >
+                          Aplicar
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card className="bg-slate-800 border-slate-700">
+            <CardContent className="text-center py-12">
+              <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-white font-semibold mb-2">¡Sé el primero en publicar!</h3>
+              <p className="text-gray-400 mb-4">
+                {user?.role === 'empresa' ? 
+                  'No hay publicaciones aún. Publica la primera vacante de tu empresa.' :
+                  'Las empresas aún no han publicado vacantes. ¡Mantente atento!'
+                }
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Job Creation Modal */}
+      {showJobForm && user?.role === 'empresa' && (
+        <Dialog open={showJobForm} onOpenChange={setShowJobForm}>
+          <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Publicar Nueva Vacante</DialogTitle>
+              <DialogDescription className="text-gray-400">
+                Comparte tu oportunidad laboral con nuestra comunidad
+              </DialogDescription>
+            </DialogHeader>
             
-            <div>
-              <Label className="text-white">Descripción *</Label>
-              <Textarea
-                value={jobForm.description}
-                onChange={(e) => setJobForm({...jobForm, description: e.target.value})}
-                className="bg-slate-700 border-slate-600 text-white"
-                rows={4}
-                required
-              />
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-white">Tipo de trabajo *</Label>
-                <Select value={jobForm.job_type} onValueChange={(value) => setJobForm({...jobForm, job_type: value})}>
-                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                    <SelectValue placeholder="Seleccionar tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="practica">Práctica</SelectItem>
-                    <SelectItem value="pasantia">Pasantía</SelectItem>
-                    <SelectItem value="junior">Junior</SelectItem>
-                    <SelectItem value="medio">Medio</SelectItem>
-                    <SelectItem value="senior">Senior</SelectItem>
-                  </SelectContent>
-                </Select>
+            <form onSubmit={handleCreateJob} className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-white">Título del puesto *</Label>
+                  <Input
+                    value={jobForm.title}
+                    onChange={(e) => setJobForm(prev => ({...prev, title: e.target.value}))}
+                    className="bg-slate-700 border-slate-600 text-white"
+                    placeholder="Ej: Desarrollador Frontend"
+                  />
+                </div>
+                <div>
+                  <Label className="text-white">Modalidad *</Label>
+                  <Select value={jobForm.modality} onValueChange={(value) => setJobForm(prev => ({...prev, modality: value}))}>
+                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                      <SelectValue placeholder="Seleccionar modalidad" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="presencial">Presencial</SelectItem>
+                      <SelectItem value="remoto">Remoto</SelectItem>
+                      <SelectItem value="hibrido">Híbrido</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+              
               <div>
-                <Label className="text-white">Ciudad</Label>
-                <Input
-                  value={jobForm.city}
-                  onChange={(e) => setJobForm({...jobForm, city: e.target.value})}
+                <Label className="text-white">Descripción *</Label>
+                <Textarea
+                  value={jobForm.description}
+                  onChange={(e) => setJobForm(prev => ({...prev, description: e.target.value}))}
                   className="bg-slate-700 border-slate-600 text-white"
+                  placeholder="Describe el puesto, responsabilidades y lo que ofreces..."
+                  rows={4}
                 />
               </div>
-            </div>
-
-            <div>
-              <Label className="text-white">URL de aplicación *</Label>
-              <Input
-                value={jobForm.apply_url}
-                onChange={(e) => setJobForm({...jobForm, apply_url: e.target.value})}
-                className="bg-slate-700 border-slate-600 text-white"
-                placeholder="https://empresa.com/vacante"
-                required
-              />
-            </div>
-
-            <div>
-              <Label className="text-white">Rango salarial</Label>
-              <Input
-                value={jobForm.salary_range}
-                onChange={(e) => setJobForm({...jobForm, salary_range: e.target.value})}
-                className="bg-slate-700 border-slate-600 text-white"
-                placeholder="Ej: Gs. 4.000.000 - 6.000.000"
-              />
-            </div>
-
-            <div className="flex gap-4">
-              <Button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white">
-                Publicar Vacante
-              </Button>
-              <Button type="button" variant="outline" onClick={() => setShowJobForm(false)}>
-                Cancelar
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+              
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <Label className="text-white">Tipo de trabajo</Label>
+                  <Select value={jobForm.job_type} onValueChange={(value) => setJobForm(prev => ({...prev, job_type: value}))}>
+                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                      <SelectValue placeholder="Tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="junior">Junior</SelectItem>
+                      <SelectItem value="medio">Medio</SelectItem>
+                      <SelectItem value="senior">Senior</SelectItem>
+                      <SelectItem value="pasantia">Pasantía</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-white">Ciudad</Label>
+                  <Input
+                    value={jobForm.city}
+                    onChange={(e) => setJobForm(prev => ({...prev, city: e.target.value}))}
+                    className="bg-slate-700 border-slate-600 text-white"
+                    placeholder="Ciudad del Este"
+                  />
+                </div>
+                <div>
+                  <Label className="text-white">Salario</Label>
+                  <Input
+                    value={jobForm.salary_range}
+                    onChange={(e) => setJobForm(prev => ({...prev, salary_range: e.target.value}))}
+                    className="bg-slate-700 border-slate-600 text-white"
+                    placeholder="Gs. 5.000.000"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-3">
+                <Button type="button" variant="outline" onClick={() => setShowJobForm(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white">
+                  Publicar Vacante
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
