@@ -2135,14 +2135,14 @@ const Dashboard = ({ user, logout }) => {
     }
   };
 
-  const fetchSavedItems = async () => {
+  const fetchSavedItems = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/saved-items`, { withCredentials: true });
       setSavedItems(response.data);
     } catch (error) {
       console.error('Error fetching saved items:', error);
     }
-  };
+  }, []);
 
   const handleSaveItem = useCallback(async (itemId, itemType) => {
     try {
