@@ -556,6 +556,37 @@ async def get_company_applications(user: User = Depends(require_company)):
     
     return [JobApplication(**app) for app in applications]
 
+# Statistics endpoints
+@api_router.get("/stats")
+async def get_platform_stats():
+    try:
+        # Count events
+        events_count = await db.events.count_documents({})
+        
+        # Count job vacancies
+        jobs_count = await db.job_vacancies.count_documents({})
+        
+        # Count courses
+        courses_count = await db.courses.count_documents({})
+        
+        # Count users (companies + students)
+        users_count = await db.users.count_documents({})
+        
+        return {
+            "events": events_count,
+            "jobs": jobs_count,
+            "courses": courses_count,
+            "users": users_count
+        }
+    except Exception as e:
+        print(f"Error getting stats: {e}")
+        return {
+            "events": 0,
+            "jobs": 0,
+            "courses": 0,
+            "users": 0
+        }
+
 # Company Jobs Feed endpoint (for social feed)
 @api_router.get("/company/jobs/feed")
 async def get_company_jobs_feed(user: User = Depends(require_auth)):
