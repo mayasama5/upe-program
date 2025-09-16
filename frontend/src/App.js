@@ -1071,6 +1071,26 @@ const DashboardHeader = ({ user, logout, activeSection, setActiveSection }) => {
 
 // Dashboard Content Components
 const DashboardHome = ({ user }) => {
+  const [stats, setStats] = useState({
+    events: 0,
+    jobs: 0,
+    courses: 0,
+    users: 0
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await axios.get(`${API}/stats`, { withCredentials: true });
+        setStats(response.data);
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      }
+    };
+    
+    fetchStats();
+  }, []);
+
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
@@ -1086,34 +1106,34 @@ const DashboardHome = ({ user }) => {
             }
           </p>
 
-          {/* Resource Cards - Fixed dimensions */}
+          {/* Resource Cards - Fixed dimensions with real data */}
           <div className="grid md:grid-cols-4 gap-4">
             <Card className="bg-slate-800/50 border-slate-700 h-32">
               <CardContent className="p-4 text-center h-full flex flex-col justify-center">
-                <TrendingUp className="w-8 h-8 text-green-400 mx-auto mb-2" />
-                <h3 className="text-white font-semibold mb-1 text-sm">Crecimiento</h3>
-                <p className="text-gray-400 text-xs">+150% estudiantes activos</p>
+                <Calendar className="w-8 h-8 text-green-400 mx-auto mb-2" />
+                <h3 className="text-white font-semibold mb-1 text-sm">Eventos</h3>
+                <p className="text-gray-400 text-xs">{stats.events} eventos disponibles</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700 h-32">
               <CardContent className="p-4 text-center h-full flex flex-col justify-center">
-                <Target className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+                <Briefcase className="w-8 h-8 text-blue-400 mx-auto mb-2" />
                 <h3 className="text-white font-semibold mb-1 text-sm">Oportunidades</h3>
-                <p className="text-gray-400 text-xs">+50 vacantes nuevas</p>
+                <p className="text-gray-400 text-xs">{stats.jobs} vacantes registradas</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700 h-32">
               <CardContent className="p-4 text-center h-full flex flex-col justify-center">
-                <Lightbulb className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
+                <BookOpen className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
                 <h3 className="text-white font-semibold mb-1 text-sm">Recursos</h3>
-                <p className="text-gray-400 text-xs">+200 cursos disponibles</p>
+                <p className="text-gray-400 text-xs">{stats.courses} cursos disponibles</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700 h-32">
               <CardContent className="p-4 text-center h-full flex flex-col justify-center">
                 <Users className="w-8 h-8 text-purple-400 mx-auto mb-2" />
                 <h3 className="text-white font-semibold mb-1 text-sm">Comunidad</h3>
-                <p className="text-gray-400 text-xs">+5,000 profesionales</p>
+                <p className="text-gray-400 text-xs">{stats.users} usuarios registrados</p>
               </CardContent>
             </Card>
           </div>
