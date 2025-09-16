@@ -540,6 +540,17 @@ async def get_company_applications(user: User = Depends(require_company)):
     
     return [JobApplication(**app) for app in applications]
 
+# Company Jobs Feed endpoint (for social feed)
+@api_router.get("/company/jobs/feed")
+async def get_company_jobs_feed(user: User = Depends(require_auth)):
+    # Get all jobs posted by companies (for social feed view)
+    # Sort by creation date to show newest first
+    jobs = await db.job_vacancies.find({
+        "apply_type": "interno"  # Only show internal jobs in feed
+    }).sort("created_at", -1).limit(20).to_list(length=None)
+    
+    return [JobVacancy(**job) for job in jobs]
+
 @api_router.put("/company/applications/{application_id}/status")
 async def update_application_status(
     application_id: str,
