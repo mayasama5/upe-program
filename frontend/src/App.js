@@ -2144,7 +2144,7 @@ const Dashboard = ({ user, logout }) => {
     }
   };
 
-  const handleSaveItem = async (itemId, itemType) => {
+  const handleSaveItem = useCallback(async (itemId, itemType) => {
     try {
       await axios.post(`${API}/saved-items?item_id=${itemId}&item_type=${itemType}`, {}, { withCredentials: true });
       await fetchSavedItems(); // Refresh saved items
@@ -2159,9 +2159,9 @@ const Dashboard = ({ user, logout }) => {
         variant: "destructive"
       });
     }
-  };
+  }, [fetchSavedItems, toast]);
 
-  const handleUnsaveItem = async (itemId, itemType) => {
+  const handleUnsaveItem = useCallback(async (itemId, itemType) => {
     try {
       await axios.delete(`${API}/saved-items/${itemId}?item_type=${itemType}`, { withCredentials: true });
       await fetchSavedItems(); // Refresh saved items
@@ -2176,7 +2176,7 @@ const Dashboard = ({ user, logout }) => {
         variant: "destructive"
       });
     }
-  };
+  }, [fetchSavedItems, toast]);
 
   const renderContent = () => {
     switch (activeSection) {
