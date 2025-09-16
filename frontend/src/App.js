@@ -2181,10 +2181,11 @@ const Dashboard = ({ user, logout }) => {
   const renderContent = () => {
     switch (activeSection) {
       case 'inicio':
-        return <DashboardHome user={user} />;
+        return <DashboardHome key="dashboard-home" user={user} />;
       case 'cursos':
         return (
           <CoursesSection 
+            key="courses-section"
             courses={courses} 
             savedItems={savedItems}
             onSaveItem={handleSaveItem}
@@ -2194,6 +2195,7 @@ const Dashboard = ({ user, logout }) => {
       case 'eventos':
         return (
           <EventsSection 
+            key="events-section"
             events={events} 
             savedItems={savedItems}
             onSaveItem={handleSaveItem}
@@ -2203,6 +2205,7 @@ const Dashboard = ({ user, logout }) => {
       case 'vacantes':
         return (
           <JobsSection 
+            key="jobs-section"
             jobs={jobs} 
             user={user} 
             savedItems={savedItems}
@@ -2211,7 +2214,7 @@ const Dashboard = ({ user, logout }) => {
           />
         );
       default:
-        return <DashboardHome user={user} />;
+        return <DashboardHome key="dashboard-home-default" user={user} />;
     }
   };
 
