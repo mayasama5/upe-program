@@ -271,6 +271,7 @@ async def logout(request: Request, response: Response):
 # User endpoints
 @api_router.put("/users/profile")
 async def update_profile(profile_data: UserCreate, user: User = Depends(require_auth)):
+    # Get raw request data to debug
     update_data = profile_data.dict(exclude_unset=True)
     
     # Debug logs
@@ -278,8 +279,15 @@ async def update_profile(profile_data: UserCreate, user: User = Depends(require_
     print(f"Updating profile for user {user.id}")
     print(f"Current user role: {user.role}")
     print(f"Raw profile_data received: {profile_data}")
+    print(f"Raw profile_data dict: {profile_data.dict()}")
     print(f"Update data (exclude_unset): {update_data}")
     print(f"Role in update_data: {update_data.get('role', 'NOT PRESENT')}")
+    
+    # FORCE role processing if it exists in the raw data
+    raw_dict = profile_data.dict()
+    if 'role' in raw_dict and raw_dict['role'] is not None:
+        update_data['role'] = raw_dict['role']
+        print(f"FORCING role assignment: {raw_dict['role']}")
     
     # If no role is provided in update, preserve current role
     if 'role' not in update_data or update_data['role'] is None:
@@ -293,6 +301,7 @@ async def update_profile(profile_data: UserCreate, user: User = Depends(require_
     
     updated_user = await db.users.find_one({"id": user.id})
     print(f"Updated user role after database update: {updated_user.get('role')}")
+    print(f"Full updated user data: {updated_user}")
     print(f"=== END PROFILE UPDATE DEBUG ===")
     
     return User(**updated_user)
