@@ -1,0 +1,33 @@
+{
+  "name": "upe-program",
+  "version": "1.0.0",
+  "description": "UPE Program - Frontend and Backend",
+  "private": true,
+  "scripts": {
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:full": "./start-dev.sh",
+    "start:backend": "cd backend-nodejs && npm start",
+    "start:frontend": "cd frontend && npm start",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend-nodejs && npm run dev",
+    "dev:frontend": "cd frontend && npm start",
+    "install:all": "npm install && cd backend-nodejs && npm install && cd ../frontend && npm install",
+    "build": "cd frontend && npm run build",
+    "build:backend": "cd backend-nodejs && npm install",
+    "build:frontend": "cd frontend && npm install && npm run build",
+    "populate:db": "cd backend-nodejs && node populate_nodejs.js",
+    "test": "concurrently \"npm run test:backend\" \"npm run test:frontend\"",
+    "test:backend": "cd backend-nodejs && npm test",
+    "test:frontend": "cd frontend && npm test",
+    "mongodb:start": "docker run -d --name mongodb-dev -p 27017:27017 -e MONGO_INITDB_DATABASE=techhub_upe mongo:7 || docker start mongodb-dev",
+    "mongodb:stop": "docker stop mongodb-dev",
+    "mongodb:clean": "docker stop mongodb-dev && docker rm mongodb-dev"
+  },
+  "workspaces": [
+    "frontend",
+    "backend-nodejs"
+  ],
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

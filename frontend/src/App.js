@@ -15,8 +15,15 @@ import { useToast } from "./hooks/use-toast";
 import { Toaster } from "./components/ui/toaster";
 import { Search, BookOpen, Calendar, Briefcase, MapPin, Clock, ExternalLink, User, Building, LogOut, Plus, Filter, UserCheck, Users, Newspaper, TrendingUp, Target, Lightbulb, Upload } from "lucide-react";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+// Backend URL configuration
+// Priority: Environment variable > Development localhost > Production fallback
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 
+  (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 
+   'https://upe-rfchnhw6m-gustavogamarra95s-projects.vercel.app');
+
+console.log('🔗 Backend URL:', BACKEND_URL);
+console.log('🌍 Environment:', process.env.NODE_ENV);
+const API = BACKEND_URL; // Remove /api from here since it's added in individual calls
 
 // Auth Hook
 const useAuth = () => {
@@ -35,13 +42,25 @@ const useAuth = () => {
       // Clean up URL
       window.location.hash = '';
     } else {
-      checkCurrentUser();
+      // For development: simulate a logged in user
+      if (process.env.NODE_ENV === 'development') {
+        setUser({
+          id: 'dev-user-1',
+          email: 'developer@test.com',
+          name: 'Usuario de Desarrollo',
+          role: 'estudiante',
+          is_verified: true
+        });
+        setLoading(false);
+      } else {
+        checkCurrentUser();
+      }
     }
   }, []);
 
   const handleAuthComplete = async (sessionId) => {
     try {
-      const response = await axios.post(`${API}/auth/complete`, {}, {
+      const response = await axios.post(`${API}/api/auth/complete`, {}, {
         headers: { 'X-Session-ID': sessionId },
         withCredentials: true
       });
@@ -63,8 +82,8 @@ const useAuth = () => {
 
   const checkCurrentUser = async () => {
     try {
-      const response = await axios.get(`${API}/auth/me`, { withCredentials: true });
-      setUser(response.data);
+      const response = await axios.get(`${API}/api/auth/me`, { withCredentials: true });
+      setUser(response.data.user);
     } catch (error) {
       // Not logged in
     }
@@ -83,7 +102,17 @@ const useAuth = () => {
 
   const logout = async () => {
     try {
-      await axios.post(`${API}/auth/logout`, {}, { withCredentials: true });
+      // For development mode, just clear the user
+      if (process.env.NODE_ENV === 'development') {
+        setUser(null);
+        toast({
+          title: "Sesión cerrada",
+          description: "Has cerrado sesión correctamente",
+        });
+        return;
+      }
+      
+      await axios.post(`${API}/api/auth/logout`, {}, { withCredentials: true });
       setUser(null);
       // Clear any stored role preference
       sessionStorage.removeItem('intended_role');
@@ -93,6 +122,8 @@ const useAuth = () => {
       });
     } catch (error) {
       console.error('Logout failed:', error);
+      // Even if logout fails, clear user locally
+      setUser(null);
     }
   };
 
@@ -318,7 +349,7 @@ const OnboardingPage = ({ user, setUser }) => {
 
   const handleAuthComplete = async (sessionId) => {
     try {
-      const response = await axios.post(`${API}/auth/complete`, {}, {
+      const response = await axios.post(`${API}/api/auth/complete`, {}, {
         headers: { 'X-Session-ID': sessionId },
         withCredentials: true
       });
@@ -369,12 +400,12 @@ const OnboardingPage = ({ user, setUser }) => {
 
     try {
       console.log('Submitting profile data:', formData); // Debug log
-      const response = await axios.put(`${API}/users/profile`, formData, { 
+      const response = await axios.put(`${API}/api/users/profile`, formData, { 
         withCredentials: true 
       });
       
       console.log('Profile update response:', response.data); // Debug log
-      setUser(response.data);
+      setUser(response.data.user);
       
       // Clear the intended role from storage after successful submission
       sessionStorage.removeItem('intended_role');
@@ -562,12 +593,27 @@ const ProfilePage = ({ user, setUser }) => {
   });
   const { toast } = useToast();
 
+  // Update editData when user prop changes
+  useEffect(() => {
+    if (user) {
+      setEditData({
+        github_url: user.github_url || '',
+        linkedin_url: user.linkedin_url || '',
+        portfolio_url: user.portfolio_url || '',
+        bio: user.bio || '',
+        skills: user.skills || [],
+        company_name: user.company_name || '',
+        company_document: user.company_document || ''
+      });
+    }
+  }, [user]);
+
   if (!user) return <Navigate to="/" />;
 
   const handleSave = async () => {
     try {
-      const response = await axios.put(`${API}/users/profile`, editData, { withCredentials: true });
-      setUser(response.data);
+      const response = await axios.put(`${API}/api/users/profile`, editData, { withCredentials: true });
+      setUser(response.data.user);
       setIsEditing(false);
       toast({
         title: "Perfil actualizado",
@@ -601,11 +647,32 @@ const ProfilePage = ({ user, setUser }) => {
 
   const handleFileUpload = async (type, file) => {
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('file_type', type);
+    
+    // Use the correct field name based on the type
+    if (type === 'cv') {
+      formData.append('cv', file);
+    } else if (type === 'certificate') {
+      formData.append('certificate', file);
+    } else if (type === 'degree') {
+      formData.append('degree', file);
+    } else if (type === 'company_document') {
+      formData.append('company_document', file);
+    }
 
     try {
-      const response = await axios.post(`${API}/upload-file`, formData, {
+      // Use the correct endpoint based on the type
+      let endpoint;
+      if (type === 'cv') {
+        endpoint = `${API}/api/users/cv`;
+      } else if (type === 'certificate') {
+        endpoint = `${API}/api/users/certificates`;
+      } else if (type === 'degree') {
+        endpoint = `${API}/api/users/degrees`;
+      } else if (type === 'company_document') {
+        endpoint = `${API}/api/users/company-document`;
+      }
+
+      const response = await axios.post(endpoint, formData, {
         withCredentials: true,
         headers: {
           'Content-Type': 'multipart/form-data'
@@ -614,18 +681,18 @@ const ProfilePage = ({ user, setUser }) => {
 
       toast({
         title: "Archivo subido",
-        description: `${type === 'cv' ? 'CV' : type === 'certificate' ? 'Certificado' : 'Título'} subido exitosamente`,
+        description: `${type === 'cv' ? 'CV' : type === 'certificate' ? 'Certificado' : type === 'degree' ? 'Título' : 'Documento de empresa'} subido exitosamente`,
       });
 
       // Refresh user data to show uploaded file
-      const userResponse = await axios.get(`${API}/auth/me`, { withCredentials: true });
-      setUser(userResponse.data);
+      const userResponse = await axios.get(`${API}/api/auth/me`, { withCredentials: true });
+      setUser(userResponse.data.user);
 
     } catch (error) {
       console.error('Upload error:', error);
       toast({
         title: "Error",
-        description: "Error al subir el archivo",
+        description: error.response?.data?.message || "Error al subir el archivo",
         variant: "destructive"
       });
     }
@@ -725,7 +792,7 @@ const ProfilePage = ({ user, setUser }) => {
                 <div>
                   <Label className="text-white">Nombre de la empresa</Label>
                   <Input 
-                    value={isEditing ? editData.company_name : user.company_name}
+                    value={isEditing ? editData.company_name : (user.company_name || '')}
                     onChange={(e) => setEditData(prev => ({...prev, company_name: e.target.value}))}
                     className="bg-slate-700 border-slate-600 text-white" 
                     readOnly={!isEditing}
@@ -734,7 +801,7 @@ const ProfilePage = ({ user, setUser }) => {
                 <div>
                   <Label className="text-white">RUC/Documento</Label>
                   <Input 
-                    value={isEditing ? editData.company_document : user.company_document}
+                    value={isEditing ? editData.company_document : (user.company_document || '')}
                     onChange={(e) => setEditData(prev => ({...prev, company_document: e.target.value}))}
                     className="bg-slate-700 border-slate-600 text-white" 
                     readOnly={!isEditing}
@@ -747,7 +814,7 @@ const ProfilePage = ({ user, setUser }) => {
                   <div>
                     <Label className="text-white">GitHub URL</Label>
                     <Input 
-                      value={isEditing ? editData.github_url : user.github_url}
+                      value={isEditing ? editData.github_url : (user.github_url || '')}
                       onChange={(e) => setEditData(prev => ({...prev, github_url: e.target.value}))}
                       className="bg-slate-700 border-slate-600 text-white" 
                       readOnly={!isEditing}
@@ -756,7 +823,7 @@ const ProfilePage = ({ user, setUser }) => {
                   <div>
                     <Label className="text-white">LinkedIn URL</Label>
                     <Input 
-                      value={isEditing ? editData.linkedin_url : user.linkedin_url}
+                      value={isEditing ? editData.linkedin_url : (user.linkedin_url || '')}
                       onChange={(e) => setEditData(prev => ({...prev, linkedin_url: e.target.value}))}
                       className="bg-slate-700 border-slate-600 text-white" 
                       readOnly={!isEditing}
@@ -765,7 +832,7 @@ const ProfilePage = ({ user, setUser }) => {
                   <div>
                     <Label className="text-white">Portfolio URL</Label>
                     <Input 
-                      value={isEditing ? editData.portfolio_url : user.portfolio_url}
+                      value={isEditing ? editData.portfolio_url : (user.portfolio_url || '')}
                       onChange={(e) => setEditData(prev => ({...prev, portfolio_url: e.target.value}))}
                       className="bg-slate-700 border-slate-600 text-white" 
                       readOnly={!isEditing}
@@ -820,7 +887,7 @@ const ProfilePage = ({ user, setUser }) => {
             <div>
               <Label className="text-white">Biografía</Label>
               <Textarea
-                value={isEditing ? editData.bio : user.bio}
+                value={isEditing ? editData.bio : (user.bio || '')}
                 onChange={(e) => setEditData(prev => ({...prev, bio: e.target.value}))}
                 className="bg-slate-700 border-slate-600 text-white"
                 rows={4}
@@ -1085,7 +1152,7 @@ const DashboardHome = ({ user }) => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await axios.get(`${API}/stats`, { withCredentials: true });
+        const response = await axios.get(`${API}/api/stats`, { withCredentials: true });
         setStats(response.data);
       } catch (error) {
         console.error('Error fetching stats:', error);
@@ -1290,16 +1357,17 @@ const DashboardHome = ({ user }) => {
 
 // Fixed dimensions for all content cards
 const CoursesSection = ({ courses, savedItems, onSaveItem, onUnsaveItem }) => {
-  const [filteredCourses, setFilteredCourses] = useState(courses);
+  const coursesArray = Array.isArray(courses) ? courses : [];
+  const [filteredCourses, setFilteredCourses] = useState(coursesArray);
   const [selectedCategory, setSelectedCategory] = useState("all");
 
   useEffect(() => {
     if (selectedCategory === "all") {
-      setFilteredCourses(courses);
+      setFilteredCourses(coursesArray);
     } else {
-      setFilteredCourses(courses.filter(course => course.category === selectedCategory));
+      setFilteredCourses(coursesArray.filter(course => course.category === selectedCategory));
     }
-  }, [courses, selectedCategory]);
+  }, [coursesArray, selectedCategory]);
 
   const categories = [
     { value: "all", label: "Todas las categorías" },
@@ -1320,7 +1388,7 @@ const CoursesSection = ({ courses, savedItems, onSaveItem, onUnsaveItem }) => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-white">Todos los Cursos ({filteredCourses.length})</h2>
+        <h2 className="text-2xl font-bold text-white">Todos los Cursos ({Array.isArray(filteredCourses) ? filteredCourses.length : 0})</h2>
         <div className="flex items-center gap-4">
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
             <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-48">
@@ -1337,7 +1405,7 @@ const CoursesSection = ({ courses, savedItems, onSaveItem, onUnsaveItem }) => {
       
       {/* Fixed grid with uniform card dimensions */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredCourses.map(course => (
+        {Array.isArray(filteredCourses) && filteredCourses.map(course => (
           <Card key={course.id} className="bg-slate-800 border-slate-700 hover:border-cyan-500/50 transition-all h-80 flex flex-col">
             <CardHeader className="pb-3 flex-shrink-0">
               <div className="flex justify-between items-start mb-2">
@@ -1351,7 +1419,7 @@ const CoursesSection = ({ courses, savedItems, onSaveItem, onUnsaveItem }) => {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => isSaved(course.id) ? onUnsaveItem(course.id, 'course') : onSaveItem(course.id, 'course')}
+                    onClick={() => isSaved(course.id) ? onUnsaveItem(course.id, 'course') : onSaveItem(course.id, 'course', course)}
                     className={isSaved(course.id) ? "text-yellow-400 hover:text-yellow-300 p-1" : "text-gray-400 hover:text-yellow-400 p-1"}
                   >
                     {isSaved(course.id) ? '★' : '☆'}
@@ -1379,22 +1447,23 @@ const CoursesSection = ({ courses, savedItems, onSaveItem, onUnsaveItem }) => {
 };
 
 const EventsSection = ({ events, savedItems, onSaveItem, onUnsaveItem }) => {
-  const [filteredEvents, setFilteredEvents] = useState(events);
+  const eventsArray = Array.isArray(events) ? events : [];
+  const [filteredEvents, setFilteredEvents] = useState(eventsArray);
   const [selectedFilter, setSelectedFilter] = useState("all");
 
   useEffect(() => {
     if (selectedFilter === "all") {
-      setFilteredEvents(events);
+      setFilteredEvents(eventsArray);
     } else if (selectedFilter === "online") {
-      setFilteredEvents(events.filter(event => event.is_online));
+      setFilteredEvents(eventsArray.filter(event => event.is_online));
     } else if (selectedFilter === "presencial") {
-      setFilteredEvents(events.filter(event => !event.is_online));
+      setFilteredEvents(eventsArray.filter(event => !event.is_online));
     } else if (selectedFilter === "paraguay") {
-      setFilteredEvents(events.filter(event => !event.is_online && event.location.toLowerCase().includes('paraguay')));
+      setFilteredEvents(eventsArray.filter(event => !event.is_online && event.location.toLowerCase().includes('paraguay')));
     } else {
-      setFilteredEvents(events.filter(event => event.category === selectedFilter));
+      setFilteredEvents(eventsArray.filter(event => event.category === selectedFilter));
     }
-  }, [events, selectedFilter]);
+  }, [eventsArray, selectedFilter]);
 
   const filters = [
     { value: "all", label: "Todos los eventos" },
@@ -1449,7 +1518,7 @@ const EventsSection = ({ events, savedItems, onSaveItem, onUnsaveItem }) => {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => isSaved(event.id) ? onUnsaveItem(event.id, 'event') : onSaveItem(event.id, 'event')}
+                    onClick={() => isSaved(event.id) ? onUnsaveItem(event.id, 'event') : onSaveItem(event.id, 'event', event)}
                     className={isSaved(event.id) ? "text-yellow-400 hover:text-yellow-300 p-1" : "text-gray-400 hover:text-yellow-400 p-1"}
                   >
                     {isSaved(event.id) ? '★' : '☆'}
@@ -1480,7 +1549,8 @@ const EventsSection = ({ events, savedItems, onSaveItem, onUnsaveItem }) => {
 
 const JobsSection = ({ jobs, user, savedItems, onSaveItem, onUnsaveItem }) => {
   const [showJobForm, setShowJobForm] = useState(false);
-  const [filteredJobs, setFilteredJobs] = useState(jobs);
+  const jobsArray = Array.isArray(jobs) ? jobs : [];
+  const [filteredJobs, setFilteredJobs] = useState(jobsArray);
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [userPostedJobs, setUserPostedJobs] = useState([]); // Jobs posted by companies
   const [loadingUserJobs, setLoadingUserJobs] = useState(false);
@@ -1502,11 +1572,11 @@ const JobsSection = ({ jobs, user, savedItems, onSaveItem, onUnsaveItem }) => {
 
   useEffect(() => {
     if (selectedFilter === "all") {
-      setFilteredJobs(jobs);
+      setFilteredJobs(jobsArray);
     } else {
-      setFilteredJobs(jobs.filter(job => job.modality === selectedFilter));
+      setFilteredJobs(jobsArray.filter(job => job.modality === selectedFilter));
     }
-  }, [jobs, selectedFilter]);
+  }, [jobsArray, selectedFilter]);
 
   // Load user-posted jobs (company feed)
   useEffect(() => {
@@ -1518,9 +1588,9 @@ const JobsSection = ({ jobs, user, savedItems, onSaveItem, onUnsaveItem }) => {
   const fetchUserPostedJobs = async () => {
     setLoadingUserJobs(true);
     try {
-      // Fetch jobs posted by all companies (for feed view)
-      const response = await axios.get(`${API}/company/jobs/feed`, { withCredentials: true });
-      setUserPostedJobs(response.data);
+      // Fetch all active jobs (for feed view)
+      const response = await axios.get(`${API}/api/jobs`, { withCredentials: true });
+      setUserPostedJobs(response.data.jobs || response.data);
     } catch (error) {
       console.error('Error fetching user jobs:', error);
     }
@@ -1541,7 +1611,7 @@ const JobsSection = ({ jobs, user, savedItems, onSaveItem, onUnsaveItem }) => {
     }
 
     try {
-      await axios.post(`${API}/jobs`, jobForm, { withCredentials: true });
+      await axios.post(`${API}/api/jobs`, jobForm, { withCredentials: true });
       toast({
         title: "¡Vacante publicada!",
         description: "Tu vacante ha sido publicada exitosamente en el feed",
@@ -1661,7 +1731,7 @@ const JobsSection = ({ jobs, user, savedItems, onSaveItem, onUnsaveItem }) => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => isSaved(job.id) ? onUnsaveItem(job.id, 'jobs') : onSaveItem(job.id, 'jobs', job)}
+                      onClick={() => isSaved(job.id) ? onUnsaveItem(job.id, 'job') : onSaveItem(job.id, 'job', job)}
                       className="text-orange-400 hover:text-orange-300 p-1"
                     >
                       {isSaved(job.id) ? '★' : '☆'}
@@ -1719,7 +1789,7 @@ const JobsSection = ({ jobs, user, savedItems, onSaveItem, onUnsaveItem }) => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => isSaved(job.id) ? onUnsaveItem(job.id, 'jobs') : onSaveItem(job.id, 'jobs', job)}
+                      onClick={() => isSaved(job.id) ? onUnsaveItem(job.id, 'job') : onSaveItem(job.id, 'job', job)}
                       className="text-cyan-400 hover:text-cyan-300"
                     >
                       {isSaved(job.id) ? '★' : '☆'}
@@ -1899,8 +1969,8 @@ const SavedItemsPage = ({ user }) => {
 
   const fetchSavedItems = async () => {
     try {
-      const response = await axios.get(`${API}/saved-items`, { withCredentials: true });
-      setSavedItems(response.data);
+      const response = await axios.get(`${API}/api/saved-items`, { withCredentials: true });
+      setSavedItems(response.data.saved_items || response.data);
     } catch (error) {
       console.error('Error fetching saved items:', error);
     }
@@ -1909,7 +1979,7 @@ const SavedItemsPage = ({ user }) => {
 
   const handleUnsaveItem = async (itemId, itemType) => {
     try {
-      await axios.delete(`${API}/saved-items/${itemId}?item_type=${itemType}`, { withCredentials: true });
+      await axios.delete(`${API}/api/saved-items/${itemId}?item_type=${itemType}`, { withCredentials: true });
       await fetchSavedItems(); // Refresh the list
       toast({
         title: "Eliminado",
@@ -2121,32 +2191,46 @@ const Dashboard = ({ user, logout }) => {
 
   const fetchContent = async () => {
     try {
+      console.log('Fetching content from:', `${API}/api/courses`);
       const [coursesRes, eventsRes, jobsRes] = await Promise.all([
-        axios.get(`${API}/courses?limit=20`),
-        axios.get(`${API}/events?limit=12`),
-        axios.get(`${API}/jobs?limit=12`)
+        axios.get(`${API}/api/courses?limit=20`),
+        axios.get(`${API}/api/events?limit=12`),
+        axios.get(`${API}/api/jobs?limit=12`)
       ]);
       
-      setCourses(coursesRes.data);
-      setEvents(eventsRes.data);
-      setJobs(jobsRes.data);
+      console.log('Courses response:', coursesRes.data);
+      console.log('Events response:', eventsRes.data);
+      console.log('Jobs response:', jobsRes.data);
+      
+      setCourses(coursesRes.data.courses || []);
+      setEvents(eventsRes.data.events || []);
+      setJobs(jobsRes.data.jobs || []);
     } catch (error) {
       console.error('Error fetching content:', error);
+      console.error('API base URL:', API);
     }
   };
 
   const fetchSavedItems = useCallback(async () => {
     try {
-      const response = await axios.get(`${API}/saved-items`, { withCredentials: true });
-      setSavedItems(response.data);
+      const response = await axios.get(`${API}/api/saved-items`, { withCredentials: true });
+      setSavedItems(response.data.saved_items || response.data);
     } catch (error) {
       console.error('Error fetching saved items:', error);
+      // For development, set empty saved items if auth fails
+      if (process.env.NODE_ENV === 'development') {
+        setSavedItems({ courses: [], events: [], jobs: [] });
+      }
     }
   }, []);
 
-  const handleSaveItem = useCallback(async (itemId, itemType) => {
+  const handleSaveItem = useCallback(async (itemId, itemType, itemData) => {
     try {
-      await axios.post(`${API}/saved-items?item_id=${itemId}&item_type=${itemType}`, {}, { withCredentials: true });
+      await axios.post(`${API}/api/saved-items`, {
+        item_id: itemId,
+        item_type: itemType,
+        item_data: itemData
+      }, { withCredentials: true });
       await fetchSavedItems(); // Refresh saved items
       toast({
         title: "Guardado",
@@ -2155,7 +2239,7 @@ const Dashboard = ({ user, logout }) => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Error al guardar el item",
+        description: error.response?.data?.message || "Error al guardar el item",
         variant: "destructive"
       });
     }
@@ -2163,7 +2247,7 @@ const Dashboard = ({ user, logout }) => {
 
   const handleUnsaveItem = useCallback(async (itemId, itemType) => {
     try {
-      await axios.delete(`${API}/saved-items/${itemId}?item_type=${itemType}`, { withCredentials: true });
+      await axios.delete(`${API}/api/saved-items/${itemId}`, { withCredentials: true });
       await fetchSavedItems(); // Refresh saved items
       toast({
         title: "Eliminado",
@@ -2172,7 +2256,7 @@ const Dashboard = ({ user, logout }) => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Error al eliminar el item",
+        description: error.response?.data?.message || "Error al eliminar el item",
         variant: "destructive"
       });
     }
