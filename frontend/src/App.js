@@ -1680,18 +1680,6 @@ function App() {
             }
           />
           <Route
-            path="/onboarding"
-            element={
-              user ? (
-                user.role === 'estudiante' || user.role === 'empresa' ?
-                  <Navigate to="/dashboard" replace /> :
-                  <OnboardingPage user={user} setUser={setUser} />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
-          <Route
             path="/onboarding-estudiante"
             element={<StudentOnboarding />}
           />

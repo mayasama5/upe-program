@@ -10,13 +10,14 @@ const rateLimit = require('express-rate-limit');
 // Import configuration and middleware
 const connectDB = require('./config/database');
 const { handleMulterError } = require('./middleware/upload');
-const {
-  helmetConfig,
-  apiLimiter,
-  sanitizeInput,
-  securityLogger,
-  preventInjection
-} = require('./middleware/security');
+// Security middleware temporarily disabled for deployment
+// const {
+//   helmetConfig,
+//   apiLimiter,
+//   sanitizeInput,
+//   securityLogger,
+//   preventInjection
+// } = require('./middleware/security');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -25,7 +26,7 @@ const contentRoutes = require('./routes/content');
 const savedItemsRoutes = require('./routes/saved-items');
 const statsRoutes = require('./routes/stats');
 const adminRoutes = require('./routes/admin');
-const careerAdviceRoutes = require('./routes/career-advice');
+// const careerAdviceRoutes = require('./routes/career-advice'); // Temporarily disabled
 
 // Load environment variables
 require('dotenv').config();
@@ -36,11 +37,14 @@ const PORT = process.env.PORT || 8000;
 // Connect to database
 connectDB();
 
-// Security middleware - Helmet con configuración personalizada
-app.use(helmetConfig);
+// Security middleware
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 
-// Sanitización de entrada contra inyecciones
-app.use(sanitizeInput);
+// Temporarily disabled security middleware
+// app.use(helmetConfig);
+// app.use(sanitizeInput);
 
 // Prevención de inyecciones SQL/NoSQL
 app.use(preventInjection);
@@ -94,7 +98,16 @@ const corsOptions = {
       'https://upe-8gd0xyqyk-gustavogamarra95s-projects.vercel.app',
       'https://upe-program.vercel.app',
       'https://upe-program-git-main-gustavogamarra95s-projects.vercel.app',
-      'https://upe-gpqkno1pr-gustavogamarra95s-projects.vercel.app' // frontend
+      'https://upe-gpqkno1pr-gustavogamarra95s-projects.vercel.app',
+      'https://upe-eight.vercel.app', // Production frontend
+      'https://upe-kkr3lcp4t-gustavogamarra95s-projects.vercel.app', // Latest frontend deploy
+      'https://upe-9cvj71k8t-gustavogamarra95s-projects.vercel.app',
+      'https://upe-700y6st0s-gustavogamarra95s-projects.vercel.app',
+      'https://upe-qwyv59pyt-gustavogamarra95s-projects.vercel.app',
+      'https://upe-oqupv2udb-gustavogamarra95s-projects.vercel.app',
+      'https://upe-glj0rn4as-gustavogamarra95s-projects.vercel.app',
+      'https://upe-jay2tsfnx-gustavogamarra95s-projects.vercel.app',
+      'https://upe-3b5kfh588-gustavogamarra95s-projects.vercel.app'
     ];
     
     if (allowedOrigins.includes(origin)) {
