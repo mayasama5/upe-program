@@ -29,5 +29,8 @@
   ],
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.76.1"
   }
 }

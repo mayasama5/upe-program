@@ -2,6 +2,13 @@ const multer = require('multer');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs').promises;
+const fsSync = require('fs');
+const {
+  generateSafeFilename,
+  verifyFileSignature,
+  ALLOWED_MIME_TYPES,
+  ALLOWED_EXTENSIONS
+} = require('../utils/fileValidator');
 
 // Configure storage
 const storage = multer.diskStorage({
@@ -19,30 +26,57 @@ const storage = multer.diskStorage({
     }
   },
   filename: (req, file, cb) => {
-    // Generate unique filename
-    const uniqueName = `${file.fieldname}_${uuidv4()}${path.extname(file.originalname)}`;
-    cb(null, uniqueName);
+    // Generate safe unique filename
+    const safeName = generateSafeFilename(file.originalname);
+    cb(null, safeName);
   }
 });
 
-// File filter
+// Mapeo de campos a categorías de archivo
+const FIELD_CATEGORIES = {
+  'cv': 'pdf',
+  'certificate': 'pdf',
+  'degree': 'pdf',
+  'company_document': 'pdf',
+  'picture': 'image',
+  'certificates': 'image', // múltiples certificados pueden ser imágenes
+  'degrees': 'image'
+};
+
+// File filter mejorado con validación estricta
 const fileFilter = (req, file, cb) => {
-  // Define allowed file types
-  const allowedTypes = {
-    'cv': ['.pdf', '.doc', '.docx'],
-    'certificate': ['.pdf', '.jpg', '.jpeg', '.png'],
-    'degree': ['.pdf', '.jpg', '.jpeg', '.png'],
-    'company_document': ['.pdf', '.jpg', '.jpeg', '.png']
-  };
-  
-  const fileExt = path.extname(file.originalname).toLowerCase();
   const fieldName = file.fieldname;
-  
-  if (allowedTypes[fieldName] && allowedTypes[fieldName].includes(fileExt)) {
-    cb(null, true);
-  } else {
-    cb(new Error(`Invalid file type for ${fieldName}. Allowed types: ${allowedTypes[fieldName]?.join(', ') || 'none'}`), false);
+  const category = FIELD_CATEGORIES[fieldName];
+
+  if (!category) {
+    return cb(new Error(`Campo de archivo no reconocido: ${fieldName}`), false);
   }
+
+  const fileExt = path.extname(file.originalname).toLowerCase();
+  const allowedExts = ALLOWED_EXTENSIONS[category] || [];
+  const allowedMimes = ALLOWED_MIME_TYPES[category] || [];
+
+  // Validar extensión
+  if (!allowedExts.includes(fileExt)) {
+    return cb(
+      new Error(
+        `Extensión no permitida para ${fieldName}. Permitidas: ${allowedExts.join(', ')}`
+      ),
+      false
+    );
+  }
+
+  // Validar tipo MIME
+  if (!allowedMimes.includes(file.mimetype)) {
+    return cb(
+      new Error(
+        `Tipo de archivo no permitido para ${fieldName}. Tipo detectado: ${file.mimetype}`
+      ),
+      false
+    );
+  }
+
+  cb(null, true);
 };
 
 // Configure multer
@@ -106,9 +140,51 @@ const deleteFile = async (filePath) => {
   }
 };
 
+/**
+ * Middleware adicional para verificar magic numbers del archivo
+ * Esto previene que archivos maliciosos se disfracen con extensiones falsas
+ */
+const verifyFileContent = async (req, res, next) => {
+  if (!req.file && !req.files) {
+    return next();
+  }
+
+  try {
+    const filesToVerify = req.file ? [req.file] : (req.files || []);
+
+    for (const file of filesToVerify) {
+      // Leer los primeros bytes del archivo
+      const buffer = fsSync.readFileSync(file.path);
+      const isValid = verifyFileSignature(buffer, file.mimetype);
+
+      if (!isValid) {
+        // Eliminar archivo no válido
+        fsSync.unlinkSync(file.path);
+
+        return res.status(400).json({
+          success: false,
+          error: 'Archivo corrupto o tipo incorrecto',
+          message: `El archivo ${file.originalname} no corresponde al tipo declarado`
+        });
+      }
+    }
+
+    next();
+  } catch (error) {
+    console.error('Error verifying file content:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Error al verificar archivo',
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
   upload,
   handleMulterError,
   getFileUrl,
-  deleteFile
+  deleteFile,
+  verifyFileContent,
+  FIELD_CATEGORIES
 };

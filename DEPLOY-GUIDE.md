@@ -1,19 +1,19 @@
 # Guía de Deploy para Desarrolladores
 
-## 🚀 Deploy Rápido para Cualquier Usuario
+## Deploy Rápido para Cualquier Usuario
 
 Este proyecto está configurado para ser deployado fácilmente por cualquier desarrollador sin necesidad de hardcodear URLs específicas.
 
-### ✅ Configuración Automática
+### Configuración Automática
 
 **CORS Dinámico**: El backend acepta automáticamente cualquier dominio `*.vercel.app`
 **Auto-detección de URLs**: El frontend detecta automáticamente la URL del backend
 
 # Guía de Deploy para Desarrolladores
 
-## � Deploy Paso a Paso
+## Deploy Paso a Paso
 
-### 📋 Orden de Deploy
+### Orden de Deploy
 
 #### 1. Preparar MongoDB Atlas (Una sola vez)
 ```bash
@@ -27,7 +27,7 @@ Este proyecto está configurado para ser deployado fácilmente por cualquier des
 cd backend-nodejs
 npx vercel --prod
 ```
-**📝 Anota la URL del backend que aparece (ej: https://upe-xxx.vercel.app)**
+**Anota la URL del backend que aparece (ej: https://upe-xxx.vercel.app)**
 
 **Variables de entorno requeridas en Vercel Dashboard:**
 ```
@@ -56,7 +56,7 @@ vercel env pull
 node scripts/populate_nodejs.js
 ```
 
-### 🔧 Para tu amiga (o cualquier desarrollador)
+### Para tu amiga (o cualquier desarrollador)
 
 1. **Fork el repositorio**
 2. **Deploy backend** → Obtener URL
@@ -65,19 +65,19 @@ node scripts/populate_nodejs.js
 5. **Configurar MongoDB Atlas** en Vercel
 6. **Poblar datos**
 
-### ✅ URLs de Ejemplo (Actuales)
+### URLs de Ejemplo (Actuales)
 
 - **Frontend**: `https://upe-fu8l4n3eu-gustavogamarra95s-projects.vercel.app`
 - **Backend**: `https://upe-8gd0xyqyk-gustavogamarra95s-projects.vercel.app`
 
-### 🔄 URLs Dinámicas en Vercel
+### URLs Dinámicas en Vercel
 
-⚠️ **Importante**: Cada deploy en Vercel genera una URL nueva. Para usar URLs fijas:
+**Importante**: Cada deploy en Vercel genera una URL nueva. Para usar URLs fijas:
 
 1. **Configurar dominio personalizado** en Vercel Dashboard
 2. **O usar alias** con `vercel --prod --alias my-app.vercel.app`
 
-### 🆘 Troubleshooting
+### Troubleshooting
 
 **Error "Network Error"**: 
 - Verificar que `REACT_APP_BACKEND_URL` esté correctamente configurado
@@ -96,8 +96,8 @@ node scripts/populate_nodejs.js
 
 ---
 
-🎉 **¡Configuración completa!**
+**¡Configuración completa!**
 
 ---
 
-🎉 **¡Listo para compartir con cualquier desarrollador!**
+**¡Listo para compartir con cualquier desarrollador!**

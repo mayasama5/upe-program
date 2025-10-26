@@ -119,3 +119,7 @@ coverage/
 test-results/
 junit.xml
 .vercel
+
+/src/generated/prisma
+
+.claude/*

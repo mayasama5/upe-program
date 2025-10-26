@@ -1,5 +1,5 @@
 const express = require('express');
-const { User, Course, Event, JobVacancy, JobApplication } = require('../models');
+const prisma = require('../config/prisma');
 const { optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -7,6 +7,9 @@ const router = express.Router();
 // Get platform statistics
 router.get('/', optionalAuth, async (req, res) => {
   try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
     // Run all queries in parallel for better performance
     const [
       totalUsers,
@@ -17,58 +20,59 @@ router.get('/', optionalAuth, async (req, res) => {
       totalJobs,
       totalApplications,
       activeJobs,
-      upcomingEvents
-    ] = await Promise.all([
-      User.countDocuments(),
-      User.countDocuments({ role: 'estudiante' }),
-      User.countDocuments({ role: 'empresa' }),
-      Course.countDocuments(),
-      Event.countDocuments(),
-      JobVacancy.countDocuments(),
-      JobApplication.countDocuments(),
-      JobVacancy.countDocuments({ is_active: true }),
-      Event.countDocuments({ event_date: { $gte: new Date() } })
-    ]);
-
-    // Get recent statistics (last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const [
+      upcomingEvents,
       newUsersLast30Days,
       newJobsLast30Days,
-      newApplicationsLast30Days
+      newApplicationsLast30Days,
+      jobTypeStats,
+      modalityStats,
+      applicationStatusStats
     ] = await Promise.all([
-      User.countDocuments({ created_at: { $gte: thirtyDaysAgo } }),
-      JobVacancy.countDocuments({ created_at: { $gte: thirtyDaysAgo } }),
-      JobApplication.countDocuments({ applied_at: { $gte: thirtyDaysAgo } })
+      prisma.user.count(),
+      prisma.user.count({ where: { role: 'estudiante' } }),
+      prisma.user.count({ where: { role: 'empresa' } }),
+      prisma.course.count(),
+      prisma.event.count(),
+      prisma.jobVacancy.count(),
+      prisma.jobApplication.count(),
+      prisma.jobVacancy.count({ where: { is_active: true } }),
+      prisma.event.count({ where: { event_date: { gte: new Date() } } }),
+      prisma.user.count({ where: { created_at: { gte: thirtyDaysAgo } } }),
+      prisma.jobVacancy.count({ where: { created_at: { gte: thirtyDaysAgo } } }),
+      prisma.jobApplication.count({ where: { created_at: { gte: thirtyDaysAgo } } }),
+      prisma.jobVacancy.groupBy({
+        by: ['job_type'],
+        where: { is_active: true },
+        _count: true
+      }),
+      prisma.jobVacancy.groupBy({
+        by: ['modality'],
+        where: { is_active: true },
+        _count: true
+      }),
+      prisma.jobApplication.groupBy({
+        by: ['status'],
+        _count: true
+      })
     ]);
 
-    // Get job type distribution
-    const jobTypeStats = await JobVacancy.aggregate([
-      { $match: { is_active: true } },
-      { $group: { _id: '$job_type', count: { $sum: 1 } } }
-    ]);
+    // Get top skills from active jobs (this requires custom logic since we can't unwind arrays directly in Prisma)
+    const activeJobsWithRequirements = await prisma.jobVacancy.findMany({
+      where: { is_active: true },
+      select: { requirements: true }
+    });
 
-    // Get modality distribution
-    const modalityStats = await JobVacancy.aggregate([
-      { $match: { is_active: true } },
-      { $group: { _id: '$modality', count: { $sum: 1 } } }
-    ]);
+    const skillsMap = {};
+    activeJobsWithRequirements.forEach(job => {
+      job.requirements.forEach(skill => {
+        skillsMap[skill] = (skillsMap[skill] || 0) + 1;
+      });
+    });
 
-    // Get application status distribution
-    const applicationStatusStats = await JobApplication.aggregate([
-      { $group: { _id: '$status', count: { $sum: 1 } } }
-    ]);
-
-    // Get top skills from active jobs
-    const topSkills = await JobVacancy.aggregate([
-      { $match: { is_active: true } },
-      { $unwind: '$skills_stack' },
-      { $group: { _id: '$skills_stack', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 10 }
-    ]);
+    const topSkills = Object.entries(skillsMap)
+      .map(([skill, count]) => ({ skill, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
 
     res.json({
       overview: {
@@ -89,23 +93,20 @@ router.get('/', optionalAuth, async (req, res) => {
       },
       distributions: {
         job_types: jobTypeStats.map(item => ({
-          type: item._id,
-          count: item.count
+          type: item.job_type,
+          count: item._count
         })),
         modalities: modalityStats.map(item => ({
-          modality: item._id,
-          count: item.count
+          modality: item.modality,
+          count: item._count
         })),
         application_status: applicationStatusStats.map(item => ({
-          status: item._id,
-          count: item.count
+          status: item.status,
+          count: item._count
         }))
       },
       insights: {
-        top_skills: topSkills.map(item => ({
-          skill: item._id,
-          count: item.count
-        }))
+        top_skills: topSkills
       }
     });
 
@@ -138,22 +139,25 @@ router.get('/personal', optionalAuth, async (req, res) => {
         savedItems,
         savedJobs,
         savedCourses,
-        savedEvents
+        savedEvents,
+        applicationStatusStats
       ] = await Promise.all([
-        JobApplication.countDocuments({ student_id: req.user.id }),
-        JobApplication.countDocuments({ 
-          student_id: req.user.id, 
-          status: { $in: ['nuevo', 'en_revision', 'entrevista'] }
+        prisma.jobApplication.count({ where: { applicant_id: req.user.id } }),
+        prisma.jobApplication.count({
+          where: {
+            applicant_id: req.user.id,
+            status: { in: ['nuevo', 'en_revision', 'entrevista'] }
+          }
         }),
-        SavedItem.countDocuments({ user_id: req.user.id }),
-        SavedItem.countDocuments({ user_id: req.user.id, item_type: 'job' }),
-        SavedItem.countDocuments({ user_id: req.user.id, item_type: 'course' }),
-        SavedItem.countDocuments({ user_id: req.user.id, item_type: 'event' })
-      ]);
-
-      const applicationStatusStats = await JobApplication.aggregate([
-        { $match: { student_id: req.user.id } },
-        { $group: { _id: '$status', count: { $sum: 1 } } }
+        prisma.savedItem.count({ where: { user_id: req.user.id } }),
+        prisma.savedItem.count({ where: { user_id: req.user.id, item_type: 'job' } }),
+        prisma.savedItem.count({ where: { user_id: req.user.id, item_type: 'course' } }),
+        prisma.savedItem.count({ where: { user_id: req.user.id, item_type: 'event' } }),
+        prisma.jobApplication.groupBy({
+          by: ['status'],
+          where: { applicant_id: req.user.id },
+          _count: true
+        })
       ]);
 
       stats = {
@@ -162,8 +166,8 @@ router.get('/personal', optionalAuth, async (req, res) => {
           total: totalApplications,
           pending: pendingApplications,
           by_status: applicationStatusStats.map(item => ({
-            status: item._id,
-            count: item.count
+            status: item.status,
+            count: item._count
           }))
         },
         saved_items: {
@@ -176,50 +180,54 @@ router.get('/personal', optionalAuth, async (req, res) => {
 
     } else if (req.user.role === 'empresa') {
       // Company statistics
-      const companyJobs = await JobVacancy.find({ company_id: req.user.id });
-      const jobIds = companyJobs.map(job => job.id);
-
       const [
         totalJobs,
         activeJobs,
         totalApplications,
-        newApplications
+        newApplications,
+        applicationStatusStats,
+        jobPerformance
       ] = await Promise.all([
-        JobVacancy.countDocuments({ company_id: req.user.id }),
-        JobVacancy.countDocuments({ company_id: req.user.id, is_active: true }),
-        JobApplication.countDocuments({ job_id: { $in: jobIds } }),
-        JobApplication.countDocuments({ 
-          job_id: { $in: jobIds }, 
-          status: 'nuevo' 
+        prisma.jobVacancy.count({ where: { posted_by_user_id: req.user.id } }),
+        prisma.jobVacancy.count({ where: { posted_by_user_id: req.user.id, is_active: true } }),
+        prisma.jobApplication.count({
+          where: { job_vacancy: { posted_by_user_id: req.user.id } }
+        }),
+        prisma.jobApplication.count({
+          where: {
+            job_vacancy: { posted_by_user_id: req.user.id },
+            status: 'nuevo'
+          }
+        }),
+        prisma.jobApplication.groupBy({
+          by: ['status'],
+          where: { job_vacancy: { posted_by_user_id: req.user.id } },
+          _count: true
+        }),
+        prisma.jobApplication.groupBy({
+          by: ['job_vacancy_id'],
+          where: { job_vacancy: { posted_by_user_id: req.user.id } },
+          _count: true,
+          orderBy: { _count: { job_vacancy_id: 'desc' } },
+          take: 5
         })
-      ]);
-
-      const applicationStatusStats = await JobApplication.aggregate([
-        { $match: { job_id: { $in: jobIds } } },
-        { $group: { _id: '$status', count: { $sum: 1 } } }
-      ]);
-
-      const jobPerformance = await JobApplication.aggregate([
-        { $match: { job_id: { $in: jobIds } } },
-        { $group: { 
-          _id: '$job_id', 
-          application_count: { $sum: 1 } 
-        }},
-        { $sort: { application_count: -1 } },
-        { $limit: 5 }
       ]);
 
       // Enrich job performance with job titles
-      const enrichedJobPerformance = await Promise.all(
-        jobPerformance.map(async (item) => {
-          const job = companyJobs.find(j => j.id === item._id);
-          return {
-            job_id: item._id,
-            job_title: job?.title || 'Unknown Job',
-            application_count: item.application_count
-          };
-        })
-      );
+      const jobIds = jobPerformance.map(item => item.job_vacancy_id);
+      const jobs = await prisma.jobVacancy.findMany({
+        where: { id: { in: jobIds } },
+        select: { id: true, title: true }
+      });
+
+      const enrichedJobPerformance = jobPerformance.map(item => {
+        const job = jobs.find(j => j.id === item.job_vacancy_id);
+        return {
+          job_id: item.job_vacancy_id,
+          job_title: job?.title || 'Unknown Job',
+          application_count: item._count
+        };
+      });
 
       stats = {
         role: 'company',
@@ -231,8 +239,8 @@ router.get('/personal', optionalAuth, async (req, res) => {
           total: totalApplications,
           new: newApplications,
           by_status: applicationStatusStats.map(item => ({
-            status: item._id,
-            count: item.count
+            status: item.status,
+            count: item._count
           }))
         },
         top_jobs: enrichedJobPerformance

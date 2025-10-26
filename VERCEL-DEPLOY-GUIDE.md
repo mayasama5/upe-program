@@ -1,6 +1,6 @@
-# 🚀 Guía de Deploy en Vercel - UPE Program
+# Guía de Deploy en Vercel - UPE Program
 
-## 📋 Preparación antes del Deploy
+##  Preparación antes del Deploy
 
 ### 1. Variables de Entorno para Producción
 
@@ -38,7 +38,7 @@ AUTH_SERVICE_URL=https://demobackend.emergentagent.com
    mongodb+srv://username:password@cluster.mongodb.net
    ```
 
-## 🎯 Deploy del Backend
+## Deploy del Backend
 
 ### Opción 1: Deploy Automático desde GitHub
 
@@ -78,7 +78,7 @@ vercel env add SESSION_SECRET
 vercel env add AUTH_SERVICE_URL
 ```
 
-## 🎨 Deploy del Frontend
+##  Deploy del Frontend
 
 ### Configurar variables de entorno del Frontend
 
@@ -106,7 +106,7 @@ vercel --prod
 # - Output Directory: build
 ```
 
-## 🗄️ Poblar la Base de Datos en Producción
+## Poblar la Base de Datos en Producción
 
 Una vez desplegado el backend, poblar la base de datos:
 
@@ -117,7 +117,7 @@ curl -X POST https://tu-backend.vercel.app/api/admin/populate
 
 O crear un endpoint específico para esto en el backend.
 
-## 📁 Estructura de Variables en Vercel
+## Estructura de Variables en Vercel
 
 ### Variables del Backend:
 - `MONGO_URL`
@@ -129,7 +129,7 @@ O crear un endpoint específico para esto en el backend.
 ### Variables del Frontend:
 - `REACT_APP_API_URL`
 
-## 🔧 Configuración de Dominios
+## Configuración de Dominios
 
 Si quieres usar un dominio personalizado:
 
@@ -138,23 +138,23 @@ Si quieres usar un dominio personalizado:
 
 Y actualizar las variables CORS en el backend para incluir tu dominio.
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Error: "Cannot connect to database"
-- ✅ Verifica que MONGO_URL esté correctamente configurado
-- ✅ Revisa que la IP esté en la whitelist de MongoDB Atlas
-- ✅ Confirma que el usuario de BD tenga permisos
+- Verifica que MONGO_URL esté correctamente configurado
+- Revisa que la IP esté en la whitelist de MongoDB Atlas
+- Confirma que el usuario de BD tenga permisos
 
 ### Error: "CORS blocked"
-- ✅ Actualiza las URLs permitidas en `backend-nodejs/src/app.js`
-- ✅ Agrega tu dominio de producción a la lista de orígenes permitidos
+- Actualiza las URLs permitidas en `backend-nodejs/src/app.js`
+- Agrega tu dominio de producción a la lista de orígenes permitidos
 
 ### Error: "Build failed"
-- ✅ Verifica que todas las dependencias estén en `package.json`
-- ✅ Revisa que no haya errores de sintaxis
-- ✅ Confirma que las rutas de archivos sean correctas
+- Verifica que todas las dependencias estén en `package.json`
+- Revisa que no haya errores de sintaxis
+- Confirma que las rutas de archivos sean correctas
 
-## 🔄 Flujo de Deploy Recomendado
+## Flujo de Deploy Recomendado
 
 1. **Desarrollo Local**: `npm run start:full`
 2. **Testing**: Verifica que todo funcione localmente
@@ -166,7 +166,7 @@ Y actualizar las variables CORS en el backend para incluir tu dominio.
 8. **Poblar BD**: Ejecutar script de población en producción
 9. **Testing Producción**: Verificar que todo funcione
 
-## 📞 Comandos Útiles Post-Deploy
+## Comandos Útiles Post-Deploy
 
 ```bash
 # Ver logs del backend
@@ -182,4 +182,4 @@ vercel env add VARIABLE_NAME
 vercel --prod
 ```
 
-¡Listo para el deploy! 🚀
+¡Listo para el deploy! 

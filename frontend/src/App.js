@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -8,12 +8,33 @@ import { Badge } from "./components/ui/badge";
 import { Input } from "./components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./components/ui/dialog";
 import { Textarea } from "./components/ui/textarea";
 import { Label } from "./components/ui/label";
 import { useToast } from "./hooks/use-toast";
 import { Toaster } from "./components/ui/toaster";
-import { Search, BookOpen, Calendar, Briefcase, MapPin, Clock, ExternalLink, User, Building, LogOut, Plus, Filter, UserCheck, Users, Newspaper, TrendingUp, Target, Lightbulb, Upload } from "lucide-react";
+import { Search, BookOpen, Calendar, Briefcase, MapPin, ExternalLink, User, Building, LogOut, Filter, UserCheck, Users, Newspaper, TrendingUp, Target, Lightbulb, Upload } from "lucide-react";
+import Footer from "./components/Footer";
+import ChatButton from "./components/ChatButton";
+
+// Import public pages
+import PublicCourses from "./pages/PublicCourses";
+import PublicEvents from "./pages/PublicEvents";
+import PublicJobs from "./pages/PublicJobs";
+import Scholarships from "./pages/Scholarships";
+import Certifications from "./pages/Certifications";
+import Companies from "./pages/Companies";
+import CareerAdvice from "./pages/CareerAdvice";
+import Support from "./pages/Support";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
+import AdminDashboard from "./pages/AdminDashboard";
+
+// Import auth pages
+import StudentSignUp from "./pages/StudentSignUp";
+import CompanySignUp from "./pages/CompanySignUp";
+import Login from "./pages/Login";
+import StudentOnboarding from "./pages/StudentOnboarding";
+import CompanyOnboarding from "./pages/CompanyOnboarding";
 
 // Backend URL configuration
 // Priority: Environment variable > Development localhost > Production fallback
@@ -25,110 +46,7 @@ console.log('🔗 Backend URL:', BACKEND_URL);
 console.log('🌍 Environment:', process.env.NODE_ENV);
 const API = BACKEND_URL; // Remove /api from here since it's added in individual calls
 
-// Auth Hook
-const useAuth = () => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    // Check for session ID in URL fragment
-    const hash = window.location.hash;
-    const sessionMatch = hash.match(/session_id=([^&]+)/);
-    
-    if (sessionMatch) {
-      const sessionId = sessionMatch[1];
-      handleAuthComplete(sessionId);
-      // Clean up URL
-      window.location.hash = '';
-    } else {
-      // For development: simulate a logged in user
-      if (process.env.NODE_ENV === 'development') {
-        setUser({
-          id: 'dev-user-1',
-          email: 'developer@test.com',
-          name: 'Usuario de Desarrollo',
-          role: 'estudiante',
-          is_verified: true
-        });
-        setLoading(false);
-      } else {
-        checkCurrentUser();
-      }
-    }
-  }, []);
-
-  const handleAuthComplete = async (sessionId) => {
-    try {
-      const response = await axios.post(`${API}/api/auth/complete`, {}, {
-        headers: { 'X-Session-ID': sessionId },
-        withCredentials: true
-      });
-      setUser(response.data.user);
-      toast({
-        title: "¡Bienvenido!",
-        description: "Has iniciado sesión correctamente",
-      });
-    } catch (error) {
-      console.error('Auth completion failed:', error);
-      toast({
-        title: "Error",
-        description: "Error al completar la autenticación",
-        variant: "destructive"
-      });
-    }
-    setLoading(false);
-  };
-
-  const checkCurrentUser = async () => {
-    try {
-      const response = await axios.get(`${API}/api/auth/me`, { withCredentials: true });
-      setUser(response.data.user);
-    } catch (error) {
-      // Not logged in
-    }
-    setLoading(false);
-  };
-
-  const startGoogleAuth = (mode = null) => {
-    // Store the intended role in sessionStorage to use after auth
-    if (mode) {
-      sessionStorage.setItem('intended_role', mode);
-      console.log('Stored intended role:', mode); // Debug log
-    }
-    const redirectUrl = encodeURIComponent(`${window.location.origin}/onboarding`);
-    window.location.href = `https://auth.emergentagent.com/?redirect=${redirectUrl}`;
-  };
-
-  const logout = async () => {
-    try {
-      // For development mode, just clear the user
-      if (process.env.NODE_ENV === 'development') {
-        setUser(null);
-        toast({
-          title: "Sesión cerrada",
-          description: "Has cerrado sesión correctamente",
-        });
-        return;
-      }
-      
-      await axios.post(`${API}/api/auth/logout`, {}, { withCredentials: true });
-      setUser(null);
-      // Clear any stored role preference
-      sessionStorage.removeItem('intended_role');
-      toast({
-        title: "Sesión cerrada",
-        description: "Has cerrado sesión correctamente",
-      });
-    } catch (error) {
-      console.error('Logout failed:', error);
-      // Even if logout fails, clear user locally
-      setUser(null);
-    }
-  };
-
-  return { user, loading, startGoogleAuth, logout, setUser };
-};
+import { useClerkAuth as useAuth } from "./hooks/useClerkAuth";
 
 // Auth & Landing Page
 const AuthLandingPage = ({ startGoogleAuth }) => {
@@ -191,33 +109,33 @@ const AuthLandingPage = ({ startGoogleAuth }) => {
 
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
+              <Button
                 onClick={() => handleAuthAction('estudiante')}
-                size="lg" 
+                size="lg"
                 className="bg-cyan-500 hover:bg-cyan-600 text-black font-semibold px-8 py-3 flex items-center gap-2"
               >
                 <UserCheck className="w-5 h-5" />
                 Crear Cuenta Estudiante
               </Button>
-              <Button 
+              <Button
                 onClick={() => handleAuthAction('empresa')}
-                size="lg" 
-                variant="outline" 
+                size="lg"
+                variant="outline"
                 className="border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 px-8 py-3 flex items-center gap-2"
               >
                 <Building className="w-5 h-5" />
                 Registrar Empresa
               </Button>
             </div>
-            
+
             <div className="text-center">
               <p className="text-gray-400 mb-3">¿Ya tienes cuenta?</p>
-              <Button 
-                onClick={() => startGoogleAuth()}
-                variant="ghost" 
+              <Button
+                onClick={() => handleAuthAction()}
+                variant="ghost"
                 className="text-cyan-400 hover:text-cyan-300 underline"
               >
-                Iniciar Sesión con Google
+                Iniciar Sesión
               </Button>
             </div>
           </div>
@@ -256,57 +174,6 @@ const AuthLandingPage = ({ startGoogleAuth }) => {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="bg-slate-900 border-t border-slate-700 py-12 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
-                  <span className="text-black font-bold text-sm">TH</span>
-                </div>
-                <span className="text-white font-bold">TechHub UPE</span>
-              </div>
-              <p className="text-gray-400 text-sm">
-                La plataforma educativa y laboral para estudiantes de Paraguay y Latinoamérica.
-              </p>
-            </div>
-            
-            <div>
-              <h4 className="text-white font-semibold mb-4">Recursos</h4>
-              <ul className="space-y-2 text-gray-400 text-sm">
-                <li><a href="#" className="hover:text-cyan-400">Cursos</a></li>
-                <li><a href="#" className="hover:text-cyan-400">Eventos</a></li>
-                <li><a href="#" className="hover:text-cyan-400">Becas</a></li>
-                <li><a href="#" className="hover:text-cyan-400">Certificaciones</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="text-white font-semibold mb-4">Empleo</h4>
-              <ul className="space-y-2 text-gray-400 text-sm">
-                <li><a href="#" className="hover:text-cyan-400">Vacantes</a></li>
-                <li><a href="#" className="hover:text-cyan-400">Empresas</a></li>
-                <li><a href="#" className="hover:text-cyan-400">Consejos</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="text-white font-semibold mb-4">Contacto</h4>
-              <ul className="space-y-2 text-gray-400 text-sm">
-                <li><a href="#" className="hover:text-cyan-400">Soporte</a></li>
-                <li><a href="#" className="hover:text-cyan-400">Términos</a></li>
-                <li><a href="#" className="hover:text-cyan-400">Privacidad</a></li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="border-t border-slate-700 mt-8 pt-8 text-center text-gray-400 text-sm">
-            <p>&copy; 2024 TechHub UPE. Todos los derechos reservados.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };
@@ -586,6 +453,8 @@ const ProfilePage = ({ user, setUser }) => {
     company_document: user?.company_document || ''
   });
   const [skillInput, setSkillInput] = useState('');
+  const [newProfilePicture, setNewProfilePicture] = useState(null);
+  const [previewPicture, setPreviewPicture] = useState(null);
   const [files, setFiles] = useState({
     cv: null,
     certificates: [],
@@ -605,6 +474,8 @@ const ProfilePage = ({ user, setUser }) => {
         company_name: user.company_name || '',
         company_document: user.company_document || ''
       });
+      setPreviewPicture(null);
+      setNewProfilePicture(null);
     }
   }, [user]);
 
@@ -612,9 +483,26 @@ const ProfilePage = ({ user, setUser }) => {
 
   const handleSave = async () => {
     try {
+      // First update profile data
       const response = await axios.put(`${API}/api/users/profile`, editData, { withCredentials: true });
-      setUser(response.data.user);
+
+      // If there's a new profile picture, upload it
+      if (newProfilePicture) {
+        const formData = new FormData();
+        formData.append('picture', newProfilePicture);
+        const pictureResponse = await axios.post(`${API}/api/users/picture`, formData, {
+          withCredentials: true,
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        setUser(pictureResponse.data.user);
+      } else {
+        setUser(response.data.user);
+      }
+
       setIsEditing(false);
+      setNewProfilePicture(null);
+      setPreviewPicture(null);
+
       toast({
         title: "Perfil actualizado",
         description: "Tus cambios han sido guardados exitosamente",
@@ -761,18 +649,110 @@ const ProfilePage = ({ user, setUser }) => {
         <Card className="bg-slate-800 border-slate-700">
           <CardHeader>
             <div className="flex justify-between items-center">
-              <div>
-                <CardTitle className="text-white text-2xl">Mi Perfil</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Gestiona tu información personal y profesional
-                </CardDescription>
+              <div className="flex items-center gap-4">
+                <div className="relative group">
+                  <img
+                    src={previewPicture || user.picture || 'https://via.placeholder.com/100?text=Sin+Foto'}
+                    alt={user.name}
+                    className="w-24 h-24 rounded-full border-2 border-cyan-500 object-cover"
+                  />
+                  {isEditing && (
+                    <label
+                      htmlFor="profile-picture-upload"
+                      className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity"
+                    >
+                      <Upload className="w-6 h-6 text-white" />
+                      <input
+                        id="profile-picture-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            // Validate file type
+                            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                            if (!validTypes.includes(file.type)) {
+                              toast({
+                                title: "Tipo de archivo inválido",
+                                description: "Solo se permiten imágenes (JPG, PNG, GIF, WEBP)",
+                                variant: "destructive"
+                              });
+                              return;
+                            }
+
+                            // Validate file size (max 5MB)
+                            if (file.size > 5 * 1024 * 1024) {
+                              toast({
+                                title: "Archivo muy grande",
+                                description: "La imagen debe ser menor a 5MB",
+                                variant: "destructive"
+                              });
+                              return;
+                            }
+
+                            // Store file for later upload
+                            setNewProfilePicture(file);
+
+                            // Create preview
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setPreviewPicture(reader.result);
+                            };
+                            reader.readAsDataURL(file);
+
+                            toast({
+                              title: "Foto seleccionada",
+                              description: "Haz clic en 'Guardar' para actualizar tu foto de perfil",
+                            });
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+                <div>
+                  <CardTitle className="text-white text-2xl">{user.name}</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    {user.email}
+                  </CardDescription>
+                  {isEditing && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {previewPicture ? '✓ Nueva foto seleccionada - Haz clic en Guardar' : 'Haz clic en la foto para cambiarla'}
+                    </p>
+                  )}
+                </div>
               </div>
-              <Button 
-                onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-                className={isEditing ? "bg-green-500 hover:bg-green-600 text-white" : "bg-cyan-500 hover:bg-cyan-600 text-black"}
-              >
-                {isEditing ? 'Guardar' : 'Editar'}
-              </Button>
+              <div className="flex gap-2">
+                {isEditing && (
+                  <Button
+                    onClick={() => {
+                      setIsEditing(false);
+                      setPreviewPicture(null);
+                      setNewProfilePicture(null);
+                      setEditData({
+                        github_url: user.github_url || '',
+                        linkedin_url: user.linkedin_url || '',
+                        portfolio_url: user.portfolio_url || '',
+                        bio: user.bio || '',
+                        skills: user.skills || [],
+                        company_name: user.company_name || '',
+                        company_document: user.company_document || ''
+                      });
+                    }}
+                    variant="outline"
+                    className="border-gray-600 text-gray-300 hover:bg-slate-700"
+                  >
+                    Cancelar
+                  </Button>
+                )}
+                <Button
+                  onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+                  className={isEditing ? "bg-green-500 hover:bg-green-600 text-white" : "bg-cyan-500 hover:bg-cyan-600 text-black"}
+                >
+                  {isEditing ? 'Guardar' : 'Editar'}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -1039,8 +1019,11 @@ const ProfilePage = ({ user, setUser }) => {
 };
 
 // Header Component for Dashboard
-const DashboardHeader = ({ user, logout, activeSection, setActiveSection }) => {
+const DashboardHeader = ({ user, logout }) => {
   const navigate = useNavigate();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const userMenuRef = useRef(null);
 
   const handleProfileClick = () => {
     navigate('/profile');
@@ -1049,6 +1032,17 @@ const DashboardHeader = ({ user, logout, activeSection, setActiveSection }) => {
   const handleSavedClick = () => {
     navigate('/saved');
   };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const onClick = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setShowUserMenu(false);
+      }
+    };
+    if (showUserMenu) document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [showUserMenu]);
 
   return (
     <>
@@ -1077,62 +1071,115 @@ const DashboardHeader = ({ user, logout, activeSection, setActiveSection }) => {
       {/* Navigation menu */}
       <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <nav className="hidden md:flex space-x-6">
-            <Button 
-              key="inicio-btn"
-              variant={activeSection === 'inicio' ? 'default' : 'ghost'}
-              onClick={() => setActiveSection('inicio')}
-              className={activeSection === 'inicio' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
-            >
-              Inicio
-            </Button>
-            <Button 
-              key="cursos-btn"
-              variant={activeSection === 'cursos' ? 'default' : 'ghost'}
-              onClick={() => setActiveSection('cursos')}
-              className={activeSection === 'cursos' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
-            >
-              <BookOpen className="w-4 h-4 mr-2" />
-              Cursos
-            </Button>
-            <Button 
-              key="eventos-btn"
-              variant={activeSection === 'eventos' ? 'default' : 'ghost'}
-              onClick={() => setActiveSection('eventos')}
-              className={activeSection === 'eventos' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
-            >
-              <Calendar className="w-4 h-4 mr-2" />
-              Eventos
-            </Button>
-            <Button 
-              key="vacantes-btn"
-              variant={activeSection === 'vacantes' ? 'default' : 'ghost'}
-              onClick={() => setActiveSection('vacantes')}
-              className={activeSection === 'vacantes' ? 'bg-cyan-500 text-black' : 'text-gray-300 hover:text-cyan-400'}
-            >
-              <Briefcase className="w-4 h-4 mr-2" />
-              Vacantes
-            </Button>
+          <nav className="flex-1">
+            {/* Mobile: show hamburger to toggle nav; Desktop: always show centered nav */}
+            <div className="flex items-center">
+              {/* Hamburger for mobile */}
+              <button
+                aria-label="Toggle navigation"
+                onClick={() => setMobileOpen(v => !v)}
+                className="mr-3 md:hidden p-2 rounded bg-slate-800 border border-slate-700 text-gray-200"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
+              </button>
+              {/* horizontal nav: only visible on md+; on mobile we use the dropdown */}
+              <div id="main-nav" className={`hidden md:flex w-full items-center justify-center gap-3 md:gap-6 overflow-x-auto`}>
+              <Button
+                key="inicio-btn"
+                variant="ghost"
+                onClick={() => navigate('/dashboard')}
+                className="text-gray-300 hover:text-cyan-400 px-3 md:px-4"
+              >
+                Inicio
+              </Button>
+              <Button
+                key="cursos-btn"
+                variant="ghost"
+                onClick={() => navigate('/courses')}
+                className="text-gray-300 hover:text-cyan-400 px-3 md:px-4"
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                <span className="whitespace-nowrap">Cursos</span>
+              </Button>
+              <Button
+                key="eventos-btn"
+                variant="ghost"
+                onClick={() => navigate('/events')}
+                className="text-gray-300 hover:text-cyan-400 px-3 md:px-4"
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                <span className="whitespace-nowrap">Eventos</span>
+              </Button>
+              <Button
+                key="vacantes-btn"
+                variant="ghost"
+                onClick={() => navigate('/jobs')}
+                className="text-gray-300 hover:text-cyan-400 px-3 md:px-4"
+              >
+                <Briefcase className="w-4 h-4 mr-2" />
+                <span className="whitespace-nowrap">Vacantes</span>
+              </Button>
+            </div>
+
+            {/* Mobile dropdown (absolute) */}
+            {mobileOpen && (
+              <div className="md:hidden absolute left-4 right-4 top-16 z-40 bg-slate-900 border border-slate-700 rounded-lg shadow-lg">
+                <div className="flex flex-col p-2">
+                  <button onClick={() => { navigate('/dashboard'); setMobileOpen(false); }} className="text-left px-4 py-2 text-gray-300 hover:bg-slate-800 hover:text-white rounded">Inicio</button>
+                  <button onClick={() => { navigate('/courses'); setMobileOpen(false); }} className="text-left px-4 py-2 text-gray-300 hover:bg-slate-800 hover:text-white rounded"><BookOpen className="w-4 h-4 inline mr-2"/>Cursos</button>
+                  <button onClick={() => { navigate('/events'); setMobileOpen(false); }} className="text-left px-4 py-2 text-gray-300 hover:bg-slate-800 hover:text-white rounded"><Calendar className="w-4 h-4 inline mr-2"/>Eventos</button>
+                  <button onClick={() => { navigate('/jobs'); setMobileOpen(false); }} className="text-left px-4 py-2 text-gray-300 hover:bg-slate-800 hover:text-white rounded"><Briefcase className="w-4 h-4 inline mr-2"/>Vacantes</button>
+                </div>
+              </div>
+            )}
+          </div>
           </nav>
 
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-3">
-              <Badge variant="outline" className={user.role === 'empresa' ? 'text-orange-400 border-orange-400/30' : 'text-cyan-400 border-cyan-400/30'}>
-                {user.role === 'empresa' ? 'Empresa' : 'Estudiante'}
-              </Badge>
-              <Button key="saved-btn" variant="ghost" size="sm" onClick={handleSavedClick} className="text-gray-300 hover:text-white">
-                <User className="w-4 h-4 mr-2" />
-                Guardados
-              </Button>
-              <Button key="profile-btn" variant="ghost" size="sm" onClick={handleProfileClick} className="text-gray-300 hover:text-white">
-                <User className="w-4 h-4 mr-2" />
-                Mi Perfil
-              </Button>
-              <Button key="logout-btn" variant="ghost" size="sm" onClick={logout} className="text-gray-300 hover:text-white">
-                <LogOut className="w-4 h-4 mr-2" />
-                Salir
-              </Button>
+            {/* Avatar with dropdown menu (presentation-only) */}
+            <div className="relative" ref={userMenuRef}>
+              <button
+                onClick={() => setShowUserMenu(prev => !prev)}
+                aria-haspopup="true"
+                aria-expanded={!!showUserMenu}
+                className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-full px-3 py-1 hover:bg-slate-700 focus:outline-none"
+              >
+                <img
+                  src={user.picture || (user.email ? `https://www.gravatar.com/avatar/${encodeURIComponent(user.email)}?d=identicon` : 'https://via.placeholder.com/100?text=Sin+Foto')}
+                  alt={user.name}
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+                <span className="hidden md:inline text-white text-sm">Perfil</span>
+              </button>
+
+              {showUserMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded shadow-lg z-50">
+                  <div className="p-3 border-b border-slate-700">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={user.picture || (user.email ? `https://www.gravatar.com/avatar/${encodeURIComponent(user.email)}?d=identicon` : 'https://via.placeholder.com/100?text=Sin+Foto')}
+                        alt={user.name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                      <div>
+                        <div className="text-white text-sm line-clamp-1">{user.name}</div>
+                        <div className="text-gray-400 text-xs">{user.role === 'empresa' ? 'Empresa' : 'Estudiante'}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col p-2">
+                    <button onClick={handleProfileClick} className="text-left px-3 py-2 text-gray-200 hover:bg-slate-700 rounded">Mi Perfil</button>
+                    <button onClick={handleSavedClick} className="text-left px-3 py-2 text-gray-200 hover:bg-slate-700 rounded">Guardados</button>
+                    <button onClick={() => { setShowUserMenu(false); logout && logout(); }} className="text-left px-3 py-2 text-red-400 hover:bg-slate-700 rounded">Salir</button>
+                  </div>
+                </div>
+              )}
             </div>
+            
+            {/* Close dropdown when clicking outside */}
+            {
+              /* attach effect */
+            }
           </div>
         </div>
       </header>
@@ -1168,7 +1215,7 @@ const DashboardHome = ({ user }) => {
       <section className="py-8 px-4 bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-3xl font-bold text-white mb-2">
-            ¡Bienvenido de vuelta, {user.name}! 👋
+            ¡Bienvenido de vuelta! {user.name}👋
           </h1>
           <p className="text-gray-300 mb-6">
             {user.role === 'empresa' ? 
@@ -1355,606 +1402,6 @@ const DashboardHome = ({ user }) => {
   );
 };
 
-// Fixed dimensions for all content cards
-const CoursesSection = ({ courses, savedItems, onSaveItem, onUnsaveItem }) => {
-  const coursesArray = Array.isArray(courses) ? courses : [];
-  const [filteredCourses, setFilteredCourses] = useState(coursesArray);
-  const [selectedCategory, setSelectedCategory] = useState("all");
-
-  useEffect(() => {
-    if (selectedCategory === "all") {
-      setFilteredCourses(coursesArray);
-    } else {
-      setFilteredCourses(coursesArray.filter(course => course.category === selectedCategory));
-    }
-  }, [coursesArray, selectedCategory]);
-
-  const categories = [
-    { value: "all", label: "Todas las categorías" },
-    { value: "Tecnología", label: "Tecnología" },
-    { value: "Marketing", label: "Marketing" },
-    { value: "Diseño", label: "Diseño" },
-    { value: "Administración", label: "Administración" },
-    { value: "Recursos Humanos", label: "Recursos Humanos" },
-    { value: "Contabilidad", label: "Contabilidad" },
-    { value: "Idiomas", label: "Idiomas" },
-    { value: "Gestión de Empresas", label: "Gestión de Empresas" }
-  ];
-
-  const isSaved = (itemId) => {
-    return savedItems?.courses?.some(item => item.id === itemId) || false;
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-white">Todos los Cursos ({Array.isArray(filteredCourses) ? filteredCourses.length : 0})</h2>
-        <div className="flex items-center gap-4">
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-48">
-              <SelectValue placeholder="Filtrar por categoría" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map(cat => (
-                <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      
-      {/* Fixed grid with uniform card dimensions */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {Array.isArray(filteredCourses) && filteredCourses.map(course => (
-          <Card key={course.id} className="bg-slate-800 border-slate-700 hover:border-cyan-500/50 transition-all h-80 flex flex-col">
-            <CardHeader className="pb-3 flex-shrink-0">
-              <div className="flex justify-between items-start mb-2">
-                <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-400 text-xs">
-                  {course.category}
-                </Badge>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-green-400 border-green-400/30 text-xs">
-                    Gratis
-                  </Badge>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => isSaved(course.id) ? onUnsaveItem(course.id, 'course') : onSaveItem(course.id, 'course', course)}
-                    className={isSaved(course.id) ? "text-yellow-400 hover:text-yellow-300 p-1" : "text-gray-400 hover:text-yellow-400 p-1"}
-                  >
-                    {isSaved(course.id) ? '★' : '☆'}
-                  </Button>
-                </div>
-              </div>
-              <CardTitle className="text-white text-sm leading-tight line-clamp-2 h-10">{course.title}</CardTitle>
-              <CardDescription className="text-gray-400 text-xs">{course.provider}</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0 flex flex-col justify-between flex-grow">
-              <p className="text-gray-300 text-xs mb-4 line-clamp-3 flex-grow">{course.description}</p>
-              <Button 
-                size="sm"
-                className="w-full bg-cyan-500 hover:bg-cyan-600 text-black text-xs"
-                onClick={() => window.open(course.url, '_blank')}
-              >
-                Ir al Curso <ExternalLink className="w-3 h-3 ml-1" />
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const EventsSection = ({ events, savedItems, onSaveItem, onUnsaveItem }) => {
-  const eventsArray = Array.isArray(events) ? events : [];
-  const [filteredEvents, setFilteredEvents] = useState(eventsArray);
-  const [selectedFilter, setSelectedFilter] = useState("all");
-
-  useEffect(() => {
-    if (selectedFilter === "all") {
-      setFilteredEvents(eventsArray);
-    } else if (selectedFilter === "online") {
-      setFilteredEvents(eventsArray.filter(event => event.is_online));
-    } else if (selectedFilter === "presencial") {
-      setFilteredEvents(eventsArray.filter(event => !event.is_online));
-    } else if (selectedFilter === "paraguay") {
-      setFilteredEvents(eventsArray.filter(event => !event.is_online && event.location.toLowerCase().includes('paraguay')));
-    } else {
-      setFilteredEvents(eventsArray.filter(event => event.category === selectedFilter));
-    }
-  }, [eventsArray, selectedFilter]);
-
-  const filters = [
-    { value: "all", label: "Todos los eventos" },
-    { value: "online", label: "Solo Online" },
-    { value: "presencial", label: "Solo Presencial" },
-    { value: "paraguay", label: "En Paraguay" },
-    { value: "Tecnología", label: "Tecnología" },
-    { value: "Marketing", label: "Marketing" },
-    { value: "Diseño", label: "Diseño" },
-    { value: "Administración", label: "Administración" },
-    { value: "Recursos Humanos", label: "Recursos Humanos" },
-    { value: "Contabilidad", label: "Contabilidad" },
-    { value: "Gestión de Empresas", label: "Gestión de Empresas" }
-  ];
-
-  const isSaved = (itemId) => {
-    return savedItems?.events?.some(item => item.id === itemId) || false;
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-white">Todos los Eventos ({filteredEvents.length})</h2>
-        <div className="flex items-center gap-4">
-          <Select value={selectedFilter} onValueChange={setSelectedFilter}>
-            <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-48">
-              <SelectValue placeholder="Filtrar eventos" />
-            </SelectTrigger>
-            <SelectContent>
-              {filters.map(filter => (
-                <SelectItem key={filter.value} value={filter.value}>{filter.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      
-      {/* Fixed grid with uniform card dimensions */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredEvents.map(event => (
-          <Card key={event.id} className="bg-slate-800 border-slate-700 hover:border-cyan-500/50 transition-all h-80 flex flex-col">
-            <CardHeader className="pb-3 flex-shrink-0">
-              <div className="flex justify-between items-start mb-2">
-                <Badge variant="secondary" className="bg-purple-500/20 text-purple-400 text-xs">
-                  {event.category}
-                </Badge>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center text-gray-400 text-xs">
-                    <Clock className="w-3 h-3 mr-1" />
-                    {new Date(event.event_date).toLocaleDateString('es-ES')}
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => isSaved(event.id) ? onUnsaveItem(event.id, 'event') : onSaveItem(event.id, 'event', event)}
-                    className={isSaved(event.id) ? "text-yellow-400 hover:text-yellow-300 p-1" : "text-gray-400 hover:text-yellow-400 p-1"}
-                  >
-                    {isSaved(event.id) ? '★' : '☆'}
-                  </Button>
-                </div>
-              </div>
-              <CardTitle className="text-white text-sm leading-tight line-clamp-2 h-10">{event.title}</CardTitle>
-              <CardDescription className="text-gray-400 text-xs">
-                {event.organizer} • {event.is_online ? 'Online' : event.location}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0 flex flex-col justify-between flex-grow">
-              <p className="text-gray-300 text-xs mb-4 line-clamp-3 flex-grow">{event.description}</p>
-              <Button 
-                size="sm"
-                className="w-full bg-purple-500 hover:bg-purple-600 text-white text-xs"
-                onClick={() => window.open(event.url, '_blank')}
-              >
-                Registrarse <ExternalLink className="w-3 h-3 ml-1" />
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const JobsSection = ({ jobs, user, savedItems, onSaveItem, onUnsaveItem }) => {
-  const [showJobForm, setShowJobForm] = useState(false);
-  const jobsArray = Array.isArray(jobs) ? jobs : [];
-  const [filteredJobs, setFilteredJobs] = useState(jobsArray);
-  const [selectedFilter, setSelectedFilter] = useState("all");
-  const [userPostedJobs, setUserPostedJobs] = useState([]); // Jobs posted by companies
-  const [loadingUserJobs, setLoadingUserJobs] = useState(false);
-  const [jobForm, setJobForm] = useState({
-    title: '',
-    description: '',
-    requirements: [],
-    modality: '',
-    job_type: '',
-    seniority_level: '',
-    skills_stack: [],
-    city: '',
-    salary_range: '',
-    apply_type: 'interno',
-    apply_url: '',
-    knockout_questions: []
-  });
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (selectedFilter === "all") {
-      setFilteredJobs(jobsArray);
-    } else {
-      setFilteredJobs(jobsArray.filter(job => job.modality === selectedFilter));
-    }
-  }, [jobsArray, selectedFilter]);
-
-  // Load user-posted jobs (company feed)
-  useEffect(() => {
-    if (user) {
-      fetchUserPostedJobs();
-    }
-  }, [user]);
-
-  const fetchUserPostedJobs = async () => {
-    setLoadingUserJobs(true);
-    try {
-      // Fetch all active jobs (for feed view)
-      const response = await axios.get(`${API}/api/jobs`, { withCredentials: true });
-      setUserPostedJobs(response.data.jobs || response.data);
-    } catch (error) {
-      console.error('Error fetching user jobs:', error);
-    }
-    setLoadingUserJobs(false);
-  };
-
-  const handleCreateJob = async (e) => {
-    e.preventDefault();
-    
-    // Validate required fields
-    if (!jobForm.title || !jobForm.description || !jobForm.modality) {
-      toast({
-        title: "Error",
-        description: "Por favor completa todos los campos obligatorios",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      await axios.post(`${API}/api/jobs`, jobForm, { withCredentials: true });
-      toast({
-        title: "¡Vacante publicada!",
-        description: "Tu vacante ha sido publicada exitosamente en el feed",
-      });
-      setShowJobForm(false);
-      
-      // Reset form
-      setJobForm({
-        title: '',
-        description: '',
-        requirements: [],
-        modality: '',
-        job_type: '',
-        seniority_level: '',
-        skills_stack: [],
-        city: '',
-        salary_range: '',
-        apply_type: 'interno',
-        apply_url: '',
-        knockout_questions: []
-      });
-      
-      // Refresh both feeds
-      fetchUserPostedJobs();
-      window.location.reload(); // Reload to get updated jobs from parent
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error al publicar la vacante",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const addRequirement = (req) => {
-    if (req.trim() && !jobForm.requirements.includes(req.trim())) {
-      setJobForm(prev => ({
-        ...prev,
-        requirements: [...prev.requirements, req.trim()]
-      }));
-    }
-  };
-
-  const removeRequirement = (req) => {
-    setJobForm(prev => ({
-      ...prev,
-      requirements: prev.requirements.filter(r => r !== req)
-    }));
-  };
-
-  const isSaved = (itemId) => {
-    return savedItems?.jobs?.some(item => item.id === itemId) || false;
-  };
-
-  const filters = [
-    { value: "all", label: "Todas las vacantes" },
-    { value: "remoto", label: "Remoto" },
-    { value: "presencial", label: "Presencial" },
-    { value: "hibrido", label: "Híbrido" }
-  ];
-
-  return (
-    <div className="space-y-8">
-      {/* Header with filters and post button */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-white">
-            Oportunidades Laborales
-          </h2>
-          <p className="text-gray-400 text-sm">
-            {user?.role === 'empresa' ? 'Publica tus vacantes y encuentra talento' : 'Descubre oportunidades de empleo'}
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <Select value={selectedFilter} onValueChange={setSelectedFilter}>
-            <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-48">
-              <SelectValue placeholder="Filtrar por modalidad" />
-            </SelectTrigger>
-            <SelectContent>
-              {filters.map(filter => (
-                <SelectItem key={filter.value} value={filter.value}>{filter.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          {user?.role === 'empresa' && (
-            <Button 
-              onClick={() => setShowJobForm(true)}
-              className="bg-orange-500 hover:bg-orange-600 text-white flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Publicar Vacante
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Opportunities Cards Section (Top) - Static opportunities */}
-      <div>
-        <div className="flex items-center gap-3 mb-4">
-          <TrendingUp className="w-5 h-5 text-orange-400" />
-          <h3 className="text-lg font-semibold text-white">Oportunidades Destacadas</h3>
-          <Badge className="bg-orange-500/20 text-orange-400 text-xs">Top</Badge>
-        </div>
-        
-        {/* Horizontal scrolling cards */}
-        <div className="overflow-x-auto pb-4">
-          <div className="flex gap-4 w-max">
-            {filteredJobs.slice(0, 5).map(job => (
-              <Card key={job.id} className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border-orange-500/30 hover:border-orange-400 transition-all w-80 flex-shrink-0">
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start mb-2">
-                    <Badge variant="secondary" className="bg-orange-500/20 text-orange-400 text-xs">
-                      {job.job_type}
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => isSaved(job.id) ? onUnsaveItem(job.id, 'job') : onSaveItem(job.id, 'job', job)}
-                      className="text-orange-400 hover:text-orange-300 p-1"
-                    >
-                      {isSaved(job.id) ? '★' : '☆'}
-                    </Button>
-                  </div>
-                  <CardTitle className="text-white text-base leading-tight">{job.title}</CardTitle>
-                  <CardDescription className="text-gray-300 text-sm">
-                    {job.company_name} • {job.city}, {job.country}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-gray-300 text-sm mb-4 line-clamp-2">{job.description}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-cyan-400 font-semibold text-sm">{job.salary_range}</span>
-                    <Button 
-                      size="sm"
-                      className="bg-orange-500 hover:bg-orange-600 text-white"
-                      onClick={() => job.apply_type === 'externo' ? window.open(job.apply_url, '_blank') : alert('Aplicar internamente')}
-                    >
-                      Aplicar <ExternalLink className="w-3 h-3 ml-1" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Company Feed Section (Bottom) */}
-      <div>
-        <div className="flex items-center gap-3 mb-6">
-          <Users className="w-5 h-5 text-cyan-400" />
-          <h3 className="text-lg font-semibold text-white">Feed de Empresas</h3>
-          <Badge className="bg-cyan-500/20 text-cyan-400 text-xs">En vivo</Badge>
-        </div>
-        
-        {loadingUserJobs ? (
-          <div className="text-center text-gray-400 py-8">Cargando publicaciones...</div>
-        ) : userPostedJobs.length > 0 ? (
-          <div className="space-y-4">
-            {userPostedJobs.map(job => (
-              <Card key={job.id} className="bg-slate-800 border-slate-700 hover:border-cyan-500/50 transition-all">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
-                        <Building className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h4 className="text-white font-semibold">{job.company_name}</h4>
-                        <p className="text-gray-400 text-sm">Publicó una nueva vacante • hace 2h</p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => isSaved(job.id) ? onUnsaveItem(job.id, 'job') : onSaveItem(job.id, 'job', job)}
-                      className="text-cyan-400 hover:text-cyan-300"
-                    >
-                      {isSaved(job.id) ? '★' : '☆'}
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-white mb-2">{job.title}</h3>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      <Badge variant="outline" className="text-cyan-400 border-cyan-400/30">{job.modality}</Badge>
-                      <Badge variant="outline" className="text-purple-400 border-purple-400/30">{job.job_type}</Badge>
-                      <Badge variant="outline" className="text-green-400 border-green-400/30">{job.city}</Badge>
-                    </div>
-                    <p className="text-gray-300 mb-4">{job.description}</p>
-                    
-                    {job.requirements && job.requirements.length > 0 && (
-                      <div className="mb-4">
-                        <h5 className="text-white font-semibold mb-2 text-sm">Requisitos:</h5>
-                        <ul className="list-disc list-inside text-gray-400 text-sm space-y-1">
-                          {job.requirements.slice(0, 3).map((req, idx) => (
-                            <li key={idx}>{req}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-cyan-400 font-semibold">{job.salary_range}</span>
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm"
-                          variant="outline"
-                          className="text-cyan-400 border-cyan-400/30 hover:bg-cyan-500/10"
-                        >
-                          Más info
-                        </Button>
-                        <Button 
-                          size="sm"
-                          className="bg-cyan-500 hover:bg-cyan-600 text-black"
-                          onClick={() => job.apply_type === 'externo' ? window.open(job.apply_url, '_blank') : alert('Aplicar internamente')}
-                        >
-                          Aplicar
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card className="bg-slate-800 border-slate-700">
-            <CardContent className="text-center py-12">
-              <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-white font-semibold mb-2">¡Sé el primero en publicar!</h3>
-              <p className="text-gray-400 mb-4">
-                {user?.role === 'empresa' ? 
-                  'No hay publicaciones aún. Publica la primera vacante de tu empresa.' :
-                  'Las empresas aún no han publicado vacantes. ¡Mantente atento!'
-                }
-              </p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* Job Creation Modal */}
-      {showJobForm && user?.role === 'empresa' && (
-        <Dialog open={showJobForm} onOpenChange={setShowJobForm}>
-          <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Publicar Nueva Vacante</DialogTitle>
-              <DialogDescription className="text-gray-400">
-                Comparte tu oportunidad laboral con nuestra comunidad
-              </DialogDescription>
-            </DialogHeader>
-            
-            <form onSubmit={handleCreateJob} className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-white">Título del puesto *</Label>
-                  <Input
-                    value={jobForm.title}
-                    onChange={(e) => setJobForm(prev => ({...prev, title: e.target.value}))}
-                    className="bg-slate-700 border-slate-600 text-white"
-                    placeholder="Ej: Desarrollador Frontend"
-                  />
-                </div>
-                <div>
-                  <Label className="text-white">Modalidad *</Label>
-                  <Select value={jobForm.modality} onValueChange={(value) => setJobForm(prev => ({...prev, modality: value}))}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                      <SelectValue placeholder="Seleccionar modalidad" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="presencial">Presencial</SelectItem>
-                      <SelectItem value="remoto">Remoto</SelectItem>
-                      <SelectItem value="hibrido">Híbrido</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div>
-                <Label className="text-white">Descripción *</Label>
-                <Textarea
-                  value={jobForm.description}
-                  onChange={(e) => setJobForm(prev => ({...prev, description: e.target.value}))}
-                  className="bg-slate-700 border-slate-600 text-white"
-                  placeholder="Describe el puesto, responsabilidades y lo que ofreces..."
-                  rows={4}
-                />
-              </div>
-              
-              <div className="grid md:grid-cols-3 gap-4">
-                <div>
-                  <Label className="text-white">Tipo de trabajo</Label>
-                  <Select value={jobForm.job_type} onValueChange={(value) => setJobForm(prev => ({...prev, job_type: value}))}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                      <SelectValue placeholder="Tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="junior">Junior</SelectItem>
-                      <SelectItem value="medio">Medio</SelectItem>
-                      <SelectItem value="senior">Senior</SelectItem>
-                      <SelectItem value="pasantia">Pasantía</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-white">Ciudad</Label>
-                  <Input
-                    value={jobForm.city}
-                    onChange={(e) => setJobForm(prev => ({...prev, city: e.target.value}))}
-                    className="bg-slate-700 border-slate-600 text-white"
-                    placeholder="Ciudad del Este"
-                  />
-                </div>
-                <div>
-                  <Label className="text-white">Salario</Label>
-                  <Input
-                    value={jobForm.salary_range}
-                    onChange={(e) => setJobForm(prev => ({...prev, salary_range: e.target.value}))}
-                    className="bg-slate-700 border-slate-600 text-white"
-                    placeholder="Gs. 5.000.000"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-3">
-                <Button type="button" variant="outline" onClick={() => setShowJobForm(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white">
-                  Publicar Vacante
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      )}
-    </div>
-  );
-};
 
 // Saved Items Page
 const SavedItemsPage = ({ user }) => {
@@ -1970,7 +1417,24 @@ const SavedItemsPage = ({ user }) => {
   const fetchSavedItems = async () => {
     try {
       const response = await axios.get(`${API}/api/saved-items`, { withCredentials: true });
-      setSavedItems(response.data.saved_items || response.data);
+      const data = response.data || {};
+      const savedArray = data.saved_items || [];
+      const grouped = { courses: [], events: [], jobs: [] };
+      if (Array.isArray(savedArray)) {
+        savedArray.forEach(si => {
+          if (si.item_type === 'course') {
+            if (si.course) grouped.courses.push(si.course);
+            else if (si.course_id) grouped.courses.push({ id: si.course_id });
+          } else if (si.item_type === 'event') {
+            if (si.event) grouped.events.push(si.event);
+            else if (si.event_id) grouped.events.push({ id: si.event_id });
+          } else if (si.item_type === 'job') {
+            if (si.job_vacancy) grouped.jobs.push(si.job_vacancy);
+            else if (si.job_vacancy_id) grouped.jobs.push({ id: si.job_vacancy_id });
+          }
+        });
+      }
+      setSavedItems(grouped);
     } catch (error) {
       console.error('Error fetching saved items:', error);
     }
@@ -2177,137 +1641,12 @@ const SavedItemsPage = ({ user }) => {
 
 // Dashboard Page (Protected)
 const Dashboard = ({ user, logout }) => {
-  const [courses, setCourses] = useState([]);
-  const [events, setEvents] = useState([]);
-  const [jobs, setJobs] = useState([]);
-  const [savedItems, setSavedItems] = useState({ courses: [], events: [], jobs: [] });
-  const [activeSection, setActiveSection] = useState('inicio');
-  const { toast } = useToast();
-
-  useEffect(() => {
-    fetchContent();
-    fetchSavedItems();
-  }, []);
-
-  const fetchContent = async () => {
-    try {
-      console.log('Fetching content from:', `${API}/api/courses`);
-      const [coursesRes, eventsRes, jobsRes] = await Promise.all([
-        axios.get(`${API}/api/courses?limit=20`),
-        axios.get(`${API}/api/events?limit=12`),
-        axios.get(`${API}/api/jobs?limit=12`)
-      ]);
-      
-      console.log('Courses response:', coursesRes.data);
-      console.log('Events response:', eventsRes.data);
-      console.log('Jobs response:', jobsRes.data);
-      
-      setCourses(coursesRes.data.courses || []);
-      setEvents(eventsRes.data.events || []);
-      setJobs(jobsRes.data.jobs || []);
-    } catch (error) {
-      console.error('Error fetching content:', error);
-      console.error('API base URL:', API);
-    }
-  };
-
-  const fetchSavedItems = useCallback(async () => {
-    try {
-      const response = await axios.get(`${API}/api/saved-items`, { withCredentials: true });
-      setSavedItems(response.data.saved_items || response.data);
-    } catch (error) {
-      console.error('Error fetching saved items:', error);
-      // For development, set empty saved items if auth fails
-      if (process.env.NODE_ENV === 'development') {
-        setSavedItems({ courses: [], events: [], jobs: [] });
-      }
-    }
-  }, []);
-
-  const handleSaveItem = useCallback(async (itemId, itemType, itemData) => {
-    try {
-      await axios.post(`${API}/api/saved-items`, {
-        item_id: itemId,
-        item_type: itemType,
-        item_data: itemData
-      }, { withCredentials: true });
-      await fetchSavedItems(); // Refresh saved items
-      toast({
-        title: "Guardado",
-        description: "Item guardado exitosamente",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Error al guardar el item",
-        variant: "destructive"
-      });
-    }
-  }, [fetchSavedItems, toast]);
-
-  const handleUnsaveItem = useCallback(async (itemId, itemType) => {
-    try {
-      await axios.delete(`${API}/api/saved-items/${itemId}`, { withCredentials: true });
-      await fetchSavedItems(); // Refresh saved items
-      toast({
-        title: "Eliminado",
-        description: "Item eliminado de guardados",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Error al eliminar el item",
-        variant: "destructive"
-      });
-    }
-  }, [fetchSavedItems, toast]);
-
-  const renderContent = () => {
-    switch (activeSection) {
-      case 'inicio':
-        return <DashboardHome key="dashboard-home" user={user} />;
-      case 'cursos':
-        return (
-          <CoursesSection 
-            key="courses-section"
-            courses={courses} 
-            savedItems={savedItems}
-            onSaveItem={handleSaveItem}
-            onUnsaveItem={handleUnsaveItem}
-          />
-        );
-      case 'eventos':
-        return (
-          <EventsSection 
-            key="events-section"
-            events={events} 
-            savedItems={savedItems}
-            onSaveItem={handleSaveItem}
-            onUnsaveItem={handleUnsaveItem}
-          />
-        );
-      case 'vacantes':
-        return (
-          <JobsSection 
-            key="jobs-section"
-            jobs={jobs} 
-            user={user} 
-            savedItems={savedItems}
-            onSaveItem={handleSaveItem}
-            onUnsaveItem={handleUnsaveItem}
-          />
-        );
-      default:
-        return <DashboardHome key="dashboard-home-default" user={user} />;
-    }
-  };
-
   return (
     <div className="min-h-screen bg-slate-950">
-      <DashboardHeader user={user} logout={logout} activeSection={activeSection} setActiveSection={setActiveSection} />
-      
+      <DashboardHeader user={user} logout={logout} />
+
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {renderContent()}
+        <DashboardHome user={user} />
       </div>
     </div>
   );
@@ -2329,47 +1668,96 @@ function App() {
     <div className="App">
       <BrowserRouter>
         <Routes>
-          <Route 
-            path="/" 
+          <Route
+            path="/"
             element={
-              user ? <Navigate to="/dashboard" /> : 
+              user ? (
+                user.role === 'estudiante' || user.role === 'empresa' ?
+                  <Navigate to="/dashboard" replace /> :
+                  <Navigate to="/onboarding" replace />
+              ) :
               <AuthLandingPage startGoogleAuth={startGoogleAuth} />
-            } 
+            }
           />
-          <Route 
-            path="/onboarding" 
+          <Route
+            path="/onboarding"
             element={
-              user && (user.role === 'estudiante' || user.role === 'empresa') ? 
-                <Navigate to="/dashboard" /> :
-                <OnboardingPage user={user} setUser={setUser} />
-            } 
+              user ? (
+                user.role === 'estudiante' || user.role === 'empresa' ?
+                  <Navigate to="/dashboard" replace /> :
+                  <OnboardingPage user={user} setUser={setUser} />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
           />
-          <Route 
-            path="/dashboard" 
+          <Route
+            path="/onboarding-estudiante"
+            element={<StudentOnboarding />}
+          />
+          <Route
+            path="/onboarding-empresa"
+            element={<CompanyOnboarding />}
+          />
+          <Route
+            path="/dashboard"
             element={
-              user && (user.role === 'estudiante' || user.role === 'empresa') ? 
-                <Dashboard user={user} logout={logout} /> : 
-                <Navigate to="/" />
-            } 
+              user ? (
+                user.role === 'estudiante' || user.role === 'empresa' ?
+                  <Dashboard user={user} logout={logout} /> :
+                  <Navigate to="/onboarding" replace />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
           />
-          <Route 
-            path="/profile" 
+          <Route
+            path="/profile"
             element={
-              user && (user.role === 'estudiante' || user.role === 'empresa') ? 
-                <ProfilePage user={user} setUser={setUser} /> : 
-                <Navigate to="/" />
-            } 
+              user && (user.role === 'estudiante' || user.role === 'empresa') ?
+                <ProfilePage user={user} setUser={setUser} /> :
+                <Navigate to="/" replace />
+            }
           />
-          <Route 
-            path="/saved" 
+          <Route
+            path="/saved"
             element={
-              user && (user.role === 'estudiante' || user.role === 'empresa') ? 
-                <SavedItemsPage user={user} /> : 
-                <Navigate to="/" />
-            } 
+              user && (user.role === 'estudiante' || user.role === 'empresa') ?
+                <SavedItemsPage user={user} /> :
+                <Navigate to="/" replace />
+            }
           />
+
+          {/* Admin Route */}
+          <Route
+            path="/admin"
+            element={
+              user && user.role === 'admin' ?
+                <AdminDashboard /> :
+                <Navigate to="/" replace />
+            }
+          />
+
+          {/* Auth Pages */}
+          <Route path="/registro-estudiante" element={<StudentSignUp />} />
+          <Route path="/registro-empresa" element={<CompanySignUp />} />
+          <Route path="/login" element={<Login />} />
+
+          {/* Public Pages */}
+          <Route path="/courses" element={<PublicCourses />} />
+          <Route path="/events" element={<PublicEvents />} />
+          <Route path="/jobs" element={<PublicJobs />} />
+          <Route path="/scholarships" element={<Scholarships />} />
+          <Route path="/certifications" element={<Certifications />} />
+          <Route path="/companies" element={<Companies />} />
+          <Route path="/career-advice" element={<CareerAdvice />} />
+          <Route path="/support" element={<Support />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
         </Routes>
+        <Footer />
         <Toaster />
+        <ChatButton user={user} />
       </BrowserRouter>
     </div>
   );

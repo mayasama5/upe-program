@@ -1,135 +1,58 @@
 const express = require('express');
-const axios = require('axios');
-const { User, Session } = require('../models');
+const { clerkClient } = require('@clerk/clerk-sdk-node');
+const prisma = require('../config/prisma');
 const { getCurrentUser, requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Complete authentication endpoint
-router.post('/complete', async (req, res) => {
+// Set user role endpoint (called after sign-up from frontend)
+router.post('/set-role', requireAuth, async (req, res) => {
   try {
-    console.log(`🔐 Auth complete request from origin: ${req.headers.origin}`);
-    console.log(`📋 Headers: ${JSON.stringify(req.headers, null, 2)}`);
-    
-    const sessionId = req.headers['x-session-id'];
-    
-    if (!sessionId) {
+    const { role } = req.body;
+
+    if (!role || !['estudiante', 'empresa'].includes(role)) {
       return res.status(400).json({
-        error: 'Session ID required',
-        message: 'X-Session-ID header is required'
+        error: 'Invalid role',
+        message: 'Role must be either "estudiante" or "empresa"'
       });
     }
 
-    // Get authentication data from external service
-    const authResponse = await axios.get(
-      'https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data',
-      {
-        headers: {
-          'X-Session-ID': sessionId
-        }
+    // Update role in Clerk metadata
+    await clerkClient.users.updateUser(req.user.id, {
+      publicMetadata: {
+        role: role
       }
-    );
-
-    const authData = authResponse.data;
-
-    // Check if user exists
-    let user = await User.findOne({ email: authData.email });
-    
-    if (!user) {
-      // Create new user
-      user = new User({
-        email: authData.email,
-        name: authData.name,
-        picture: authData.picture || null
-      });
-      await user.save();
-    }
-
-    // Create or update session
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
-
-    // Remove any existing sessions for this user
-    await Session.deleteMany({ user_id: user.id });
-
-    const session = new Session({
-      user_id: user.id,
-      session_token: authData.session_token,
-      expires_at: expiresAt
-    });
-    await session.save();
-
-    // Set cookie with environment-specific settings
-    const isProduction = process.env.NODE_ENV === 'production';
-    
-    res.cookie('session_token', session.session_token, {
-      path: '/',
-      httpOnly: true,
-      secure: isProduction, // HTTPS in production, HTTP in development
-      sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-origin in production
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
     });
 
-    console.log(`🍪 Cookie set for ${isProduction ? 'production' : 'development'} mode`);
-    console.log(`🔒 Secure: ${isProduction}, SameSite: ${isProduction ? 'none' : 'lax'}`);
+    // Update role in Supabase (via Prisma)
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { role: role }
+    });
 
     res.json({
-      message: 'Authentication completed successfully',
+      message: 'Role updated successfully',
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        picture: user.picture,
-        role: user.role,
-        is_verified: user.is_verified
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        picture: updatedUser.picture,
+        role: updatedUser.role,
+        is_verified: updatedUser.is_verified
       }
     });
 
   } catch (error) {
-    console.error('Authentication error:', error);
-    
-    if (error.response) {
-      // External API error
-      return res.status(error.response.status).json({
-        error: 'Authentication failed',
-        message: 'Failed to validate session with authentication service'
-      });
-    }
-    
+    console.error('Set role error:', error);
     res.status(500).json({
       error: 'Internal server error',
-      message: 'An error occurred during authentication'
+      message: 'An error occurred while setting the role'
     });
   }
 });
 
 // Get current user
 router.get('/me', getCurrentUser, (req, res) => {
-  // Development mode: return mock user if no real user is authenticated
-  if (!req.user && process.env.NODE_ENV === 'development') {
-    const mockUser = {
-      id: 'dev-user-1',
-      email: 'developer@test.com',
-      name: 'Usuario de Desarrollo',
-      picture: null,
-      role: 'estudiante',
-      is_verified: true,
-      github_url: '',
-      linkedin_url: '',
-      portfolio_url: '',
-      skills: [],
-      bio: '',
-      company_name: '',
-      company_document: '',
-      cv_file_path: null,
-      certificate_files: [],
-      degree_files: [],
-      created_at: new Date(),
-      updated_at: new Date()
-    };
-    
-    return res.json({ user: mockUser });
-  }
   
   if (!req.user) {
     return res.status(401).json({
@@ -158,22 +81,9 @@ router.get('/me', getCurrentUser, (req, res) => {
   });
 });
 
-// Logout endpoint
+// Logout endpoint (sign out from Clerk)
 router.post('/logout', requireAuth, async (req, res) => {
   try {
-    // Delete the current session
-    if (req.session) {
-      await Session.deleteOne({ _id: req.session._id });
-    }
-
-    // Clear the cookie
-    res.clearCookie('session_token', {
-      path: '/',
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax'
-    });
-
     res.json({
       message: 'Logged out successfully'
     });

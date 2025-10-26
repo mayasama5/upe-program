@@ -1,5 +1,5 @@
 const express = require('express');
-const { Course, Event, JobVacancy, SavedItem, JobApplication, User } = require('../models');
+const prisma = require('../config/prisma');
 const { optionalAuth, requireAuth, requireCompany, requireStudent } = require('../middleware/auth');
 const Joi = require('joi');
 
@@ -40,36 +40,39 @@ const savedItemSchema = Joi.object({
 // Get courses
 router.get('/courses', optionalAuth, async (req, res) => {
   try {
-    const { 
-      page = 1, 
-      limit = 20, 
-      category, 
-      language, 
-      is_free, 
-      search 
+    const {
+      page = 1,
+      limit = 20,
+      category,
+      language,
+      is_free,
+      search
     } = req.query;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const query = {};
+    const where = {};
 
     // Apply filters
-    if (category) query.category = category;
-    if (language) query.language = language;
-    if (is_free !== undefined) query.is_free = is_free === 'true';
+    if (category) where.category = category;
+    if (language) where.language = language;
+    if (is_free !== undefined) where.is_free = is_free === 'true';
     if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { provider: { $regex: search, $options: 'i' } }
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { provider: { contains: search, mode: 'insensitive' } }
       ];
     }
 
-    const courses = await Course.find(query)
-      .sort({ created_at: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
-
-    const total = await Course.countDocuments(query);
+    const [courses, total] = await Promise.all([
+      prisma.course.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: parseInt(limit)
+      }),
+      prisma.course.count({ where })
+    ]);
 
     res.json({
       courses,
@@ -93,38 +96,41 @@ router.get('/courses', optionalAuth, async (req, res) => {
 // Get events
 router.get('/events', optionalAuth, async (req, res) => {
   try {
-    const { 
-      page = 1, 
-      limit = 20, 
-      category, 
-      is_online, 
-      upcoming, 
-      search 
+    const {
+      page = 1,
+      limit = 20,
+      category,
+      is_online,
+      upcoming,
+      search
     } = req.query;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const query = {};
+    const where = {};
 
     // Apply filters
-    if (category) query.category = category;
-    if (is_online !== undefined) query.is_online = is_online === 'true';
+    if (category) where.category = category;
+    if (is_online !== undefined) where.is_online = is_online === 'true';
     if (upcoming === 'true') {
-      query.event_date = { $gte: new Date() };
+      where.event_date = { gte: new Date() };
     }
     if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { organizer: { $regex: search, $options: 'i' } }
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { organizer: { contains: search, mode: 'insensitive' } }
       ];
     }
 
-    const events = await Event.find(query)
-      .sort({ event_date: 1 })
-      .skip(skip)
-      .limit(parseInt(limit));
-
-    const total = await Event.countDocuments(query);
+    const [events, total] = await Promise.all([
+      prisma.event.findMany({
+        where,
+        orderBy: { event_date: 'asc' },
+        skip,
+        take: parseInt(limit)
+      }),
+      prisma.event.count({ where })
+    ]);
 
     res.json({
       events,
@@ -148,41 +154,44 @@ router.get('/events', optionalAuth, async (req, res) => {
 // Get jobs
 router.get('/jobs', optionalAuth, async (req, res) => {
   try {
-    const { 
-      page = 1, 
-      limit = 20, 
-      modality, 
-      job_type, 
-      city, 
-      skills, 
-      search 
+    const {
+      page = 1,
+      limit = 20,
+      modality,
+      job_type,
+      city,
+      skills,
+      search
     } = req.query;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const query = { is_active: true };
+    const where = { is_active: true };
 
     // Apply filters
-    if (modality) query.modality = modality;
-    if (job_type) query.job_type = job_type;
-    if (city) query.city = { $regex: city, $options: 'i' };
+    if (modality) where.modality = modality;
+    if (job_type) where.job_type = job_type;
+    if (city) where.location = { contains: city, mode: 'insensitive' };
     if (skills) {
       const skillsArray = skills.split(',').map(skill => skill.trim());
-      query.skills_stack = { $in: skillsArray };
+      where.requirements = { hasSome: skillsArray };
     }
     if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { company_name: { $regex: search, $options: 'i' } }
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { company: { contains: search, mode: 'insensitive' } }
       ];
     }
 
-    const jobs = await JobVacancy.find(query)
-      .sort({ created_at: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
-
-    const total = await JobVacancy.countDocuments(query);
+    const [jobs, total] = await Promise.all([
+      prisma.jobVacancy.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: parseInt(limit)
+      }),
+      prisma.jobVacancy.count({ where })
+    ]);
 
     res.json({
       jobs,
@@ -207,7 +216,7 @@ router.get('/jobs', optionalAuth, async (req, res) => {
 router.post('/jobs', requireCompany, async (req, res) => {
   try {
     const { error, value } = jobVacancySchema.validate(req.body);
-    
+
     if (error) {
       return res.status(400).json({
         error: 'Validation error',
@@ -215,13 +224,23 @@ router.post('/jobs', requireCompany, async (req, res) => {
       });
     }
 
-    const jobVacancy = new JobVacancy({
-      ...value,
-      company_id: req.user.id,
-      company_name: req.user.company_name || req.user.name
+    const jobVacancy = await prisma.jobVacancy.create({
+      data: {
+        title: value.title,
+        description: value.description,
+        company: req.user.company_name || req.user.name,
+        location: value.city || value.country || 'Paraguay',
+        job_type: value.job_type,
+        modality: value.modality,
+        salary_range: value.salary_range,
+        requirements: value.requirements || [],
+        responsibilities: value.skills_stack || [],
+        apply_type: value.apply_type,
+        external_url: value.apply_url,
+        posted_by_user_id: req.user.id,
+        category: 'Tecnología'
+      }
     });
-
-    await jobVacancy.save();
 
     res.status(201).json({
       message: 'Job vacancy created successfully',
@@ -242,9 +261,12 @@ router.get('/jobs/:jobId', optionalAuth, async (req, res) => {
   try {
     const { jobId } = req.params;
 
-    const job = await JobVacancy.findOne({ id: jobId, is_active: true });
+    const job = await prisma.jobVacancy.findUnique({
+      where: { id: jobId },
+      include: { posted_by: true }
+    });
 
-    if (!job) {
+    if (!job || !job.is_active) {
       return res.status(404).json({
         error: 'Job not found',
         message: 'Job vacancy not found or no longer active'
@@ -267,7 +289,7 @@ router.post('/jobs/:jobId/apply', requireStudent, async (req, res) => {
   try {
     const { jobId } = req.params;
     const { error, value } = jobApplicationSchema.validate(req.body);
-    
+
     if (error) {
       return res.status(400).json({
         error: 'Validation error',
@@ -276,8 +298,11 @@ router.post('/jobs/:jobId/apply', requireStudent, async (req, res) => {
     }
 
     // Check if job exists and is active
-    const job = await JobVacancy.findOne({ id: jobId, is_active: true });
-    if (!job) {
+    const job = await prisma.jobVacancy.findUnique({
+      where: { id: jobId }
+    });
+
+    if (!job || !job.is_active) {
       return res.status(404).json({
         error: 'Job not found',
         message: 'Job vacancy not found or no longer active'
@@ -285,9 +310,13 @@ router.post('/jobs/:jobId/apply', requireStudent, async (req, res) => {
     }
 
     // Check if user already applied
-    const existingApplication = await JobApplication.findOne({
-      job_id: jobId,
-      student_id: req.user.id
+    const existingApplication = await prisma.jobApplication.findUnique({
+      where: {
+        job_vacancy_id_applicant_id: {
+          job_vacancy_id: jobId,
+          applicant_id: req.user.id
+        }
+      }
     });
 
     if (existingApplication) {
@@ -297,25 +326,21 @@ router.post('/jobs/:jobId/apply', requireStudent, async (req, res) => {
       });
     }
 
-    const application = new JobApplication({
-      job_id: jobId,
-      student_id: req.user.id,
-      student_name: req.user.name,
-      student_email: req.user.email,
-      cv_url: req.user.cv_file_path,
-      cover_letter: value.cover_letter,
-      answers: value.answers
+    const application = await prisma.jobApplication.create({
+      data: {
+        job_vacancy_id: jobId,
+        applicant_id: req.user.id,
+        cover_letter: value.cover_letter
+      }
     });
-
-    await application.save();
 
     res.status(201).json({
       message: 'Application submitted successfully',
       application: {
         id: application.id,
-        job_id: application.job_id,
+        job_vacancy_id: application.job_vacancy_id,
         status: application.status,
-        applied_at: application.applied_at
+        created_at: application.created_at
       }
     });
 
@@ -331,44 +356,39 @@ router.post('/jobs/:jobId/apply', requireStudent, async (req, res) => {
 // Get company applications (company only)
 router.get('/company/applications', requireCompany, async (req, res) => {
   try {
-    const { 
-      page = 1, 
-      limit = 20, 
-      status, 
-      job_id 
+    const {
+      page = 1,
+      limit = 20,
+      status,
+      job_id
     } = req.query;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    
-    // First get all jobs for this company
-    const companyJobs = await JobVacancy.find({ company_id: req.user.id });
-    const jobIds = companyJobs.map(job => job.id);
+    const where = {
+      job_vacancy: {
+        posted_by_user_id: req.user.id
+      }
+    };
 
-    const query = { job_id: { $in: jobIds } };
-    
-    if (status) query.status = status;
-    if (job_id) query.job_id = job_id;
+    if (status) where.status = status;
+    if (job_id) where.job_vacancy_id = job_id;
 
-    const applications = await JobApplication.find(query)
-      .sort({ applied_at: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
-
-    const total = await JobApplication.countDocuments(query);
-
-    // Enrich applications with job details
-    const enrichedApplications = await Promise.all(
-      applications.map(async (app) => {
-        const job = companyJobs.find(j => j.id === app.job_id);
-        return {
-          ...app.toObject(),
-          job_title: job?.title || 'Unknown Job'
-        };
-      })
-    );
+    const [applications, total] = await Promise.all([
+      prisma.jobApplication.findMany({
+        where,
+        include: {
+          job_vacancy: true,
+          applicant: true
+        },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: parseInt(limit)
+      }),
+      prisma.jobApplication.count({ where })
+    ]);
 
     res.json({
-      applications: enrichedApplications,
+      applications,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -390,7 +410,7 @@ router.get('/company/applications', requireCompany, async (req, res) => {
 router.put('/company/applications/:applicationId/status', requireCompany, async (req, res) => {
   try {
     const { applicationId } = req.params;
-    const { status, notes } = req.body;
+    const { status } = req.body;
 
     if (!status || !['nuevo', 'en_revision', 'entrevista', 'oferta', 'rechazado'].includes(status)) {
       return res.status(400).json({
@@ -399,7 +419,11 @@ router.put('/company/applications/:applicationId/status', requireCompany, async 
       });
     }
 
-    const application = await JobApplication.findOne({ id: applicationId });
+    const application = await prisma.jobApplication.findUnique({
+      where: { id: applicationId },
+      include: { job_vacancy: true }
+    });
+
     if (!application) {
       return res.status(404).json({
         error: 'Application not found',
@@ -408,28 +432,17 @@ router.put('/company/applications/:applicationId/status', requireCompany, async 
     }
 
     // Verify this application belongs to a job from this company
-    const job = await JobVacancy.findOne({ 
-      id: application.job_id, 
-      company_id: req.user.id 
-    });
-
-    if (!job) {
+    if (application.job_vacancy.posted_by_user_id !== req.user.id) {
       return res.status(403).json({
         error: 'Access denied',
         message: 'You can only update applications for your own job postings'
       });
     }
 
-    const updatedApplication = await JobApplication.findOneAndUpdate(
-      { id: applicationId },
-      { 
-        $set: { 
-          status, 
-          notes: notes || application.notes 
-        } 
-      },
-      { new: true }
-    );
+    const updatedApplication = await prisma.jobApplication.update({
+      where: { id: applicationId },
+      data: { status }
+    });
 
     res.json({
       message: 'Application status updated successfully',

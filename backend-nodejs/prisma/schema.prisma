@@ -1,0 +1,211 @@
+// Prisma Schema for UPE Program - Supabase PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  estudiante
+  empresa
+}
+
+enum JobType {
+  practica
+  pasantia
+  junior
+  medio
+  senior
+}
+
+enum JobModality {
+  remoto
+  presencial
+  hibrido
+}
+
+enum ApplicationStatus {
+  nuevo
+  en_revision
+  entrevista
+  oferta
+  rechazado
+}
+
+enum ApplyType {
+  interno
+  externo
+}
+
+// User Model
+model User {
+  id                String            @id @default(uuid())
+  email             String            @unique
+  name              String
+  picture           String?
+  role              UserRole          @default(estudiante)
+  is_verified       Boolean           @default(false)
+
+  // Student fields
+  github_url        String?
+  linkedin_url      String?
+  portfolio_url     String?
+  skills            String[]          @default([])
+  bio               String?
+  education         String?
+  career            String?
+  phone             String?
+  cv_file_path      String?
+  certificate_files Json[]            @default([])
+  degree_files      Json[]            @default([])
+
+  // Company fields
+  company_name      String?
+  company_document  String?
+  industry          String?
+  company_size      String?
+  website           String?
+  address           String?
+  city              String?
+  country           String?
+  benefits          String?
+
+  created_at        DateTime          @default(now())
+  updated_at        DateTime          @updatedAt
+
+  // Relations
+  saved_items       SavedItem[]
+  job_applications  JobApplication[]
+  posted_jobs       JobVacancy[]
+
+  @@map("users")
+}
+
+// Course Model
+model Course {
+  id                     String      @id @default(uuid())
+  title                  String
+  description            String
+  provider               String
+  url                    String
+  language               String      @default("es")
+  has_spanish_subtitles  Boolean     @default(false)
+  category               String
+  is_free                Boolean     @default(true)
+  image_url              String?
+  created_at             DateTime    @default(now())
+
+  // Relations
+  saved_items            SavedItem[]
+
+  @@map("courses")
+}
+
+// Event Model
+model Event {
+  id          String      @id @default(uuid())
+  title       String
+  description String
+  organizer   String
+  url         String
+  event_date  DateTime
+  location    String
+  is_online   Boolean     @default(true)
+  category    String
+  image_url   String?
+  created_at  DateTime    @default(now())
+
+  // Relations
+  saved_items SavedItem[]
+
+  @@map("events")
+}
+
+// Job Vacancy Model
+model JobVacancy {
+  id                  String            @id @default(uuid())
+  title               String
+  description         String
+  company             String
+  company_logo        String?
+  location            String
+  job_type            JobType
+  modality            JobModality
+  salary_range        String?
+  requirements        String[]          @default([])
+  responsibilities    String[]          @default([])
+  benefits            String[]          @default([])
+  apply_type          ApplyType
+  external_url        String?
+  posted_by_user_id   String?
+  is_active           Boolean           @default(true)
+  category            String
+  experience_years    Int?
+  created_at          DateTime          @default(now())
+  updated_at          DateTime          @updatedAt
+
+  // Relations
+  posted_by           User?             @relation(fields: [posted_by_user_id], references: [id], onDelete: SetNull)
+  saved_items         SavedItem[]
+  applications        JobApplication[]
+
+  @@map("job_vacancies")
+}
+
+// Saved Item Model
+model SavedItem {
+  id              String    @id @default(uuid())
+  user_id         String
+  item_type       String    // 'course', 'event', 'job'
+  course_id       String?
+  event_id        String?
+  job_vacancy_id  String?
+  created_at      DateTime  @default(now())
+
+  // Relations
+  user            User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  course          Course?      @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  event           Event?       @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  job_vacancy     JobVacancy?  @relation(fields: [job_vacancy_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, course_id])
+  @@unique([user_id, event_id])
+  @@unique([user_id, job_vacancy_id])
+  @@map("saved_items")
+}
+
+// Job Application Model
+model JobApplication {
+  id              String            @id @default(uuid())
+  job_vacancy_id  String
+  applicant_id    String
+  cover_letter    String?
+  status          ApplicationStatus @default(nuevo)
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+
+  // Relations
+  job_vacancy     JobVacancy        @relation(fields: [job_vacancy_id], references: [id], onDelete: Cascade)
+  applicant       User              @relation(fields: [applicant_id], references: [id], onDelete: Cascade)
+
+  @@unique([job_vacancy_id, applicant_id])
+  @@map("job_applications")
+}
+
+// Career Advice Model
+model CareerAdvice {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  author      String
+  url         String?
+  image_url   String?
+  created_at  DateTime @default(now())
+
+  @@map("career_advice")
+}

@@ -1,7 +1,8 @@
 const express = require('express');
-const { User } = require('../models');
+const prisma = require('../config/prisma');
 const { requireAuth, requireCompany } = require('../middleware/auth');
-const { upload, handleMulterError, getFileUrl } = require('../middleware/upload');
+const { upload, handleMulterError, getFileUrl, verifyFileContent } = require('../middleware/upload');
+const { validateSingleFile, validateMultipleFiles } = require('../utils/fileValidator');
 const Joi = require('joi');
 
 const router = express.Router();
@@ -81,19 +82,11 @@ router.put('/profile', requireAuth, async (req, res) => {
       });
     }
 
-    // Update user
-    const updatedUser = await User.findOneAndUpdate(
-      { id: req.user.id },
-      { $set: value },
-      { new: true }
-    );
-
-    if (!updatedUser) {
-      return res.status(404).json({
-        error: 'User not found',
-        message: 'User not found in database'
-      });
-    }
+    // Update user with Prisma
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: value
+    });
 
     res.json({
       message: 'Profile updated successfully',
@@ -124,8 +117,57 @@ router.put('/profile', requireAuth, async (req, res) => {
   }
 });
 
+// Upload profile picture
+router.post('/picture', requireAuth, upload.single('picture'), verifyFileContent, validateSingleFile('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        error: 'No file uploaded',
+        message: 'Picture file is required'
+      });
+    }
+
+    const fileUrl = getFileUrl(req, req.file.path);
+
+    // Update user's picture with Prisma
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { picture: fileUrl }
+    });
+
+    res.json({
+      message: 'Profile picture uploaded successfully',
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        picture: updatedUser.picture,
+        role: updatedUser.role,
+        is_verified: updatedUser.is_verified,
+        github_url: updatedUser.github_url,
+        linkedin_url: updatedUser.linkedin_url,
+        portfolio_url: updatedUser.portfolio_url,
+        skills: updatedUser.skills,
+        bio: updatedUser.bio,
+        company_name: updatedUser.company_name,
+        cv_file_path: updatedUser.cv_file_path,
+        certificate_files: updatedUser.certificate_files,
+        degree_files: updatedUser.degree_files,
+        created_at: updatedUser.created_at
+      }
+    });
+
+  } catch (error) {
+    console.error('Picture upload error:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'An error occurred while uploading picture'
+    });
+  }
+});
+
 // Upload CV
-router.post('/cv', requireAuth, upload.single('cv'), handleMulterError, async (req, res) => {
+router.post('/cv', requireAuth, upload.single('cv'), verifyFileContent, validateSingleFile('pdf'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -136,12 +178,11 @@ router.post('/cv', requireAuth, upload.single('cv'), handleMulterError, async (r
 
     const fileUrl = getFileUrl(req, req.file.path);
 
-    // Update user's CV path
-    const updatedUser = await User.findOneAndUpdate(
-      { id: req.user.id },
-      { $set: { cv_file_path: fileUrl } },
-      { new: true }
-    );
+    // Update user's CV path with Prisma
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { cv_file_path: fileUrl }
+    });
 
     res.json({
       message: 'CV uploaded successfully',
@@ -163,7 +204,7 @@ router.post('/cv', requireAuth, upload.single('cv'), handleMulterError, async (r
 });
 
 // Upload certificates
-router.post('/certificates', requireAuth, upload.array('certificate', 5), handleMulterError, async (req, res) => {
+router.post('/certificates', requireAuth, upload.array('certificate', 5), verifyFileContent, validateMultipleFiles('image', 5), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
@@ -181,12 +222,18 @@ router.post('/certificates', requireAuth, upload.array('certificate', 5), handle
       uploaded_at: new Date()
     }));
 
-    // Add certificates to user's certificate_files array
-    const updatedUser = await User.findOneAndUpdate(
-      { id: req.user.id },
-      { $push: { certificate_files: { $each: certificates } } },
-      { new: true }
-    );
+    // Get current user to append certificates
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
+
+    // Add certificates to user's certificate_files array with Prisma
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        certificate_files: [...(currentUser.certificate_files || []), ...certificates]
+      }
+    });
 
     res.json({
       message: 'Certificates uploaded successfully',
@@ -203,7 +250,7 @@ router.post('/certificates', requireAuth, upload.array('certificate', 5), handle
 });
 
 // Upload degrees
-router.post('/degrees', requireAuth, upload.array('degree', 5), handleMulterError, async (req, res) => {
+router.post('/degrees', requireAuth, upload.array('degree', 5), verifyFileContent, validateMultipleFiles('image', 5), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
@@ -221,12 +268,18 @@ router.post('/degrees', requireAuth, upload.array('degree', 5), handleMulterErro
       uploaded_at: new Date()
     }));
 
-    // Add degrees to user's degree_files array
-    const updatedUser = await User.findOneAndUpdate(
-      { id: req.user.id },
-      { $push: { degree_files: { $each: degrees } } },
-      { new: true }
-    );
+    // Get current user to append degrees
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
+
+    // Add degrees to user's degree_files array with Prisma
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        degree_files: [...(currentUser.degree_files || []), ...degrees]
+      }
+    });
 
     res.json({
       message: 'Degrees uploaded successfully',
@@ -243,7 +296,7 @@ router.post('/degrees', requireAuth, upload.array('degree', 5), handleMulterErro
 });
 
 // Upload company document
-router.post('/company-document', requireCompany, upload.single('company_document'), handleMulterError, async (req, res) => {
+router.post('/company-document', requireCompany, upload.single('company_document'), verifyFileContent, validateSingleFile('pdf'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -254,12 +307,11 @@ router.post('/company-document', requireCompany, upload.single('company_document
 
     const fileUrl = getFileUrl(req, req.file.path);
 
-    // Update user's company document
-    const updatedUser = await User.findOneAndUpdate(
-      { id: req.user.id },
-      { $set: { company_document: fileUrl } },
-      { new: true }
-    );
+    // Update user's company document with Prisma
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { company_document: fileUrl }
+    });
 
     res.json({
       message: 'Company document uploaded successfully',
@@ -285,18 +337,19 @@ router.delete('/certificates/:certificateId', requireAuth, async (req, res) => {
   try {
     const { certificateId } = req.params;
 
-    const updatedUser = await User.findOneAndUpdate(
-      { id: req.user.id },
-      { $pull: { certificate_files: { id: certificateId } } },
-      { new: true }
+    // Get current user and filter out the certificate
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
+
+    const updatedCertificates = (currentUser.certificate_files || []).filter(
+      cert => cert.id !== certificateId
     );
 
-    if (!updatedUser) {
-      return res.status(404).json({
-        error: 'User not found',
-        message: 'User not found in database'
-      });
-    }
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { certificate_files: updatedCertificates }
+    });
 
     res.json({
       message: 'Certificate deleted successfully'
@@ -316,18 +369,19 @@ router.delete('/degrees/:degreeId', requireAuth, async (req, res) => {
   try {
     const { degreeId } = req.params;
 
-    const updatedUser = await User.findOneAndUpdate(
-      { id: req.user.id },
-      { $pull: { degree_files: { id: degreeId } } },
-      { new: true }
+    // Get current user and filter out the degree
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
+
+    const updatedDegrees = (currentUser.degree_files || []).filter(
+      degree => degree.id !== degreeId
     );
 
-    if (!updatedUser) {
-      return res.status(404).json({
-        error: 'User not found',
-        message: 'User not found in database'
-      });
-    }
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { degree_files: updatedDegrees }
+    });
 
     res.json({
       message: 'Degree deleted successfully'
@@ -343,3 +397,64 @@ router.delete('/degrees/:degreeId', requireAuth, async (req, res) => {
 });
 
 module.exports = router;
+
+// Complete profile endpoint (used by frontend after signup/onboarding)
+// This updates only allowed fields and avoids using any non-existent Prisma fields
+router.post('/complete-profile', requireAuth, async (req, res) => {
+  try {
+    const schema = Joi.object({
+      role: Joi.string().valid('estudiante', 'empresa').required(),
+      display_name: Joi.string().max(200).required(),
+      company_name: Joi.string().max(200).allow('', null),
+      bio: Joi.string().max(1000).allow('', null)
+    });
+
+    const { error, value } = schema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: 'Validation error', message: error.details[0].message });
+    }
+
+    const { role, display_name, company_name, bio } = value;
+
+    // Development mock
+    if (process.env.NODE_ENV === 'development' && req.user.id === 'dev-user-1') {
+      const mock = { ...req.user, role, name: display_name, company_name, bio, updated_at: new Date() };
+      return res.json({ user: mock });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        role,
+        name: display_name,
+        company_name: role === 'empresa' ? company_name : null,
+        bio,
+        updated_at: new Date()
+      }
+    });
+
+    res.json({ user: {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      name: updatedUser.name,
+      picture: updatedUser.picture,
+      role: updatedUser.role,
+      is_verified: updatedUser.is_verified,
+      github_url: updatedUser.github_url,
+      linkedin_url: updatedUser.linkedin_url,
+      portfolio_url: updatedUser.portfolio_url,
+      skills: updatedUser.skills,
+      bio: updatedUser.bio,
+      company_name: updatedUser.company_name,
+      cv_file_path: updatedUser.cv_file_path,
+      certificate_files: updatedUser.certificate_files,
+      degree_files: updatedUser.degree_files,
+      created_at: updatedUser.created_at,
+      updated_at: updatedUser.updated_at
+    }});
+
+  } catch (error) {
+    console.error('Complete profile error:', error);
+    res.status(500).json({ error: 'Internal server error', message: 'Could not complete profile' });
+  }
+});
