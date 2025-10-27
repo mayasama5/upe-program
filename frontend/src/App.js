@@ -28,6 +28,7 @@ import Support from "./pages/Support";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import AdminDashboard from "./pages/AdminDashboard";
+import Maintenance from "./pages/Maintenance";
 
 // Import auth pages
 import StudentSignUp from "./pages/StudentSignUp";
@@ -1674,18 +1675,20 @@ function App() {
               user ? (
                 user.role === 'estudiante' || user.role === 'empresa' ?
                   <Navigate to="/dashboard" replace /> :
-                  <Navigate to="/onboarding" replace />
+                user.role === 'admin' ?
+                  <AdminDashboard /> :
+                  <AuthLandingPage startGoogleAuth={startGoogleAuth} />
               ) :
               <AuthLandingPage startGoogleAuth={startGoogleAuth} />
             }
           />
           <Route
             path="/onboarding-estudiante"
-            element={<StudentOnboarding />}
+            element={user ? <StudentOnboarding /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />}
           />
           <Route
             path="/onboarding-empresa"
-            element={<CompanyOnboarding />}
+            element={user ? <CompanyOnboarding /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />}
           />
           <Route
             path="/dashboard"
@@ -1693,7 +1696,7 @@ function App() {
               user ? (
                 user.role === 'estudiante' || user.role === 'empresa' ?
                   <Dashboard user={user} logout={logout} /> :
-                  <Navigate to="/onboarding" replace />
+                  <Navigate to="/" replace />
               ) : (
                 <Navigate to="/" replace />
               )
@@ -1727,21 +1730,24 @@ function App() {
           />
 
           {/* Auth Pages */}
-          <Route path="/registro-estudiante" element={<StudentSignUp />} />
-          <Route path="/registro-empresa" element={<CompanySignUp />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/registro-estudiante" element={user ? <Navigate to="/dashboard" replace /> : <StudentSignUp />} />
+          <Route path="/registro-empresa" element={user ? <Navigate to="/dashboard" replace /> : <CompanySignUp />} />
+          <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
 
           {/* Public Pages */}
-          <Route path="/courses" element={<PublicCourses />} />
-          <Route path="/events" element={<PublicEvents />} />
-          <Route path="/jobs" element={<PublicJobs />} />
-          <Route path="/scholarships" element={<Scholarships />} />
-          <Route path="/certifications" element={<Certifications />} />
-          <Route path="/companies" element={<Companies />} />
-          <Route path="/career-advice" element={<CareerAdvice />} />
-          <Route path="/support" element={<Support />} />
+          <Route path="/courses" element={user ? <PublicCourses /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />} />
+          <Route path="/events" element={user ? <PublicEvents /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />} />
+          <Route path="/jobs" element={user ? <PublicJobs /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />} />
+          <Route path="/scholarships" element={user ? <Scholarships /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />} />
+          <Route path="/certifications" element={user ? <Certifications /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />} />
+          <Route path="/companies" element={user ? <Companies /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />} />
+          <Route path="/career-advice" element={user ? <CareerAdvice /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />} />
+          <Route path="/support" element={user ? <Support /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
+
+          {/* Maintenance Mode */}
+          <Route path="/maintenance" element={<Maintenance />} />
         </Routes>
         <Footer />
         <Toaster />

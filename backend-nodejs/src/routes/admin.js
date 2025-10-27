@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../config/prisma');
-const { authenticateJWT, requireAdmin } = require('../middleware/jwtAuth');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { createLimiter } = require('../middleware/security');
 const {
   createUserDTO,
@@ -23,8 +23,7 @@ const {
   createNotificationDTO
 } = require('../dto/notification.dto');
 
-// Aplicar autenticación JWT y permisos de admin a todas las rutas
-router.use(authenticateJWT);
+// Aplicar autenticación de Clerk y permisos de admin a todas las rutas
 router.use(requireAdmin);
 
 // Endpoint para poblar la base de datos en producción
@@ -522,7 +521,8 @@ router.get('/reports/users', async (req, res) => {
 
     res.json({ success: true, data: reportData });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error al generar reporte' });
+    console.error('Error generating users report:', error);
+    res.status(500).json({ success: false, message: 'Error al generar reporte', error: error.message });
   }
 });
 
@@ -531,7 +531,7 @@ router.get('/reports/courses', async (req, res) => {
     const courses = await prisma.course.findMany({
       include: {
         _count: {
-          select: { SavedItem: true }
+          select: { saved_items: true }
         }
       }
     });
@@ -542,13 +542,14 @@ router.get('/reports/courses', async (req, res) => {
       Proveedor: c.provider,
       Categoría: c.category,
       Gratis: c.is_free ? 'Sí' : 'No',
-      'Veces Guardado': c._count.SavedItem,
+      'Veces Guardado': c._count.saved_items,
       'Fecha Creación': c.created_at.toISOString().split('T')[0]
     }));
 
     res.json({ success: true, data: reportData });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error al generar reporte' });
+    console.error('Error generating courses report:', error);
+    res.status(500).json({ success: false, message: 'Error al generar reporte', error: error.message });
   }
 });
 
@@ -557,7 +558,7 @@ router.get('/reports/events', async (req, res) => {
     const events = await prisma.event.findMany({
       include: {
         _count: {
-          select: { SavedItem: true }
+          select: { saved_items: true }
         }
       }
     });
@@ -569,12 +570,13 @@ router.get('/reports/events', async (req, res) => {
       Fecha: e.event_date.toISOString().split('T')[0],
       Ubicación: e.location,
       Tipo: e.is_online ? 'Virtual' : 'Presencial',
-      Registrados: e._count.SavedItem
+      Registrados: e._count.saved_items
     }));
 
     res.json({ success: true, data: reportData });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error al generar reporte' });
+    console.error('Error generating events report:', error);
+    res.status(500).json({ success: false, message: 'Error al generar reporte', error: error.message });
   }
 });
 
@@ -583,7 +585,7 @@ router.get('/reports/jobs', async (req, res) => {
     const jobs = await prisma.jobVacancy.findMany({
       include: {
         _count: {
-          select: { SavedItem: true }
+          select: { saved_items: true }
         }
       }
     });
@@ -595,13 +597,14 @@ router.get('/reports/jobs', async (req, res) => {
       Ubicación: j.location,
       Tipo: j.job_type,
       Modalidad: j.modality,
-      Aplicaciones: j._count.SavedItem,
+      Aplicaciones: j._count.saved_items,
       Estado: j.is_active ? 'Activa' : 'Inactiva'
     }));
 
     res.json({ success: true, data: reportData });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error al generar reporte' });
+    console.error('Error generating jobs report:', error);
+    res.status(500).json({ success: false, message: 'Error al generar reporte', error: error.message });
   }
 });
 
@@ -647,7 +650,69 @@ router.get('/reports/activity', async (req, res) => {
 
     res.json({ success: true, data: reportData });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error al generar reporte' });
+    console.error('Error generating activity report:', error);
+    res.status(500).json({ success: false, message: 'Error al generar reporte', error: error.message });
+  }
+});
+
+// ============================================
+// CONFIGURACIÓN DEL SISTEMA
+// ============================================
+
+// Obtener configuración del sistema
+router.get('/settings', async (req, res) => {
+  try {
+    let settings = await prisma.systemSettings.findFirst();
+
+    // Si no existe configuración, crear una por defecto
+    if (!settings) {
+      settings = await prisma.systemSettings.create({
+        data: {
+          maintenance_mode: false,
+          maintenance_message: 'El sistema está en mantenimiento. Volveremos pronto.'
+        }
+      });
+    }
+
+    res.json({ success: true, data: settings });
+  } catch (error) {
+    console.error('Error fetching system settings:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener configuración', error: error.message });
+  }
+});
+
+// Actualizar modo de mantenimiento
+router.patch('/settings/maintenance', async (req, res) => {
+  try {
+    const { maintenance_mode, maintenance_message } = req.body;
+
+    let settings = await prisma.systemSettings.findFirst();
+
+    if (!settings) {
+      settings = await prisma.systemSettings.create({
+        data: {
+          maintenance_mode: maintenance_mode || false,
+          maintenance_message: maintenance_message || 'El sistema está en mantenimiento. Volveremos pronto.'
+        }
+      });
+    } else {
+      settings = await prisma.systemSettings.update({
+        where: { id: settings.id },
+        data: {
+          maintenance_mode: maintenance_mode !== undefined ? maintenance_mode : settings.maintenance_mode,
+          maintenance_message: maintenance_message || settings.maintenance_message
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: settings,
+      message: `Modo de mantenimiento ${maintenance_mode ? 'activado' : 'desactivado'}`
+    });
+  } catch (error) {
+    console.error('Error updating maintenance mode:', error);
+    res.status(500).json({ success: false, message: 'Error al actualizar modo de mantenimiento', error: error.message });
   }
 });
 

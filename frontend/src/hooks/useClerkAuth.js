@@ -1,4 +1,4 @@
-import { useUser, useClerk } from '@clerk/clerk-react';
+import { useUser, useClerk, useSession } from '@clerk/clerk-react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useToast } from './use-toast';
@@ -10,9 +10,52 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL ||
 export const useClerkAuth = () => {
   const { user: clerkUser, isLoaded, isSignedIn } = useUser();
   const { signOut } = useClerk();
+  const { session } = useSession();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  // Setup axios interceptor to automatically include session token in all requests
+  useEffect(() => {
+    const requestInterceptor = axios.interceptors.request.use(
+      async (config) => {
+        if (session) {
+          try {
+            const token = await session.getToken();
+            if (token) {
+              config.headers.Authorization = `Bearer ${token}`;
+            }
+          } catch (error) {
+            console.error('Failed to get session token:', error);
+          }
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
+    // Setup response interceptor to handle maintenance mode
+    const responseInterceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        // Check if it's a maintenance mode response
+        if (error.response?.status === 503 && error.response?.data?.maintenance) {
+          // Redirigir a página de mantenimiento solo si no estamos ya ahí
+          if (window.location.pathname !== '/maintenance') {
+            window.location.href = '/maintenance';
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.request.eject(requestInterceptor);
+      axios.interceptors.response.eject(responseInterceptor);
+    };
+  }, [session]);
 
   useEffect(() => {
     if (isLoaded) {
@@ -28,15 +71,19 @@ export const useClerkAuth = () => {
 
   const syncUserWithBackend = async () => {
     try {
-      if (!clerkUser) {
+      if (!clerkUser || !session) {
         setLoading(false);
         return;
       }
 
-      // Send to backend to sync user using cookie-based session (withCredentials)
-      // Some Clerk setups use cookies instead of exposing a token to the client.
-      console.log('Syncing user with backend (cookie-based)...');
+      // Get session token from Clerk
+      const token = await session.getToken();
+
+      console.log('Syncing user with backend...');
       const response = await axios.get(`${BACKEND_URL}/api/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
         withCredentials: true
       });
 
@@ -95,11 +142,11 @@ export const useClerkAuth = () => {
 
   const setRole = async (role) => {
     try {
-      if (!clerkUser) {
+      if (!clerkUser || !session) {
         throw new Error('No user found');
       }
 
-      const token = await getToken();
+      const token = await session.getToken();
 
       if (!token) {
         throw new Error('Could not get authentication token');

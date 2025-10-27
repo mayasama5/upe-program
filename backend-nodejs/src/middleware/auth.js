@@ -79,19 +79,25 @@ const getCurrentUser = async (req, res, next) => {
           // If unique constraint on email occurs, fallback to existing user by email
           if (err && err.code === 'P2002') {
             console.warn('User create conflict (P2002), falling back to find by email');
-            if (email) user = await prisma.user.findUnique({ where: { email } });
+            user = await prisma.user.findUnique({ where: { email } });
           } else {
             throw err;
           }
         }
       }
+    }
 
-  }
-
-  req.user = user;
+    // Sincroniza el rol si Clerk tiene un valor diferente
+    if (user && clerkUser.publicMetadata?.role && user.role !== clerkUser.publicMetadata.role) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { role: clerkUser.publicMetadata.role }
+      });
+      user.role = clerkUser.publicMetadata.role;
+    }
+    req.user = user;
     req.clerkUser = clerkUser;
     next();
-
   } catch (error) {
     console.error('Authentication error:', error);
     req.user = null;
@@ -201,10 +207,27 @@ const optionalAuth = async (req, res, next) => {
   await getCurrentUser(req, res, next);
 };
 
+// Require admin role
+const requireAdmin = async (req, res, next) => {
+  await requireAuth(req, res, () => {});
+
+  if (res.headersSent) return; // If requireAuth already sent a response
+
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({
+      error: 'Admin account required',
+      message: 'This resource is only available to admin accounts'
+    });
+  }
+
+  next();
+};
+
 module.exports = {
   getCurrentUser,
   requireAuth,
   requireCompany,
   requireStudent,
+  requireAdmin,
   optionalAuth
 };

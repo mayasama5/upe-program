@@ -35,6 +35,7 @@ import ContentManagement from '../components/admin/ContentManagement';
 import NotificationSystem from '../components/admin/NotificationSystem';
 import ReportsPanel from '../components/admin/ReportsPanel';
 import { UserGrowthChart, CategoryActivityChart, UsersByRoleChart } from '../components/admin/AdminCharts';
+import { exportToExcel } from '../utils/exportUtils';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
@@ -58,6 +59,8 @@ export default function AdminDashboard() {
     categoryActivity: { courses: 0, events: 0, jobs: 0 },
     usersByRole: []
   });
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceLoading, setMaintenanceLoading] = useState(false);
 
   useEffect(() => {
     if (user && user.role === 'admin') {
@@ -65,6 +68,7 @@ export default function AdminDashboard() {
       fetchUsers();
       fetchLogs();
       fetchAnalytics();
+      fetchMaintenanceStatus();
     }
   }, [user]);
 
@@ -193,6 +197,41 @@ export default function AdminDashboard() {
     setTimeout(() => setRefreshing(false), 500);
   };
 
+  const fetchMaintenanceStatus = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/admin/settings`, {
+        withCredentials: true
+      });
+
+      if (response.data.success) {
+        setMaintenanceMode(response.data.data.maintenance_mode);
+      }
+    } catch (error) {
+      console.error('Error fetching maintenance status:', error);
+    }
+  };
+
+  const toggleMaintenanceMode = async () => {
+    setMaintenanceLoading(true);
+    try {
+      const response = await axios.patch(
+        `${BACKEND_URL}/api/admin/settings/maintenance`,
+        { maintenance_mode: !maintenanceMode },
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        setMaintenanceMode(response.data.data.maintenance_mode);
+        alert(response.data.message);
+      }
+    } catch (error) {
+      console.error('Error toggling maintenance mode:', error);
+      alert('Error al cambiar el modo de mantenimiento');
+    } finally {
+      setMaintenanceLoading(false);
+    }
+  };
+
   const handleDeleteUser = async (userId) => {
     if (window.confirm('¿Estás seguro de eliminar este usuario?')) {
       try {
@@ -257,6 +296,25 @@ export default function AdminDashboard() {
     u.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleExportUsers = () => {
+    if (users.length === 0) {
+      alert('No hay usuarios para exportar');
+      return;
+    }
+
+    // Formatear datos para exportación
+    const exportData = users.map(user => ({
+      'Nombre': user.name || '',
+      'Email': user.email || '',
+      'Rol': user.role || '',
+      'Verificado': user.is_verified ? 'Sí' : 'No',
+      'Fecha de Registro': user.created_at ? new Date(user.created_at).toLocaleDateString('es-ES') : ''
+    }));
+
+    const filename = `usuarios_${new Date().toISOString().split('T')[0]}`;
+    exportToExcel(exportData, filename);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -273,28 +331,28 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-slate-950">
       <Header user={user} logout={null} />
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <Shield className="w-8 h-8 text-cyan-400" />
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white flex items-center gap-2 sm:gap-3">
+              <Shield className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-cyan-400" />
               Panel de Administración
             </h1>
-            <p className="text-gray-400 mt-2">Gestión completa del sistema UPE</p>
+            <p className="text-gray-400 mt-1 sm:mt-2 text-sm sm:text-base">Gestión completa del sistema UPE</p>
           </div>
           <Button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="bg-cyan-500 hover:bg-cyan-600 text-black"
+            className="w-full sm:w-auto bg-cyan-500 hover:bg-cyan-600 text-black text-sm sm:text-base"
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3 h-3 sm:w-4 sm:h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             Actualizar
           </Button>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
           <Card className="bg-slate-800 border-slate-700">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -375,127 +433,130 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="users" className="space-y-4">
-          <TabsList className="bg-slate-800 border border-slate-700">
-            <TabsTrigger value="users" className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
-              <Users className="w-4 h-4 mr-2" />
-              Usuarios
+        <Tabs defaultValue="users" className="space-y-3 sm:space-y-4">
+          <TabsList className="bg-slate-800 border border-slate-700 w-full flex flex-wrap gap-1 p-1 sm:p-1.5 h-auto">
+            <TabsTrigger value="users" className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">
+              <Users className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Usuarios</span>
             </TabsTrigger>
-            <TabsTrigger value="content" className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
-              <FolderOpen className="w-4 h-4 mr-2" />
-              Contenido
+            <TabsTrigger value="content" className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">
+              <FolderOpen className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Contenido</span>
             </TabsTrigger>
-            <TabsTrigger value="notifications" className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
-              <Bell className="w-4 h-4 mr-2" />
-              Notificaciones
+            <TabsTrigger value="notifications" className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">
+              <Bell className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Notificaciones</span>
             </TabsTrigger>
-            <TabsTrigger value="logs" className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
-              <FileText className="w-4 h-4 mr-2" />
-              Logs
+            <TabsTrigger value="logs" className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">
+              <FileText className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Logs</span>
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Analytics
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">
+              <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Analytics</span>
             </TabsTrigger>
-            <TabsTrigger value="reports" className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
-              <Download className="w-4 h-4 mr-2" />
-              Reportes
+            <TabsTrigger value="reports" className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">
+              <Download className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Reportes</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
-              <Settings className="w-4 h-4 mr-2" />
-              Configuración
+            <TabsTrigger value="settings" className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2">
+              <Settings className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Configuración</span>
             </TabsTrigger>
           </TabsList>
 
           {/* Users Tab */}
-          <TabsContent value="users" className="space-y-4">
+          <TabsContent value="users" className="space-y-3 sm:space-y-4">
             <Card className="bg-slate-800 border-slate-700">
-              <CardHeader>
-                <div className="flex items-center justify-between">
+              <CardHeader className="p-4 sm:p-6">
+                <div className="flex flex-col gap-4">
                   <div>
-                    <CardTitle className="text-white">Gestión de Usuarios</CardTitle>
-                    <CardDescription className="text-gray-400">
+                    <CardTitle className="text-white text-lg sm:text-xl">Gestión de Usuarios</CardTitle>
+                    <CardDescription className="text-gray-400 text-sm sm:text-base">
                       Administra todos los usuarios de la plataforma
                     </CardDescription>
                   </div>
-                  <div className="flex gap-2">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
                       <Input
                         placeholder="Buscar usuarios..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-slate-900 border-slate-700 text-white w-64"
+                        className="pl-8 sm:pl-10 bg-slate-900 border-slate-700 text-white text-sm sm:text-base"
                       />
                     </div>
-                    <Button className="bg-cyan-500 hover:bg-cyan-600 text-black">
-                      <Download className="w-4 h-4 mr-2" />
-                      Exportar
+                    <Button
+                      onClick={handleExportUsers}
+                      className="bg-cyan-500 hover:bg-cyan-600 text-black text-sm sm:text-base whitespace-nowrap"
+                    >
+                      <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                      Exportar Excel
                     </Button>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
+              <CardContent className="p-3 sm:p-6">
+                <div className="space-y-2 sm:space-y-3">
                   {filteredUsers.map((user) => (
                     <div
                       key={user.id}
-                      className="flex items-center justify-between p-4 bg-slate-900 rounded-lg border border-slate-700 hover:border-cyan-500/50 transition-all"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-4 bg-slate-900 rounded-lg border border-slate-700 hover:border-cyan-500/50 transition-all"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-semibold">
+                      <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-semibold text-sm sm:text-base flex-shrink-0">
                           {user.name.charAt(0)}
                         </div>
-                        <div>
-                          <p className="text-white font-medium">{user.name}</p>
-                          <p className="text-sm text-gray-400">{user.email}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-white font-medium text-sm sm:text-base truncate">{user.name}</p>
+                          <p className="text-xs sm:text-sm text-gray-400 truncate">{user.email}</p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-4">
-                        <Badge variant="outline" className={
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+                        <Badge variant="outline" className={`text-xs sm:text-sm ${
                           user.role === 'admin' ? 'text-red-400 border-red-400/30' :
                           user.role === 'empresa' ? 'text-orange-400 border-orange-400/30' :
                           'text-cyan-400 border-cyan-400/30'
-                        }>
+                        }`}>
                           {user.role}
                         </Badge>
 
-                        <Badge variant={user.status === 'active' ? 'default' : 'secondary'} className={
+                        <Badge variant={user.status === 'active' ? 'default' : 'secondary'} className={`text-xs sm:text-sm ${
                           user.status === 'active'
                             ? 'bg-green-500/20 text-green-400 border-green-400/30'
                             : 'bg-gray-500/20 text-gray-400 border-gray-400/30'
-                        }>
+                        }`}>
                           {user.status === 'active' ? 'Activo' : 'Inactivo'}
                         </Badge>
 
-                        <span className="text-sm text-gray-500">
+                        <span className="text-xs sm:text-sm text-gray-500 hidden md:inline">
                           {formatDate(user.createdAt)}
                         </span>
 
-                        <div className="flex gap-2">
+                        <div className="flex gap-1 sm:gap-2">
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => handleToggleUserStatus(user.id)}
-                            className="text-gray-400 hover:text-white"
+                            className="text-gray-400 hover:text-white p-1 sm:p-2"
                           >
-                            {user.status === 'active' ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                            {user.status === 'active' ? <UserX className="w-3 h-3 sm:w-4 sm:h-4" /> : <UserCheck className="w-3 h-3 sm:w-4 sm:h-4" />}
                           </Button>
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="text-gray-400 hover:text-cyan-400"
+                            className="text-gray-400 hover:text-cyan-400 p-1 sm:p-2"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                           </Button>
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => handleDeleteUser(user.id)}
-                            className="text-gray-400 hover:text-red-400"
+                            className="text-gray-400 hover:text-red-400 p-1 sm:p-2"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                           </Button>
                         </div>
                       </div>
@@ -544,35 +605,38 @@ export default function AdminDashboard() {
           </TabsContent>
 
           {/* Logs Tab */}
-          <TabsContent value="logs" className="space-y-4">
+          <TabsContent value="logs" className="space-y-3 sm:space-y-4">
             <Card className="bg-slate-800 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white">Logs del Sistema</CardTitle>
-                <CardDescription className="text-gray-400">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-white text-lg sm:text-xl">Logs del Sistema</CardTitle>
+                <CardDescription className="text-gray-400 text-sm sm:text-base">
                   Registro de actividad y eventos del sistema
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[500px] pr-4">
+              <CardContent className="p-3 sm:p-6">
+                <ScrollArea className="h-[400px] sm:h-[500px] pr-2 sm:pr-4">
                   <div className="space-y-2">
                     {logs.map((log) => (
                       <div
                         key={log.id}
-                        className="p-4 bg-slate-900 rounded-lg border border-slate-700"
+                        className="p-3 sm:p-4 bg-slate-900 rounded-lg border border-slate-700"
                       >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge className={getLogLevelColor(log.level)}>
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                              <Badge className={`text-xs ${getLogLevelColor(log.level)}`}>
                                 {log.level.toUpperCase()}
                               </Badge>
-                              <Badge variant="outline" className="text-gray-400 border-gray-600">
+                              <Badge variant="outline" className="text-gray-400 border-gray-600 text-xs">
                                 {log.type}
                               </Badge>
+                              <span className="text-xs text-gray-500 sm:hidden">
+                                {formatDate(log.timestamp)}
+                              </span>
                             </div>
-                            <p className="text-white text-sm">{log.message}</p>
+                            <p className="text-white text-xs sm:text-sm break-words">{log.message}</p>
                           </div>
-                          <span className="text-xs text-gray-500 whitespace-nowrap ml-4">
+                          <span className="text-xs text-gray-500 whitespace-nowrap hidden sm:inline ml-4">
                             {formatDate(log.timestamp)}
                           </span>
                         </div>
@@ -585,8 +649,8 @@ export default function AdminDashboard() {
           </TabsContent>
 
           {/* Analytics Tab */}
-          <TabsContent value="analytics" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TabsContent value="analytics" className="space-y-3 sm:space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
               <UserGrowthChart data={analyticsData.userGrowth} />
               <CategoryActivityChart data={analyticsData.categoryActivity} />
             </div>
@@ -676,8 +740,13 @@ export default function AdminDashboard() {
                       <p className="text-white font-medium">Modo de mantenimiento</p>
                       <p className="text-sm text-gray-400">Desactivar temporalmente la plataforma</p>
                     </div>
-                    <Button variant="outline" className="border-slate-600 text-gray-400">
-                      Desactivado
+                    <Button
+                      onClick={toggleMaintenanceMode}
+                      disabled={maintenanceLoading}
+                      variant="outline"
+                      className={maintenanceMode ? "border-red-600 text-red-400 hover:bg-red-500/10" : "border-slate-600 text-gray-400"}
+                    >
+                      {maintenanceLoading ? 'Cargando...' : (maintenanceMode ? 'Activado' : 'Desactivado')}
                     </Button>
                   </div>
 

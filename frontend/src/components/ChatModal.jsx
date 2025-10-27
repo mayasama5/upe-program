@@ -101,55 +101,55 @@ export default function ChatModal({ isOpen, onClose, user }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] h-[600px] p-0 bg-slate-900 border-slate-700">
+      <DialogContent className="sm:max-w-[500px] w-[95vw] sm:w-full max-h-[90vh] sm:h-[600px] p-0 bg-slate-900 border-slate-700 flex flex-col">
         {/* Header */}
-        <DialogHeader className="border-b border-slate-700 p-4 bg-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-cyan-500 flex items-center justify-center">
-              <MessageCircle className="w-5 h-5 text-black" />
+        <DialogHeader className="border-b border-slate-700 p-3 sm:p-4 bg-slate-800 flex-shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cyan-500 flex items-center justify-center flex-shrink-0">
+              <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
             </div>
-            <div>
-              <DialogTitle className="text-white text-lg">Asistente UPE</DialogTitle>
-              <p className="text-xs text-gray-400">En línea</p>
+            <div className="min-w-0">
+              <DialogTitle className="text-white text-base sm:text-lg truncate">Asistente UPE</DialogTitle>
+              <p className="text-[10px] sm:text-xs text-gray-400">En línea</p>
             </div>
           </div>
         </DialogHeader>
 
         {/* Messages Area */}
-        <ScrollArea className="flex-1 p-4 h-[420px]" ref={scrollAreaRef}>
-          <div className="space-y-4">
+        <ScrollArea className="flex-1 p-3 sm:p-4 min-h-0" ref={scrollAreaRef}>
+          <div className="space-y-3 sm:space-y-4">
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex gap-3 ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                className={`flex gap-2 sm:gap-3 ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
               >
                 {/* Avatar */}
                 {message.type === 'bot' ? (
-                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center bg-cyan-500">
-                    <Bot className="w-4 h-4 text-black" />
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex-shrink-0 flex items-center justify-center bg-cyan-500">
+                    <Bot className="w-3 h-3 sm:w-4 sm:h-4 text-black" />
                   </div>
                 ) : user && user.picture ? (
                   <img
                     src={user.picture}
                     alt={user.name || 'Usuario'}
-                    className="w-8 h-8 rounded-full flex-shrink-0 object-cover border border-slate-600"
+                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex-shrink-0 object-cover border border-slate-600"
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center bg-slate-700">
-                    <User className="w-4 h-4 text-white" />
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex-shrink-0 flex items-center justify-center bg-slate-700">
+                    <User className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                   </div>
                 )}
 
                 {/* Message Bubble */}
-                <div className={`flex flex-col max-w-[75%] ${message.type === 'user' ? 'items-end' : 'items-start'}`}>
-                  <div className={`rounded-lg px-4 py-2 ${
+                <div className={`flex flex-col max-w-[80%] sm:max-w-[75%] ${message.type === 'user' ? 'items-end' : 'items-start'}`}>
+                  <div className={`rounded-lg px-3 py-2 sm:px-4 sm:py-2 ${
                     message.type === 'bot'
                       ? 'bg-slate-800 text-gray-100'
                       : 'bg-cyan-500 text-black'
                   }`}>
-                    <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+                    <p className="text-xs sm:text-sm whitespace-pre-wrap break-words">{message.text}</p>
                   </div>
-                  <span className="text-xs text-gray-500 mt-1">
+                  <span className="text-[10px] sm:text-xs text-gray-500 mt-1">
                     {formatTime(message.timestamp)}
                   </span>
                 </div>
@@ -158,15 +158,15 @@ export default function ChatModal({ isOpen, onClose, user }) {
 
             {/* Typing Indicator */}
             {isTyping && (
-              <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-cyan-500 flex-shrink-0 flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-black" />
+              <div className="flex gap-2 sm:gap-3">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-cyan-500 flex-shrink-0 flex items-center justify-center">
+                  <Bot className="w-3 h-3 sm:w-4 sm:h-4 text-black" />
                 </div>
-                <div className="bg-slate-800 rounded-lg px-4 py-2">
+                <div className="bg-slate-800 rounded-lg px-3 py-2 sm:px-4 sm:py-2">
                   <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                   </div>
                 </div>
               </div>
@@ -177,24 +177,24 @@ export default function ChatModal({ isOpen, onClose, user }) {
         </ScrollArea>
 
         {/* Input Area */}
-        <div className="border-t border-slate-700 p-4 bg-slate-800">
+        <div className="border-t border-slate-700 p-3 sm:p-4 bg-slate-800 flex-shrink-0">
           <div className="flex gap-2">
             <Input
               placeholder="Escribe tu mensaje..."
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="bg-slate-900 border-slate-700 text-white placeholder:text-gray-500 focus:border-cyan-500"
+              className="bg-slate-900 border-slate-700 text-white placeholder:text-gray-500 focus:border-cyan-500 text-sm"
             />
             <Button
               onClick={handleSendMessage}
               disabled={!inputMessage.trim()}
-              className="bg-cyan-500 hover:bg-cyan-600 text-black"
+              className="bg-cyan-500 hover:bg-cyan-600 text-black px-3 sm:px-4"
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-3 h-3 sm:w-4 sm:h-4" />
             </Button>
           </div>
-          <p className="text-xs text-gray-500 mt-2 text-center">
+          <p className="text-[10px] sm:text-xs text-gray-500 mt-2 text-center">
             Presiona Enter para enviar
           </p>
         </div>

@@ -163,25 +163,6 @@ export default function ReportsPanel() {
                         <div className="flex flex-wrap gap-2">
                           <Button
                             size="sm"
-                            onClick={() => handleExport(report, 'pdf')}
-                            disabled={loading[`${report.id}-pdf`]}
-                            className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30"
-                          >
-                            {loading[`${report.id}-pdf`] ? (
-                              <span className="flex items-center">
-                                <div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin mr-2" />
-                                Generando...
-                              </span>
-                            ) : (
-                              <>
-                                <FileText className="w-3 h-3 mr-1" />
-                                PDF
-                              </>
-                            )}
-                          </Button>
-
-                          <Button
-                            size="sm"
                             onClick={() => handleExport(report, 'excel')}
                             disabled={loading[`${report.id}-excel`]}
                             className="bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30"

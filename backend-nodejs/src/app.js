@@ -9,7 +9,9 @@ const rateLimit = require('express-rate-limit');
 
 // Import configuration and middleware
 const connectDB = require('./config/database');
+const { preventInjection, securityLogger, apiLimiter } = require('./middleware/security');
 const { handleMulterError } = require('./middleware/upload');
+const { checkMaintenance } = require('./middleware/maintenance');
 // Security middleware temporarily disabled for deployment
 // const {
 //   helmetConfig,
@@ -27,6 +29,7 @@ const savedItemsRoutes = require('./routes/saved-items');
 const statsRoutes = require('./routes/stats');
 const adminRoutes = require('./routes/admin');
 // const careerAdviceRoutes = require('./routes/career-advice'); // Temporarily disabled
+const careerAdviceRoutes = require('./routes/career-advice');
 
 // Load environment variables
 require('dotenv').config();
@@ -205,6 +208,9 @@ app.get('/health', (req, res) => {
     version: process.env.npm_package_version || '1.0.0'
   });
 });
+
+// Maintenance mode middleware (debe ir antes de las rutas API)
+app.use(checkMaintenance);
 
 // API routes
 app.use('/api/auth', authRoutes);

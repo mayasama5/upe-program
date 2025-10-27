@@ -10,10 +10,10 @@ router.post('/set-role', requireAuth, async (req, res) => {
   try {
     const { role } = req.body;
 
-    if (!role || !['estudiante', 'empresa'].includes(role)) {
+    if (!role || !['estudiante', 'empresa', 'admin'].includes(role)) {
       return res.status(400).json({
         error: 'Invalid role',
-        message: 'Role must be either "estudiante" or "empresa"'
+        message: 'Role must be either "estudiante", "empresa" o "admin"'
       });
     }
 
@@ -24,21 +24,37 @@ router.post('/set-role', requireAuth, async (req, res) => {
       }
     });
 
-    // Update role in Supabase (via Prisma)
-    const updatedUser = await prisma.user.update({
-      where: { id: req.user.id },
-      data: { role: role }
-    });
+    // Check if user exists in DB
+    let dbUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!dbUser) {
+      // Create user if not exists (minimal fields)
+      dbUser = await prisma.user.create({
+        data: {
+          id: req.user.id,
+          email: req.user.email,
+          name: req.user.name || '',
+          picture: req.user.picture || '',
+          role: role,
+          is_verified: false
+        }
+      });
+    } else {
+      // Update role if exists
+      dbUser = await prisma.user.update({
+        where: { id: req.user.id },
+        data: { role: role }
+      });
+    }
 
     res.json({
       message: 'Role updated successfully',
       user: {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        name: updatedUser.name,
-        picture: updatedUser.picture,
-        role: updatedUser.role,
-        is_verified: updatedUser.is_verified
+        id: dbUser.id,
+        email: dbUser.email,
+        name: dbUser.name,
+        picture: dbUser.picture,
+        role: dbUser.role,
+        is_verified: dbUser.is_verified
       }
     });
 
