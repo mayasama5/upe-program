@@ -151,7 +151,47 @@ app.use(cors(corsOptions));
 // Explicit OPTIONS handler for preflight requests
 app.options('*', (req, res) => {
   console.log(`OPTIONS request for: ${req.path} from origin: ${req.headers.origin}`);
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  const origin = req.headers.origin;
+  // Reutiliza la lógica de CORS para determinar si el origen está permitido
+  const developmentOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001'
+  ];
+  const vercelPattern = /^https:\/\/.*\.vercel\.app$/;
+  const allowedOrigins = [
+    'https://upe-8gd0xyqyk-gustavogamarra95s-projects.vercel.app',
+    'https://upe-program.vercel.app',
+    'https://upe-program-git-main-gustavogamarra95s-projects.vercel.app',
+    'https://upe-gpqkno1pr-gustavogamarra95s-projects.vercel.app',
+    'https://upe-eight.vercel.app',
+    'https://upe-kkr3lcp4t-gustavogamarra95s-projects.vercel.app',
+    'https://upe-9cvj71k8t-gustavogamarra95s-projects.vercel.app',
+    'https://upe-700y6st0s-gustavogamarra95s-projects.vercel.app',
+    'https://upe-qwyv59pyt-gustavogamarra95s-projects.vercel.app',
+    'https://upe-oqupv2udb-gustavogamarra95s-projects.vercel.app',
+    'https://upe-glj0rn4as-gustavogamarra95s-projects.vercel.app',
+    'https://upe-jay2tsfnx-gustavogamarra95s-projects.vercel.app',
+    'https://upe-3b5kfh588-gustavogamarra95s-projects.vercel.app'
+  ];
+  let allowedOrigin = '';
+  if (!origin) {
+    allowedOrigin = '';
+  } else if (developmentOrigins.includes(origin)) {
+    allowedOrigin = origin;
+  } else if (vercelPattern.test(origin)) {
+    allowedOrigin = origin;
+  } else if (allowedOrigins.includes(origin)) {
+    allowedOrigin = origin;
+  } else if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
+    allowedOrigin = origin;
+  } else if (process.env.NODE_ENV === 'production') {
+    allowedOrigin = origin;
+  }
+  if (allowedOrigin) {
+    res.header('Access-Control-Allow-Origin', allowedOrigin);
+  }
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,HEAD,PATCH');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Session-ID, Cache-Control, Pragma');
   res.header('Access-Control-Allow-Credentials', 'true');

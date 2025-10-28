@@ -3,9 +3,14 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useToast } from './use-toast';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL ||
-  (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' :
-   'https://upe-rfchnhw6m-gustavogamarra95s-projects.vercel.app');
+// Use environment variable or fallback to localhost for development
+// In production, REACT_APP_BACKEND_URL MUST be set in Vercel
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+
+// Log the backend URL being used (helpful for debugging)
+if (process.env.NODE_ENV === 'production') {
+  console.log('Backend URL:', BACKEND_URL);
+}
 
 export const useClerkAuth = () => {
   const { user: clerkUser, isLoaded, isSignedIn } = useUser();
@@ -130,6 +135,8 @@ export const useClerkAuth = () => {
         title: "Sesión cerrada",
         description: "Has cerrado sesión correctamente",
       });
+      // Redirige a la landing para limpiar la UI
+      window.location.href = "/";
     } catch (error) {
       console.error('Logout failed:', error);
       toast({
