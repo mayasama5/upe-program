@@ -5,6 +5,7 @@ const prisma = require('../config/prisma');
 // Get current user from Clerk session
 const getCurrentUser = async (req, res, next) => {
   try {
+    console.log('🔐 getCurrentUser middleware called for:', req.method, req.path);
     // Get session token from cookie or Authorization header
     let sessionToken = req.cookies.__session;
 
@@ -16,14 +17,17 @@ const getCurrentUser = async (req, res, next) => {
     }
 
     if (!sessionToken) {
+      console.log('⚠️ No session token found');
       req.user = null;
       return next();
     }
 
+    console.log('✅ Session token found, verifying...');
     // Verify JWT token (networkless verification - recommended by Clerk)
     const payload = await verifyToken(sessionToken, {
       secretKey: process.env.CLERK_SECRET_KEY,
     });
+    console.log('✅ Token verified, payload sub:', payload?.sub);
 
     if (!payload || !payload.sub) {
       req.user = null;
@@ -100,6 +104,12 @@ const getCurrentUser = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Authentication error:', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      status: error.status
+    });
     req.user = null;
     next();
   }
