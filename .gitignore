@@ -79,13 +79,7 @@ agenthub/agents/youtube/db
 # Mobile development
 android-sdk/
 
-# Environment files
-*.env
-*.env.local
-*.env.development
-*.env.test
-*.env.production
-!*.env.example
+
 
 # Uploads
 backend-nodejs/uploads/
