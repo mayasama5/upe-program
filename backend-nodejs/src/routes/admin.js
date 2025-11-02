@@ -716,6 +716,59 @@ router.patch('/settings/maintenance', async (req, res) => {
   }
 });
 
+// Actualizar logos del sistema
+router.post('/settings/logos', require('../middleware/upload').upload.fields([
+  { name: 'university_logo', maxCount: 1 },
+  { name: 'faculty_logo', maxCount: 1 },
+  { name: 'techhub_logo', maxCount: 1 }
+]), async (req, res) => {
+  try {
+    let settings = await prisma.systemSettings.findFirst();
+
+    const updateData = {};
+
+    // Process uploaded logos
+    if (req.files) {
+      if (req.files.university_logo) {
+        const file = req.files.university_logo[0];
+        updateData.university_logo = `/uploads/${req.user.id}/${file.filename}`;
+      }
+      if (req.files.faculty_logo) {
+        const file = req.files.faculty_logo[0];
+        updateData.faculty_logo = `/uploads/${req.user.id}/${file.filename}`;
+      }
+      if (req.files.techhub_logo) {
+        const file = req.files.techhub_logo[0];
+        updateData.techhub_logo = `/uploads/${req.user.id}/${file.filename}`;
+      }
+    }
+
+    if (!settings) {
+      settings = await prisma.systemSettings.create({
+        data: {
+          maintenance_mode: false,
+          maintenance_message: 'El sistema está en mantenimiento. Volveremos pronto.',
+          ...updateData
+        }
+      });
+    } else {
+      settings = await prisma.systemSettings.update({
+        where: { id: settings.id },
+        data: updateData
+      });
+    }
+
+    res.json({
+      success: true,
+      data: settings,
+      message: 'Logos actualizados correctamente'
+    });
+  } catch (error) {
+    console.error('Error updating logos:', error);
+    res.status(500).json({ success: false, message: 'Error al actualizar logos', error: error.message });
+  }
+});
+
 // ============================================
 // NOTIFICACIONES
 // ============================================

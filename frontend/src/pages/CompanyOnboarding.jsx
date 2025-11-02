@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUser } from '@clerk/clerk-react';
+import { useAuth } from '../hooks/useAuth';
 import axios from 'axios';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -10,6 +10,7 @@ import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useToast } from '../hooks/use-toast';
 import { Building, MapPin, Users, Briefcase, Globe, Phone } from 'lucide-react';
+import { useSystemSettings } from '../hooks/useSystemSettings';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL ||
   (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' :
@@ -17,9 +18,11 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL ||
 
 const CompanyOnboarding = () => {
   const navigate = useNavigate();
-  const { user: clerkUser } = useUser();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const { settings } = useSystemSettings();
+  const [techhubError, setTechhubError] = useState(false);
 
   const [formData, setFormData] = useState({
     company_name: '',
@@ -39,7 +42,7 @@ const CompanyOnboarding = () => {
   useEffect(() => {
     // Verificar que sea un nuevo usuario sin rol
     checkUserStatus();
-  }, [clerkUser]);
+  }, [user]);
 
   const checkUserStatus = async () => {
     try {
@@ -104,24 +107,54 @@ const CompanyOnboarding = () => {
     }
   };
 
-  if (!clerkUser) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="text-white">Cargando...</div>
       </div>
     );
   }
+  if (!user) {
+    // Si por alguna razón no hay usuario, forzar login
+    navigate('/login');
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 py-8 px-4">
-      {/* Header */}
-      <header className="bg-slate-900 border-b border-orange-500/20 px-4 py-3 fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
-              <span className="text-black font-bold text-sm">TH</span>
-            </div>
-            <h1 className="text-xl font-bold text-white">TechHub UPE</h1>
+      {/* Header with logos */}
+  <header className="bg-slate-900 border-b border-orange-500/20 px-4 py-2 fixed top-0 left-0 right-0 z-50 th-header">
+        <div className="max-w-7xl mx-auto grid grid-cols-3 items-center">
+          <div className="flex items-center justify-center justify-self-end">
+            {settings.faculty_logo ? (
+              <img src={settings.faculty_logo} alt="Facultad" className="logo-img logo-left" />
+            ) : (
+              <span className="text-gray-400 text-xs">Facultad</span>
+            )}
+          </div>
+          <div className="flex items-center justify-center space-x-2">
+            {settings.techhub_logo && !techhubError ? (
+              <img
+                src={settings.techhub_logo}
+                alt="TechHub UPE"
+                className="logo-img logo-center"
+                onError={() => setTechhubError(true)}
+              />
+            ) : (
+              <>
+                <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
+                  <span className="text-black font-bold text-sm">TH</span>
+                </div>
+                <h1 className="text-xl font-bold text-white">TechHub UPE</h1>
+              </>
+            )}
+          </div>
+          <div className="flex items-center justify-center">
+            {settings.university_logo ? (
+              <img src={settings.university_logo} alt="Universidad" className="logo-img logo-right" />
+            ) : (
+              <span className="text-gray-400 text-xs">Universidad</span>
+            )}
           </div>
         </div>
       </header>
@@ -136,7 +169,7 @@ const CompanyOnboarding = () => {
               </div>
             </div>
             <CardTitle className="text-white text-2xl mb-2">
-              ¡Bienvenido, {clerkUser.firstName || clerkUser.fullName}!
+              ¡Bienvenido, {user.name}!
             </CardTitle>
             <CardDescription className="text-gray-400 text-base">
               Completa el perfil de tu empresa para empezar a publicar oportunidades

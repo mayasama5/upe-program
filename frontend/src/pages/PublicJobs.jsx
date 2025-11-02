@@ -7,6 +7,8 @@ import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useToast } from '../hooks/use-toast';
 import Header from '../components/Header';
+import { useAuth } from '../hooks/useAuth';
+import CreateJobButton from '../components/CreateJobButton';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL ||
@@ -16,17 +18,19 @@ const API = BACKEND_URL;
 
 export default function PublicJobs() {
   const { toast } = useToast();
+  const { user, logout } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [selectedFilter, setSelectedFilter] = useState("all");
-  const [user, setUser] = useState(null);
-  const [logout, setLogout] = useState(null);
   const [savedItems, setSavedItems] = useState({ jobs: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAuth();
-  }, []);
+    fetchJobs();
+    if (user) {
+      fetchSavedItems();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (selectedFilter === "all") {
@@ -35,23 +39,6 @@ export default function PublicJobs() {
       setFilteredJobs(jobs.filter(job => job.modality === selectedFilter));
     }
   }, [jobs, selectedFilter]);
-
-  const checkAuth = async () => {
-    try {
-      const response = await axios.get(`${API}/api/auth/me`, { withCredentials: true });
-      setUser(response.data.user);
-      if (response.data.user) {
-        fetchJobs();
-        fetchSavedItems();
-      } else {
-        setLoading(false);
-      }
-    } catch (error) {
-      console.log('No active session');
-      setUser(null);
-      setLoading(false);
-    }
-  };
 
   const fetchJobs = async () => {
     try {
@@ -260,16 +247,21 @@ export default function PublicJobs() {
               <h2 className="text-2xl font-bold text-white">
                 Todas las Vacantes ({filteredJobs.length})
               </h2>
-              <Select value={selectedFilter} onValueChange={setSelectedFilter}>
-                <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-48">
-                  <SelectValue placeholder="Filtrar por modalidad" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filters.map(filter => (
-                    <SelectItem key={filter.value} value={filter.value}>{filter.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-3">
+                {user && user.role === 'empresa' && (
+                  <CreateJobButton inline={true} onJobCreated={fetchJobs} />
+                )}
+                <Select value={selectedFilter} onValueChange={setSelectedFilter}>
+                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-48">
+                    <SelectValue placeholder="Filtrar por modalidad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filters.map(filter => (
+                      <SelectItem key={filter.value} value={filter.value}>{filter.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

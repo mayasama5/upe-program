@@ -84,3 +84,81 @@ code {
     @apply bg-background text-foreground;
     }
 }
+
+/* Global logo sizing (edit variables to change across the app) */
+:root {
+  --logo-left-h: 80px;   /* Facultad (left) */
+  --logo-center-h: 300px; /* Centro (center) */
+  
+  --logo-right-h: 70px;  /* Universidad (right) */
+  --logo-footer-h: 600px; /* Footer TechHub */
+  --logo-auth-h: 100px;   /* Auth pages (login/registro) base */
+  --logo-auth-sm-h: 64px;/* Auth pages on small+ screens */
+  /* Header paddings (vertical) */
+  --header-py: 12px;     /* Main nav header vertical padding */
+  --header-top-py: 2px;  /* Top logos bar vertical padding */
+  /* Header heights (overall container heights) */
+  --header-h: 56px;      /* Main nav header min-height */
+  --header-top-h: 120px;  /* Top logos bar min-height */
+}
+/* Utility classes for logos */
+/* Ensure logos keep their intrinsic aspect ratio unless a specific class sets size */
+.logo-img {
+  display: inline-block;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+.logo-left { 
+  height: var(--logo-left-h);
+  padding-right: 300px; 
+}
+.logo-center { height: var(--logo-center-h); }
+.logo-right { 
+  height: var(--logo-right-h); 
+  padding-left: 300px;}
+.logo-footer {
+  /* Preserve aspect ratio of original (414x126 ~ 3.286) and avoid squaring */
+  width: auto;
+  height: auto;
+  max-height: var(--logo-footer-h);
+  max-width: 100%;
+  aspect-ratio: 414 / 126;
+}
+.logo-auth { height: var(--logo-auth-h); }
+
+@media (min-width: 640px) {
+  .logo-auth { height: var(--logo-auth-sm-h); }
+}
+
+/* Global header sizing */
+.th-header {
+  padding-top: var(--header-py) !important;
+  padding-bottom: var(--header-py) !important;
+  min-height: var(--header-h);
+}
+.th-header-top {
+  padding-top: var(--header-top-py) !important;
+  padding-bottom: var(--header-top-py) !important;
+  min-height: var(--header-top-h);
+}
+
+/* Fixed-height variants (use exact height, no vertical padding) */
+.th-header-fixed {
+  height: var(--header-h) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  display: flex;
+  align-items: center;
+}
+.th-header-top-fixed {
+  height: var(--header-top-h) !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  display: flex;
+  align-items: center;
+}
+.th-footer-logo-row { 
+  height: 56px;
+  margin-left: -200px; 
+}

@@ -48,9 +48,13 @@ model User {
   id                String            @id @default(uuid())
   email             String            @unique
   name              String
+  password          String?           // Hashed password for email/password auth
   picture           String?
   role              UserRole          @default(estudiante)
   is_verified       Boolean           @default(false)
+
+  // Company fields (contact person)
+  contact_name      String?
 
   // Student fields
   github_url        String?
@@ -216,6 +220,9 @@ model SystemSettings {
   id                    String   @id @default(uuid())
   maintenance_mode      Boolean  @default(false)
   maintenance_message   String?
+  university_logo       String?  // URL or path to university logo
+  faculty_logo          String?  // URL or path to faculty logo
+  techhub_logo          String?  // URL or path to TechHub UPE logo
   updated_at            DateTime @updatedAt
 
   @@map("system_settings")

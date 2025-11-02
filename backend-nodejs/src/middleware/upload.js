@@ -40,7 +40,10 @@ const FIELD_CATEGORIES = {
   'company_document': 'pdf',
   'picture': 'image',
   'certificates': 'image', // múltiples certificados pueden ser imágenes
-  'degrees': 'image'
+  'degrees': 'image',
+  'university_logo': 'image',
+  'faculty_logo': 'image',
+  'techhub_logo': 'image'
 };
 
 // File filter mejorado con validación estricta

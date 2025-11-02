@@ -167,7 +167,7 @@ export default function ContentManagement({ type }) {
           apply_type: 'externo',
           external_url: '',
           is_active: true,
-          category: ''
+          category: 'Tecnología'
         };
       default:
         return {};
@@ -385,6 +385,15 @@ export default function ContentManagement({ type }) {
               </div>
             </div>
             <div>
+              <Label>Categoría</Label>
+              <Input
+                value={formData.category || ''}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="bg-slate-900 border-slate-700"
+                placeholder="Ej: Tecnología"
+              />
+            </div>
+            <div>
               <Label>URL de Aplicación</Label>
               <Input
                 value={formData.external_url || ''}
@@ -519,7 +528,11 @@ export default function ContentManagement({ type }) {
             <div className="text-center text-gray-400 py-8">No hay elementos</div>
           ) : (
             <div className="space-y-3">
-              {items.map(item => renderItem(item))}
+              {items.map(item => (
+                <div key={item.id}>
+                  {renderItem(item)}
+                </div>
+              ))}
             </div>
           )}
         </CardContent>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useClerkAuth } from '../hooks/useClerkAuth';
+import { useAuth } from '../hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -7,6 +7,7 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { ScrollArea } from '../components/ui/scroll-area';
+import LogoSettings from '../components/admin/LogoSettings';
 import {
   Users,
   Activity,
@@ -41,7 +42,7 @@ import axios from 'axios';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
 
 export default function AdminDashboard() {
-  const { user, loading } = useClerkAuth();
+  const { user, loading, logout } = useAuth();
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalCourses: 0,
@@ -329,7 +330,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      <Header user={user} logout={null} />
+      <Header user={user} logout={logout} />
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
         {/* Header */}
@@ -726,6 +727,10 @@ export default function AdminDashboard() {
 
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-4">
+            {/* Logos Settings */}
+            <LogoSettings />
+
+            {/* System Settings */}
             <Card className="bg-slate-800 border-slate-700">
               <CardHeader>
                 <CardTitle className="text-white">Configuración del Sistema</CardTitle>

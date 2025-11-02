@@ -7,6 +7,8 @@ import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useToast } from '../hooks/use-toast';
 import Header from '../components/Header';
+import { useAuth } from '../hooks/useAuth';
+import CreateEventButton from '../components/CreateEventButton';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL ||
@@ -16,17 +18,19 @@ const API = BACKEND_URL;
 
 export default function PublicEvents() {
   const { toast } = useToast();
+  const { user, logout } = useAuth();
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedFilter, setSelectedFilter] = useState("all");
-  const [user, setUser] = useState(null);
-  const [logout, setLogout] = useState(null);
   const [savedItems, setSavedItems] = useState({ events: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAuth();
-  }, []);
+    fetchEvents();
+    if (user) {
+      fetchSavedItems();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (selectedFilter === "all") {
@@ -41,23 +45,6 @@ export default function PublicEvents() {
       setFilteredEvents(events.filter(event => event.category === selectedFilter));
     }
   }, [events, selectedFilter]);
-
-  const checkAuth = async () => {
-    try {
-      const response = await axios.get(`${API}/api/auth/me`, { withCredentials: true });
-      setUser(response.data.user);
-      if (response.data.user) {
-        fetchEvents();
-        fetchSavedItems();
-      } else {
-        setLoading(false);
-      }
-    } catch (error) {
-      console.log('No active session');
-      setUser(null);
-      setLoading(false);
-    }
-  };
 
   const fetchEvents = async () => {
     try {
@@ -246,16 +233,21 @@ export default function PublicEvents() {
               <h2 className="text-2xl font-bold text-white">
                 Todos los Eventos ({filteredEvents.length})
               </h2>
-              <Select value={selectedFilter} onValueChange={setSelectedFilter}>
-                <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-48">
-                  <SelectValue placeholder="Filtrar eventos" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filters.map(filter => (
-                    <SelectItem key={filter.value} value={filter.value}>{filter.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-3">
+                {user && user.role === 'empresa' && (
+                  <CreateEventButton inline={true} onEventCreated={fetchEvents} />
+                )}
+                <Select value={selectedFilter} onValueChange={setSelectedFilter}>
+                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-48">
+                    <SelectValue placeholder="Filtrar eventos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filters.map(filter => (
+                      <SelectItem key={filter.value} value={filter.value}>{filter.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

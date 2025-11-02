@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import Header from '../components/Header';
+import { useAuth } from '../hooks/useAuth';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL ||
@@ -13,25 +14,12 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL ||
 const API = BACKEND_URL;
 
 export default function Scholarships() {
-  const [user, setUser] = useState(null);
+  const { user, logout } = useAuth();
   const [scholarships, setScholarships] = useState([]);
 
   useEffect(() => {
-    checkAuth();
+    loadScholarships();
   }, []);
-
-  const checkAuth = async () => {
-    try {
-      const response = await axios.get(`${API}/api/auth/me`, { withCredentials: true });
-      setUser(response.data.user);
-      if (response.data.user) {
-        loadScholarships();
-      }
-    } catch (error) {
-      console.log('No active session');
-      setUser(null);
-    }
-  };
 
   const loadScholarships = () => {
     const mockScholarships = [
@@ -95,7 +83,7 @@ export default function Scholarships() {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      <Header user={user} logout={null} />
+      <Header user={user} logout={logout} />
 
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="text-center mb-12">

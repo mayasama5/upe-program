@@ -17,8 +17,10 @@ const generateToken = (user) => {
   const payload = {
     id: user.id,
     email: user.email,
+    name: user.name,
     role: user.role,
-    is_verified: user.is_verified
+    is_verified: user.is_verified,
+    picture: user.picture || null
   };
 
   return jwt.sign(payload, JWT_CONFIG.secret, {
@@ -58,7 +60,8 @@ const verifyToken = (token) => {
       audience: JWT_CONFIG.audience
     });
   } catch (error) {
-    throw new Error('Token inválido o expirado');
+    console.error('JWT Verification Error:', error.message);
+    throw error; // Throw original error for better debugging
   }
 };
 

@@ -5,9 +5,12 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Building, ArrowLeft } from 'lucide-react';
+import { useSystemSettings } from '../hooks/useSystemSettings';
 
 const CompanySignUp = () => {
   const navigate = useNavigate();
+  const { settings } = useSystemSettings();
+  const [techhubError, setTechhubError] = React.useState(false);
 
   // Store the role when user lands on this page
   React.useEffect(() => {
@@ -16,28 +19,59 @@ const CompanySignUp = () => {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      {/* Header */}
-      <header className="bg-slate-900 border-b border-orange-500/20 px-4 py-3 fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
-              <span className="text-black font-bold text-sm">TH</span>
+      {/* Header: top logos bar + action row */}
+      <div className="fixed top-0 left-0 right-0 z-50">
+  <div className="bg-slate-800 border-b border-slate-700 px-4 th-header-top-fixed">
+          <div className="max-w-7xl mx-auto grid grid-cols-3 items-center">
+            <div className="flex items-center justify-center justify-self-end">
+              {settings.faculty_logo ? (
+                <img src={settings.faculty_logo} alt="Facultad" className="logo-img logo-left" />
+              ) : (
+                <span className="text-gray-400 text-xs">Facultad</span>
+              )}
             </div>
-            <h1 className="text-xl font-bold text-white">TechHub UPE</h1>
+            <div className="flex items-center justify-center">
+              {settings.university_logo ? (
+                <img src={settings.university_logo} alt="Universidad" className="logo-img logo-right" />
+              ) : (
+                <span className="text-gray-400 text-xs">Universidad</span>
+              )}
+            </div>
           </div>
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/')}
-            className="text-gray-300 hover:text-cyan-400"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Volver
-          </Button>
         </div>
-      </header>
+  <header className="bg-slate-900 border-b border-orange-500/20 px-4 py-3 th-header">
+          <div className="max-w-7xl mx-auto flex justify-between items-center">
+            <div className="flex items-center justify-center space-x-2">
+              {settings.techhub_logo && !techhubError ? (
+                <img
+                  src={settings.techhub_logo}
+                  alt="TechHub UPE"
+                  className="logo-img logo-center"
+                  onError={() => setTechhubError(true)}
+                />
+              ) : (
+                <>
+                  <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
+                    <span className="text-black font-bold text-sm">TH</span>
+                  </div>
+                  <h1 className="text-xl font-bold text-white">TechHub UPE</h1>
+                </>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/')}
+              className="text-gray-300 hover:text-cyan-400"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Volver
+            </Button>
+          </div>
+        </header>
+      </div>
 
       {/* Content - Two Column Layout */}
-      <div className="pt-20 min-h-screen flex items-center">
+  <div className="pt-24 min-h-screen flex items-center">
         <div className="max-w-7xl mx-auto w-full px-4 py-8">
           <div className="grid lg:grid-cols-2 gap-8 items-start">
         

@@ -1,17 +1,25 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useSystemSettings } from '../hooks/useSystemSettings';
 
 export default function Footer() {
+  const { settings } = useSystemSettings();
   return (
     <footer className="bg-slate-900 border-t border-slate-700 py-6 sm:py-8 md:py-12 px-3 sm:px-4 md:px-6 mt-6 sm:mt-8">
       <div className="max-w-6xl mx-auto">
         {/* Logo y descripción - Separado en móvil */}
         <div className="mb-6 sm:mb-8">
-          <div className="flex items-center space-x-2 mb-3 sm:mb-4">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-black font-bold text-xs sm:text-sm">TH</span>
-            </div>
-            <span className="text-white font-bold text-sm sm:text-base">TechHub UPE</span>
+          <div className="flex items-center th-footer-logo-row">
+            {settings.techhub_logo ? (
+              <img src={settings.techhub_logo} alt="TechHub UPE" className="logo-img logo-footer" />
+            ) : (
+              <>
+                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-black font-bold text-xs sm:text-sm">TH</span>
+                </div>
+                <span className="text-white font-bold text-sm sm:text-base">TechHub UPE</span>
+              </>
+            )}
           </div>
           <p className="text-gray-400 text-xs sm:text-sm leading-relaxed max-w-md">
             La plataforma educativa y laboral para estudiantes de Paraguay y Latinoamérica.

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Calendar, Briefcase } from 'lucide-react';
 import { Button } from './ui/button';
+import { useSystemSettings } from '../hooks/useSystemSettings';
 
 export default function Header({ user, logout }) {
   const navigate = useNavigate();
@@ -32,32 +33,52 @@ export default function Header({ user, logout }) {
     return () => document.removeEventListener('mousedown', onClick);
   }, [showUserMenu]);
 
+  const { settings } = useSystemSettings();
+  const [techhubError, setTechhubError] = useState(false);
+
   return (
     <>
       {/* Top bar with logos */}
-      <div className="bg-slate-800 border-b border-slate-700 px-4 py-2">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center">
-            <span className="text-gray-400 text-xs">Facultad</span>
-            {/* Placeholder for faculty logo */}
+      <div className="bg-slate-800 border-b border-slate-700 px-4 th-header-top-fixed">
+        <div className="max-w-7xl mx-auto grid grid-cols-3 items-center">
+          <div className="flex items-center justify-center justify-self-end">
+            {settings.faculty_logo ? (
+              <img src={settings.faculty_logo} alt="Facultad" className="logo-img logo-left" />
+            ) : (
+              <span className="text-gray-400 text-xs">Facultad</span>
+            )}
           </div>
 
-          <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
-              <span className="text-black font-bold text-lg">TH</span>
-            </div>
-            <h1 className="text-2xl font-bold text-white">TechHub UPE</h1>
+          <div className="flex items-center justify-center space-x-2">
+            {settings.techhub_logo && !techhubError ? (
+              <img
+                src={settings.techhub_logo}
+                alt="TechHub UPE"
+                className="logo-img logo-center"
+                onError={() => setTechhubError(true)}
+              />
+            ) : (
+              <>
+                <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
+                  <span className="text-black font-bold text-lg">TH</span>
+                </div>
+                <h1 className="text-2xl font-bold text-white">TechHub UPE</h1>
+              </>
+            )}
           </div>
 
-          <div className="flex items-center">
-            <span className="text-gray-400 text-xs">Universidad</span>
-            {/* Placeholder for university logo */}
+          <div className="flex items-center justify-center">
+            {settings.university_logo ? (
+              <img src={settings.university_logo} alt="Universidad" className="logo-img logo-right" />
+            ) : (
+              <span className="text-gray-400 text-xs">Universidad</span>
+            )}
           </div>
         </div>
       </div>
 
       {/* Navigation menu */}
-      <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3 sticky top-0 z-50">
+  <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3 sticky top-0 z-50 th-header">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <nav className="flex-1">
             {/* Mobile: show hamburger to toggle nav; Desktop: always show centered nav */}
@@ -152,14 +173,28 @@ export default function Header({ user, logout }) {
                         />
                         <div>
                           <div className="text-white text-sm line-clamp-1">{user.name}</div>
-                          <div className="text-gray-400 text-xs">{user.role === 'empresa' ? 'Empresa' : 'Estudiante'}</div>
+                          <div className="text-gray-400 text-xs">
+                            {user.role === 'admin' ? 'Administrador' : user.role === 'empresa' ? 'Empresa' : 'Estudiante'}
+                          </div>
                         </div>
                       </div>
                     </div>
                     <div className="flex flex-col p-2">
-                      <button onClick={handleProfileClick} className="text-left px-3 py-2 text-gray-200 hover:bg-slate-700 rounded">Mi Perfil</button>
-                      <button onClick={handleSavedClick} className="text-left px-3 py-2 text-gray-200 hover:bg-slate-700 rounded">Guardados</button>
-                      <button onClick={() => { setShowUserMenu(false); logout && logout(); }} className="text-left px-3 py-2 text-red-400 hover:bg-slate-700 rounded">Salir</button>
+                      {/* Solo mostrar Mi Perfil y Guardados si NO es admin */}
+                      {user.role !== 'admin' && (
+                        <>
+                          <button onClick={handleProfileClick} className="text-left px-3 py-2 text-gray-200 hover:bg-slate-700 rounded">Mi Perfil</button>
+                          <button onClick={handleSavedClick} className="text-left px-3 py-2 text-gray-200 hover:bg-slate-700 rounded">Guardados</button>
+                        </>
+                      )}
+                      <button onClick={() => {
+                        setShowUserMenu(false);
+                        if (logout && typeof logout === 'function') {
+                          logout();
+                        } else {
+                          console.error('Logout function is not available');
+                        }
+                      }} className="text-left px-3 py-2 text-red-400 hover:bg-slate-700 rounded">Salir</button>
                     </div>
                   </div>
                 )}

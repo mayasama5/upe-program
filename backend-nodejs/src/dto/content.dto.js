@@ -161,7 +161,7 @@ const createJobDTO = [
     .isLength({ max: 100 })
     .withMessage('El rango salarial es demasiado largo'),
   body('job_type')
-    .isIn(['junior', 'medio', 'senior'])
+    .isIn(['practica', 'pasantia', 'junior', 'medio', 'senior'])
     .withMessage('Tipo de trabajo inválido'),
   body('modality')
     .isIn(['presencial', 'remoto', 'hibrido'])
@@ -213,7 +213,7 @@ const updateJobDTO = [
     .withMessage('El título debe tener entre 3 y 200 caracteres'),
   body('job_type')
     .optional()
-    .isIn(['junior', 'medio', 'senior'])
+    .isIn(['practica', 'pasantia', 'junior', 'medio', 'senior'])
     .withMessage('Tipo de trabajo inválido'),
   body('modality')
     .optional()

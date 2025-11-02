@@ -7,6 +7,7 @@ import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useToast } from '../hooks/use-toast';
 import Header from '../components/Header';
+import { useAuth } from '../hooks/useAuth';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL ||
@@ -16,19 +17,21 @@ const API = BACKEND_URL;
 
 export default function PublicCourses() {
   const { toast } = useToast();
+  const { user, logout } = useAuth();
   const [courses, setCourses] = useState([]);
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [user, setUser] = useState(null);
-  const [logout, setLogout] = useState(null);
   const [savedItems, setSavedItems] = useState({ courses: [] });
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
   useEffect(() => {
-    checkAuth();
-  }, []);
+    fetchCourses();
+    if (user) {
+      fetchSavedItems();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (selectedCategory === "all") {
@@ -37,23 +40,6 @@ export default function PublicCourses() {
       setFilteredCourses(courses.filter(course => course.category === selectedCategory));
     }
   }, [courses, selectedCategory]);
-
-  const checkAuth = async () => {
-    try {
-      const response = await axios.get(`${API}/api/auth/me`, { withCredentials: true });
-      setUser(response.data.user);
-      if (response.data.user) {
-        fetchCourses();
-        fetchSavedItems();
-      } else {
-        setLoading(false);
-      }
-    } catch (error) {
-      console.log('No active session');
-      setUser(null);
-      setLoading(false);
-    }
-  };
 
   const fetchCourses = async () => {
     try {

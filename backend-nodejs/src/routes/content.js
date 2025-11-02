@@ -6,6 +6,17 @@ const Joi = require('joi');
 const router = express.Router();
 
 // Validation schemas
+const eventSchema = Joi.object({
+  title: Joi.string().required(),
+  description: Joi.string().required(),
+  event_date: Joi.date().required(),
+  location: Joi.string().required(),
+  is_online: Joi.boolean().default(true),
+  category: Joi.string().required(),
+  url: Joi.string().uri().required(),
+  image_url: Joi.string().uri().allow('', null)
+});
+
 const jobVacancySchema = Joi.object({
   title: Joi.string().required(),
   description: Joi.string().required(),
@@ -35,6 +46,31 @@ const savedItemSchema = Joi.object({
   item_id: Joi.string().required(),
   item_type: Joi.string().valid('course', 'event', 'job').required(),
   item_data: Joi.object().required()
+});
+
+// Public system settings (logos, etc.)
+router.get('/settings/public', async (req, res) => {
+  try {
+    const settings = await prisma.systemSettings.findFirst();
+
+    // If no settings exist yet, respond with nulls to avoid 404s
+    const payload = settings ? {
+      university_logo: settings.university_logo,
+      faculty_logo: settings.faculty_logo,
+      techhub_logo: settings.techhub_logo,
+      updated_at: settings.updated_at
+    } : {
+      university_logo: null,
+      faculty_logo: null,
+      techhub_logo: null,
+      updated_at: null
+    };
+
+    res.json({ success: true, data: payload });
+  } catch (error) {
+    console.error('Get public settings error:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener configuración pública' });
+  }
 });
 
 // Get courses
@@ -147,6 +183,47 @@ router.get('/events', optionalAuth, async (req, res) => {
     res.status(500).json({
       error: 'Internal server error',
       message: 'An error occurred while fetching events'
+    });
+  }
+});
+
+// Create event (only for companies)
+router.post('/events', requireCompany, async (req, res) => {
+  try {
+    // Validate request body
+    const { error, value } = eventSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: error.details[0].message
+      });
+    }
+
+    // Get company name from user
+    const company = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { name: true, company_name: true }
+    });
+
+    // Create event
+    const event = await prisma.event.create({
+      data: {
+        ...value,
+        organizer: company.company_name || company.name,
+        event_date: new Date(value.event_date)
+      }
+    });
+
+    res.status(201).json({
+      message: 'Evento creado exitosamente',
+      event
+    });
+
+  } catch (error) {
+    console.error('Create event error:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Ocurrió un error al crear el evento'
     });
   }
 });

@@ -12,9 +12,12 @@ import { Textarea } from "./components/ui/textarea";
 import { Label } from "./components/ui/label";
 import { useToast } from "./hooks/use-toast";
 import { Toaster } from "./components/ui/toaster";
-import { Search, BookOpen, Calendar, Briefcase, MapPin, ExternalLink, User, Building, LogOut, Filter, UserCheck, Users, Newspaper, TrendingUp, Target, Lightbulb, Upload } from "lucide-react";
+import { Search, BookOpen, Calendar, Briefcase, MapPin, ExternalLink, User, Building, LogOut, Filter, UserCheck, Users, Newspaper, TrendingUp, Target, Lightbulb, Upload, Plus } from "lucide-react";
 import Footer from "./components/Footer";
 import ChatButton from "./components/ChatButton";
+import CreateEventButton from "./components/CreateEventButton";
+import CreateJobButton from "./components/CreateJobButton";
+import { useSystemSettings } from "./hooks/useSystemSettings";
 
 // Import public pages
 import PublicCourses from "./pages/PublicCourses";
@@ -24,6 +27,7 @@ import Scholarships from "./pages/Scholarships";
 import Certifications from "./pages/Certifications";
 import Companies from "./pages/Companies";
 import CareerAdvice from "./pages/CareerAdvice";
+import News from "./pages/News";
 import Support from "./pages/Support";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -31,9 +35,6 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Maintenance from "./pages/Maintenance";
 
 // Import auth pages
-import StudentSignUp from "./pages/StudentSignUp";
-import CompanySignUp from "./pages/CompanySignUp";
-import Login from "./pages/Login";
 import StudentOnboarding from "./pages/StudentOnboarding";
 import CompanyOnboarding from "./pages/CompanyOnboarding";
 
@@ -47,27 +48,61 @@ console.log('🔗 Backend URL:', BACKEND_URL);
 console.log('🌍 Environment:', process.env.NODE_ENV);
 const API = BACKEND_URL; // Remove /api from here since it's added in individual calls
 
-import { useClerkAuth as useAuth } from "./hooks/useClerkAuth";
+import { useAuth } from "./hooks/useAuth";
+
+// Import new auth pages
+import LoginPage from "./pages/LoginPage";
+import StudentRegisterPage from "./pages/StudentRegisterPage";
+import CompanyRegisterPage from "./pages/CompanyRegisterPage";
+import AuthCallback from "./pages/AuthCallback";
 
 // Auth & Landing Page
-const AuthLandingPage = ({ startGoogleAuth }) => {
-  const handleAuthAction = (mode) => {
-    console.log('Auth action clicked:', mode); // Debug log
-    startGoogleAuth(mode);
-  };
+const AuthLandingPage = () => {
+  const navigate = useNavigate();
+  const { settings } = useSystemSettings();
+  const [techhubError, setTechhubError] = useState(false);
 
   return (
     <div className="min-h-screen bg-slate-950">
-      {/* Header */}
-      <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
-              <span className="text-black font-bold text-sm">TH</span>
-            </div>
-            <h1 className="text-xl font-bold text-white">TechHub UPE</h1>
+      {/* Top logos bar */}
+  <div className="bg-slate-800 border-b border-slate-700 px-4 th-header-top-fixed">
+        <div className="max-w-7xl mx-auto grid grid-cols-3 items-center">
+          <div className="flex items-center justify-center justify-self-end">
+            {settings.faculty_logo ? (
+              <img src={settings.faculty_logo} alt="Facultad" className="logo-img logo-left" />
+            ) : (
+              <span className="text-gray-400 text-xs">Facultad</span>
+            )}
+          </div>
+          <div className="flex items-center justify-center space-x-2">
+            {settings.techhub_logo && !techhubError ? (
+              <img
+                src={settings.techhub_logo}
+                alt="TechHub UPE"
+                className="logo-img logo-center"
+                onError={() => setTechhubError(true)}
+              />
+            ) : (
+              <>
+                <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
+                  <span className="text-black font-bold text-sm">TH</span>
+                </div>
+                <h1 className="text-xl font-bold text-white">TechHub UPE</h1>
+              </>
+            )}
+          </div>
+          <div className="flex items-center justify-center">
+            {settings.university_logo ? (
+              <img src={settings.university_logo} alt="Universidad" className="logo-img logo-right" />
+            ) : (
+              <span className="text-gray-400 text-xs">Universidad</span>
+            )}
           </div>
         </div>
+      </div>
+      {/* Secondary header keeps spacing/style consistent */}
+  <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3 th-header">
+        <div className="max-w-7xl mx-auto" />
       </header>
 
       {/* Hero Section */}
@@ -111,7 +146,7 @@ const AuthLandingPage = ({ startGoogleAuth }) => {
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
-                onClick={() => handleAuthAction('estudiante')}
+                onClick={() => navigate('/registro-estudiante')}
                 size="lg"
                 className="bg-cyan-500 hover:bg-cyan-600 text-black font-semibold px-8 py-3 flex items-center gap-2"
               >
@@ -119,7 +154,7 @@ const AuthLandingPage = ({ startGoogleAuth }) => {
                 Crear Cuenta Estudiante
               </Button>
               <Button
-                onClick={() => handleAuthAction('empresa')}
+                onClick={() => navigate('/registro-empresa')}
                 size="lg"
                 variant="outline"
                 className="border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 px-8 py-3 flex items-center gap-2"
@@ -132,7 +167,7 @@ const AuthLandingPage = ({ startGoogleAuth }) => {
             <div className="text-center">
               <p className="text-gray-400 mb-3">¿Ya tienes cuenta?</p>
               <Button
-                onClick={() => handleAuthAction()}
+                onClick={() => navigate('/login')}
                 variant="ghost"
                 className="text-cyan-400 hover:text-cyan-300 underline"
               >
@@ -634,7 +669,7 @@ const ProfilePage = ({ user, setUser }) => {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3">
+      <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3 th-header">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Button variant="ghost" onClick={() => navigate('/dashboard')} className="text-cyan-400 hover:text-cyan-300">
             ← Volver al Dashboard
@@ -1025,6 +1060,8 @@ const DashboardHeader = ({ user, logout }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const userMenuRef = useRef(null);
+  const { settings } = useSystemSettings();
+  const [techhubError, setTechhubError] = useState(false);
 
   const handleProfileClick = () => {
     navigate('/profile');
@@ -1048,29 +1085,46 @@ const DashboardHeader = ({ user, logout }) => {
   return (
     <>
       {/* Top bar with logos */}
-      <div className="bg-slate-800 border-b border-slate-700 px-4 py-2">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center">
-            <span className="text-gray-400 text-xs">Facultad</span>
-            {/* Placeholder for faculty logo */}
+  <div className="bg-slate-800 border-b border-slate-700 px-4 th-header-top-fixed">
+        <div className="max-w-7xl mx-auto grid grid-cols-3 items-center">
+          <div className="flex items-center justify-center justify-self-end">
+            {settings.faculty_logo ? (
+              <img src={settings.faculty_logo} alt="Facultad" className="logo-img logo-left" />
+            ) : (
+              <span className="text-gray-400 text-xs">Facultad</span>
+            )}
           </div>
           
-          <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
-              <span className="text-black font-bold text-lg">TH</span>
-            </div>
-            <h1 className="text-2xl font-bold text-white">TechHub UPE</h1>
+          <div className="flex items-center justify-center space-x-2">
+            {settings.techhub_logo && !techhubError ? (
+              <img
+                src={settings.techhub_logo}
+                alt="TechHub UPE"
+                className="logo-img logo-center"
+                onError={() => setTechhubError(true)}
+              />
+            ) : (
+              <>
+                <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
+                  <span className="text-black font-bold text-lg">TH</span>
+                </div>
+                <h1 className="text-2xl font-bold text-white">TechHub UPE</h1>
+              </>
+            )}
           </div>
           
-          <div className="flex items-center">
-            <span className="text-gray-400 text-xs">Universidad</span>
-            {/* Placeholder for university logo */}
+          <div className="flex items-center justify-center">
+            {settings.university_logo ? (
+              <img src={settings.university_logo} alt="Universidad" className="logo-img logo-right" />
+            ) : (
+              <span className="text-gray-400 text-xs">Universidad</span>
+            )}
           </div>
         </div>
       </div>
 
       {/* Navigation menu */}
-      <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3 sticky top-0 z-50">
+  <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3 sticky top-0 z-50 th-header">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <nav className="flex-1">
             {/* Mobile: show hamburger to toggle nav; Desktop: always show centered nav */}
@@ -1171,7 +1225,14 @@ const DashboardHeader = ({ user, logout }) => {
                   <div className="flex flex-col p-2">
                     <button onClick={handleProfileClick} className="text-left px-3 py-2 text-gray-200 hover:bg-slate-700 rounded">Mi Perfil</button>
                     <button onClick={handleSavedClick} className="text-left px-3 py-2 text-gray-200 hover:bg-slate-700 rounded">Guardados</button>
-                    <button onClick={() => { setShowUserMenu(false); logout && logout(); }} className="text-left px-3 py-2 text-red-400 hover:bg-slate-700 rounded">Salir</button>
+                    <button onClick={() => {
+                      setShowUserMenu(false);
+                      if (logout && typeof logout === 'function') {
+                        logout();
+                      } else {
+                        console.error('Logout function is not available');
+                      }
+                    }} className="text-left px-3 py-2 text-red-400 hover:bg-slate-700 rounded">Salir</button>
                   </div>
                 </div>
               )}
@@ -1190,6 +1251,7 @@ const DashboardHeader = ({ user, logout }) => {
 
 // Dashboard Content Components
 const DashboardHome = ({ user }) => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     events: 0,
     jobs: 0,
@@ -1226,29 +1288,56 @@ const DashboardHome = ({ user }) => {
           </p>
 
           {/* Resource Cards - Fixed dimensions with real data */}
-          <div className="grid md:grid-cols-4 gap-4">
-            <Card className="bg-slate-800/50 border-slate-700 h-32">
+          <div className="grid md:grid-cols-3 gap-4">
+            <Card className="bg-slate-800/50 border-slate-700 h-40">
               <CardContent className="p-4 text-center h-full flex flex-col justify-center">
                 <Calendar className="w-8 h-8 text-green-400 mx-auto mb-2" />
                 <h3 className="text-white font-semibold mb-1 text-sm">Eventos</h3>
-                <p className="text-gray-400 text-xs">{stats.events} eventos disponibles</p>
+                <p className="text-gray-400 text-xs mb-3">{stats.events} eventos disponibles</p>
+                {user.role === 'empresa' && (
+                  <CreateEventButton
+                    inline={true}
+                    onEventCreated={() => {
+                      // Refresh stats after creating event
+                      const fetchStats = async () => {
+                        try {
+                          const response = await axios.get(`${API}/api/stats`, { withCredentials: true });
+                          setStats(response.data);
+                        } catch (error) {
+                          console.error('Error fetching stats:', error);
+                        }
+                      };
+                      fetchStats();
+                    }}
+                  />
+                )}
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700 h-32">
+            <Card className="bg-slate-800/50 border-slate-700 h-40">
               <CardContent className="p-4 text-center h-full flex flex-col justify-center">
                 <Briefcase className="w-8 h-8 text-blue-400 mx-auto mb-2" />
                 <h3 className="text-white font-semibold mb-1 text-sm">Oportunidades</h3>
-                <p className="text-gray-400 text-xs">{stats.jobs} vacantes registradas</p>
+                <p className="text-gray-400 text-xs mb-3">{stats.jobs} vacantes registradas</p>
+                {user.role === 'empresa' && (
+                  <CreateJobButton
+                    inline={true}
+                    onJobCreated={() => {
+                      // Refresh stats after creating job
+                      const fetchStats = async () => {
+                        try {
+                          const response = await axios.get(`${API}/api/stats`, { withCredentials: true });
+                          setStats(response.data);
+                        } catch (error) {
+                          console.error('Error fetching stats:', error);
+                        }
+                      };
+                      fetchStats();
+                    }}
+                  />
+                )}
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700 h-32">
-              <CardContent className="p-4 text-center h-full flex flex-col justify-center">
-                <BookOpen className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-                <h3 className="text-white font-semibold mb-1 text-sm">Recursos</h3>
-                <p className="text-gray-400 text-xs">{stats.courses} cursos disponibles</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-slate-800/50 border-slate-700 h-32">
+            <Card className="bg-slate-800/50 border-slate-700 h-40">
               <CardContent className="p-4 text-center h-full flex flex-col justify-center">
                 <Users className="w-8 h-8 text-purple-400 mx-auto mb-2" />
                 <h3 className="text-white font-semibold mb-1 text-sm">Comunidad</h3>
@@ -1261,7 +1350,7 @@ const DashboardHome = ({ user }) => {
 
       {/* News & Tips Section - Fixed dimensions */}
       <div className="grid lg:grid-cols-3 gap-8">
-        <Card className="bg-slate-800 border-slate-700 h-96">
+        <Card className="bg-slate-800 border-slate-700 h-96 hover:border-cyan-500/50 transition-all cursor-pointer" onClick={() => navigate('/news')}>
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2 text-lg">
               <Newspaper className="w-5 h-5 text-cyan-400" />
@@ -1269,22 +1358,25 @@ const DashboardHome = ({ user }) => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 overflow-y-auto" style={{ maxHeight: '280px' }}>
-            <div className="p-3 bg-slate-700/50 rounded-lg">
+            <div className="p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors">
               <h4 className="text-white font-medium mb-1 text-sm">SNPP lanza nuevos cursos técnicos</h4>
               <p className="text-gray-400 text-xs">El Servicio Nacional de Promoción Profesional amplía su oferta educativa.</p>
             </div>
-            <div className="p-3 bg-slate-700/50 rounded-lg">
+            <div className="p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors">
               <h4 className="text-white font-medium mb-1 text-sm">Becas 100% Paraguay 2024</h4>
               <p className="text-gray-400 text-xs">Abierta convocatoria para 500 becas de estudio en universidades.</p>
             </div>
-            <div className="p-3 bg-slate-700/50 rounded-lg">
+            <div className="p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors">
               <h4 className="text-white font-medium mb-1 text-sm">UPE inaugura nuevo campus</h4>
               <p className="text-gray-400 text-xs">La Universidad expande sus instalaciones en Ciudad del Este.</p>
             </div>
+            <Button className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-semibold text-xs">
+              Ver Todas las Noticias
+            </Button>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-800 border-slate-700 h-96">
+        <Card className="bg-slate-800 border-slate-700 h-96 hover:border-green-500/50 transition-all cursor-pointer" onClick={() => navigate('/career-advice')}>
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2 text-lg">
               <TrendingUp className="w-5 h-5 text-green-400" />
@@ -1292,18 +1384,21 @@ const DashboardHome = ({ user }) => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 overflow-y-auto" style={{ maxHeight: '280px' }}>
-            <div className="p-3 bg-slate-700/50 rounded-lg">
+            <div className="p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors">
               <h4 className="text-white font-medium mb-1 text-sm">Networking Digital</h4>
               <p className="text-gray-400 text-xs">Construye conexiones profesionales efectivas usando LinkedIn.</p>
             </div>
-            <div className="p-3 bg-slate-700/50 rounded-lg">
+            <div className="p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors">
               <h4 className="text-white font-medium mb-1 text-sm">Portafolio Profesional</h4>
               <p className="text-gray-400 text-xs">Crea un portafolio que destaque tus mejores proyectos.</p>
             </div>
-            <div className="p-3 bg-slate-700/50 rounded-lg">
+            <div className="p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors">
               <h4 className="text-white font-medium mb-1 text-sm">Entrevistas Remotas</h4>
               <p className="text-gray-400 text-xs">Domina las entrevistas virtuales con preparación.</p>
             </div>
+            <Button className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold text-xs">
+              Ver Más Consejos
+            </Button>
           </CardContent>
         </Card>
 
@@ -1315,23 +1410,39 @@ const DashboardHome = ({ user }) => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 overflow-y-auto" style={{ maxHeight: '280px' }}>
-            <div className="p-3 bg-slate-700/50 rounded-lg">
-              <h4 className="text-white font-medium mb-1 text-sm">
+            <div
+              className="p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer"
+              onClick={() => navigate('/jobs')}
+            >
+              <h4 className="text-white font-medium mb-1 text-sm flex items-center justify-between">
                 {user.role === 'empresa' ? 'Encuentra Talento' : 'Encuentra Oportunidades'}
+                <ExternalLink className="w-3 h-3" />
               </h4>
               <p className="text-gray-400 text-xs">
-                {user.role === 'empresa' ? 
+                {user.role === 'empresa' ?
                   'Accede a candidatos calificados en constante crecimiento.' :
                   'Descubre vacantes que se ajusten a tu perfil profesional.'
                 }
               </p>
             </div>
-            <div className="p-3 bg-slate-700/50 rounded-lg">
-              <h4 className="text-white font-medium mb-1 text-sm">Educación Continua</h4>
-              <p className="text-gray-400 text-xs">Cursos gratuitos de las mejores plataformas mundiales.</p>
+            <div
+              className="p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer"
+              onClick={() => navigate('/certifications')}
+            >
+              <h4 className="text-white font-medium mb-1 text-sm flex items-center justify-between">
+                Educación Continua
+                <ExternalLink className="w-3 h-3" />
+              </h4>
+              <p className="text-gray-400 text-xs">Certificaciones y cursos de las mejores plataformas mundiales.</p>
             </div>
-            <div className="p-3 bg-slate-700/50 rounded-lg">
-              <h4 className="text-white font-medium mb-1 text-sm">Eventos Profesionales</h4>
+            <div
+              className="p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer"
+              onClick={() => navigate('/events')}
+            >
+              <h4 className="text-white font-medium mb-1 text-sm flex items-center justify-between">
+                Eventos Profesionales
+                <ExternalLink className="w-3 h-3" />
+              </h4>
               <p className="text-gray-400 text-xs">Conecta con la comunidad en eventos y conferencias.</p>
             </div>
           </CardContent>
@@ -1471,7 +1582,7 @@ const SavedItemsPage = ({ user }) => {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3">
+      <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3 th-header">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Button variant="ghost" onClick={() => navigate('/dashboard')} className="text-cyan-400 hover:text-cyan-300">
             ← Volver al Dashboard
@@ -1655,7 +1766,7 @@ const Dashboard = ({ user, logout }) => {
 
 // Main App Component
 function App() {
-  const { user, loading, startGoogleAuth, logout, setUser } = useAuth();
+  const { user, loading, logout, updateUser } = useAuth();
 
   if (loading) {
     return (
@@ -1676,19 +1787,19 @@ function App() {
                 user.role === 'estudiante' || user.role === 'empresa' ?
                   <Navigate to="/dashboard" replace /> :
                 user.role === 'admin' ?
-                  <AdminDashboard /> :
-                  <AuthLandingPage startGoogleAuth={startGoogleAuth} />
+                  <Navigate to="/admin" replace /> :
+                  <AuthLandingPage />
               ) :
-              <AuthLandingPage startGoogleAuth={startGoogleAuth} />
+              <AuthLandingPage />
             }
           />
           <Route
             path="/onboarding-estudiante"
-            element={user ? <StudentOnboarding /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />}
+            element={user ? <StudentOnboarding /> : <Navigate to="/login" replace />}
           />
           <Route
             path="/onboarding-empresa"
-            element={user ? <CompanyOnboarding /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />}
+            element={user ? <CompanyOnboarding /> : <Navigate to="/login" replace />}
           />
           <Route
             path="/dashboard"
@@ -1706,7 +1817,7 @@ function App() {
             path="/profile"
             element={
               user && (user.role === 'estudiante' || user.role === 'empresa') ?
-                <ProfilePage user={user} setUser={setUser} /> :
+                <ProfilePage user={user} setUser={updateUser} /> :
                 <Navigate to="/" replace />
             }
           />
@@ -1730,19 +1841,21 @@ function App() {
           />
 
           {/* Auth Pages */}
-          <Route path="/registro-estudiante" element={user ? <Navigate to="/dashboard" replace /> : <StudentSignUp />} />
-          <Route path="/registro-empresa" element={user ? <Navigate to="/dashboard" replace /> : <CompanySignUp />} />
-          <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
+          <Route path="/registro-estudiante" element={user ? <Navigate to="/dashboard" replace /> : <StudentRegisterPage />} />
+          <Route path="/registro-empresa" element={user ? <Navigate to="/dashboard" replace /> : <CompanyRegisterPage />} />
+          <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
           {/* Public Pages */}
-          <Route path="/courses" element={user ? <PublicCourses /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />} />
-          <Route path="/events" element={user ? <PublicEvents /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />} />
-          <Route path="/jobs" element={user ? <PublicJobs /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />} />
-          <Route path="/scholarships" element={user ? <Scholarships /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />} />
-          <Route path="/certifications" element={user ? <Certifications /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />} />
-          <Route path="/companies" element={user ? <Companies /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />} />
-          <Route path="/career-advice" element={user ? <CareerAdvice /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />} />
-          <Route path="/support" element={user ? <Support /> : <AuthLandingPage startGoogleAuth={startGoogleAuth} />} />
+          <Route path="/courses" element={<PublicCourses />} />
+          <Route path="/events" element={<PublicEvents />} />
+          <Route path="/jobs" element={<PublicJobs />} />
+          <Route path="/scholarships" element={<Scholarships />} />
+          <Route path="/certifications" element={<Certifications />} />
+          <Route path="/companies" element={<Companies />} />
+          <Route path="/career-advice" element={<CareerAdvice />} />
+          <Route path="/news" element={<News />} />
+          <Route path="/support" element={<Support />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
 
