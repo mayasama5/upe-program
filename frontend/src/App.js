@@ -18,6 +18,9 @@ import ChatButton from "./components/ChatButton";
 import CreateEventButton from "./components/CreateEventButton";
 import CreateJobButton from "./components/CreateJobButton";
 import { useSystemSettings } from "./hooks/useSystemSettings";
+import techHubLogo from './images/LOGO_TECH_HUB(1).png';
+import facultadLogo from './images/logo_upe_infor(1).png';
+import upeLogo from './images/LOGO_UPE(1).png';
 
 // Import public pages
 import PublicCourses from "./pages/PublicCourses";
@@ -59,49 +62,25 @@ import AuthCallback from "./pages/AuthCallback";
 // Auth & Landing Page
 const AuthLandingPage = () => {
   const navigate = useNavigate();
-  const { settings } = useSystemSettings();
-  const [techhubError, setTechhubError] = useState(false);
 
   return (
     <div className="min-h-screen bg-slate-950">
       {/* Top logos bar */}
-  <div className="bg-slate-800 border-b border-slate-700 px-4 th-header-top-fixed">
-        <div className="max-w-7xl mx-auto grid grid-cols-3 items-center">
-          <div className="flex items-center justify-center justify-self-end">
-            {settings.faculty_logo ? (
-              <img src={settings.faculty_logo} alt="Facultad" className="logo-img logo-left" />
-            ) : (
-              <span className="text-gray-400 text-xs">Facultad</span>
-            )}
-          </div>
-          <div className="flex items-center justify-center space-x-2">
-            {settings.techhub_logo && !techhubError ? (
-              <img
-                src={settings.techhub_logo}
-                alt="TechHub UPE"
-                className="logo-img logo-center"
-                onError={() => setTechhubError(true)}
-              />
-            ) : (
-              <>
-                <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
-                  <span className="text-black font-bold text-sm">TH</span>
-                </div>
-                <h1 className="text-xl font-bold text-white">TechHub UPE</h1>
-              </>
-            )}
+      <div className="bg-slate-800 border-b border-slate-700 th-header-top-fixed">
+        <div className="max-w-7xl mx-auto grid grid-cols-[1fr_auto_1fr] items-center gap-4 sm:gap-6 md:gap-8 px-2 sm:px-4">
+          <div className="flex items-center justify-center">
+            <img src={upeLogo} alt="Universidad Privada del Este" className="logo-img logo-left" />
           </div>
           <div className="flex items-center justify-center">
-            {settings.university_logo ? (
-              <img src={settings.university_logo} alt="Universidad" className="logo-img logo-right" />
-            ) : (
-              <span className="text-gray-400 text-xs">Universidad</span>
-            )}
+            <img src={techHubLogo} alt="TechHub UPE" className="logo-img logo-center" />
+          </div>
+          <div className="flex items-center justify-center">
+            <img src={facultadLogo} alt="Facultad de Ciencias de la Informática" className="logo-img logo-right" />
           </div>
         </div>
       </div>
       {/* Secondary header keeps spacing/style consistent */}
-  <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3 th-header">
+      <header className="bg-slate-900 border-b border-cyan-500/20 px-4 py-3 th-header">
         <div className="max-w-7xl mx-auto" />
       </header>
 

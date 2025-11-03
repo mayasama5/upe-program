@@ -7,7 +7,51 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { ScrollArea } from '../components/ui/scroll-area';
-import LogoSettings from '../components/admin/LogoSettings';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
+
+// Component para manejar avatares con imagen o fallback
+const UserAvatar = ({ user, size = 'sm', className = '' }) => {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  const sizeClasses = {
+    sm: 'w-8 h-8 sm:w-10 sm:h-10',
+    md: 'w-10 h-10',
+    lg: 'w-16 h-16'
+  };
+
+  const textSizeClasses = {
+    sm: 'text-sm sm:text-base',
+    md: 'text-sm',
+    lg: 'text-2xl'
+  };
+
+  const showImage = user.picture && !imageError;
+  const imageUrl = user.picture ? 
+    (user.picture.startsWith('http') ? user.picture : `${BACKEND_URL}${user.picture}`) : 
+    null;
+
+  return (
+    <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-semibold ${textSizeClasses[size]} flex-shrink-0 overflow-hidden ${className}`}>
+      {showImage && (
+        <img 
+          src={imageUrl}
+          alt={user.name}
+          className={`w-full h-full object-cover ${imageLoaded ? 'block' : 'hidden'}`}
+          onLoad={() => setImageLoaded(true)}
+          onError={() => setImageError(true)}
+        />
+      )}
+      {(!showImage || !imageLoaded) && (
+        <span className="flex items-center justify-center w-full h-full">
+          {user.name?.charAt(0) || 'U'}
+        </span>
+      )}
+    </div>
+  );
+};
+
 import {
   Users,
   Activity,
@@ -29,7 +73,8 @@ import {
   Download,
   RefreshCw,
   Bell,
-  FolderOpen
+  FolderOpen,
+  UserCog
 } from 'lucide-react';
 import Header from '../components/Header';
 import ContentManagement from '../components/admin/ContentManagement';
@@ -62,6 +107,11 @@ export default function AdminDashboard() {
   });
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [maintenanceLoading, setMaintenanceLoading] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   useEffect(() => {
     if (user && user.role === 'admin') {
@@ -234,19 +284,30 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteUser = async (userId) => {
-    if (window.confirm('¿Estás seguro de eliminar este usuario?')) {
-      try {
-        const response = await axios.delete(`${BACKEND_URL}/api/admin/users/${userId}`, {
-          withCredentials: true
-        });
+    const user = users.find(u => u.id === userId);
+    if (user) {
+      setUserToDelete(user);
+      setDeleteModalOpen(true);
+    }
+  };
 
-        if (response.data.success) {
-          setUsers(users.filter(u => u.id !== userId));
-        }
-      } catch (error) {
-        console.error('Error deleting user:', error);
-        alert('Error al eliminar usuario');
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+    
+    try {
+      const response = await axios.delete(`${BACKEND_URL}/api/admin/users/${userToDelete.id}`, {
+        withCredentials: true
+      });
+
+      if (response.data.success) {
+        setUsers(users.filter(u => u.id !== userToDelete.id));
+        setDeleteModalOpen(false);
+        setUserToDelete(null);
+        setDeleteConfirmText('');
       }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('Error al eliminar usuario');
     }
   };
 
@@ -270,6 +331,30 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error updating user:', error);
       alert('Error al actualizar usuario');
+    }
+  };
+
+  const handleChangeUserRole = async (userId, newRole) => {
+    if (!window.confirm(`¿Estás seguro de cambiar el rol de este usuario a "${newRole}"?`)) {
+      return;
+    }
+
+    try {
+      const response = await axios.put(
+        `${BACKEND_URL}/api/admin/users/${userId}`,
+        { role: newRole },
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        setUsers(users.map(u =>
+          u.id === userId ? { ...u, role: newRole } : u
+        ));
+        alert('Rol actualizado correctamente');
+      }
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      alert('Error al cambiar el rol del usuario');
     }
   };
 
@@ -314,6 +399,11 @@ export default function AdminDashboard() {
 
     const filename = `usuarios_${new Date().toISOString().split('T')[0]}`;
     exportToExcel(exportData, filename);
+  };
+
+  const handleViewUserDetails = (user) => {
+    setSelectedUser(user);
+    setUserModalOpen(true);
   };
 
   if (loading) {
@@ -505,9 +595,7 @@ export default function AdminDashboard() {
                       className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-4 bg-slate-900 rounded-lg border border-slate-700 hover:border-cyan-500/50 transition-all"
                     >
                       <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-semibold text-sm sm:text-base flex-shrink-0">
-                          {user.name.charAt(0)}
-                        </div>
+                        <UserAvatar user={user} size="sm" />
                         <div className="min-w-0 flex-1">
                           <p className="text-white font-medium text-sm sm:text-base truncate">{user.name}</p>
                           <p className="text-xs sm:text-sm text-gray-400 truncate">{user.email}</p>
@@ -515,13 +603,26 @@ export default function AdminDashboard() {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-                        <Badge variant="outline" className={`text-xs sm:text-sm ${
-                          user.role === 'admin' ? 'text-red-400 border-red-400/30' :
-                          user.role === 'empresa' ? 'text-orange-400 border-orange-400/30' :
-                          'text-cyan-400 border-cyan-400/30'
-                        }`}>
-                          {user.role}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <UserCog className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+                          <Select
+                            value={user.role}
+                            onValueChange={(newRole) => handleChangeUserRole(user.id, newRole)}
+                          >
+                            <SelectTrigger className={`w-[110px] sm:w-[130px] h-7 text-xs sm:text-sm border ${
+                              user.role === 'admin' ? 'text-red-400 border-red-400/30 bg-red-500/10' :
+                              user.role === 'empresa' ? 'text-orange-400 border-orange-400/30 bg-orange-500/10' :
+                              'text-cyan-400 border-cyan-400/30 bg-cyan-500/10'
+                            }`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-900 border-slate-700">
+                              <SelectItem value="estudiante" className="text-cyan-400 hover:bg-cyan-500/10">Estudiante</SelectItem>
+                              <SelectItem value="empresa" className="text-orange-400 hover:bg-orange-500/10">Empresa</SelectItem>
+                              <SelectItem value="admin" className="text-red-400 hover:bg-red-500/10">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
 
                         <Badge variant={user.status === 'active' ? 'default' : 'secondary'} className={`text-xs sm:text-sm ${
                           user.status === 'active'
@@ -547,6 +648,7 @@ export default function AdminDashboard() {
                           <Button
                             size="sm"
                             variant="ghost"
+                            onClick={() => handleViewUserDetails(user)}
                             className="text-gray-400 hover:text-cyan-400 p-1 sm:p-2"
                           >
                             <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -727,9 +829,6 @@ export default function AdminDashboard() {
 
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-4">
-            {/* Logos Settings */}
-            <LogoSettings />
-
             {/* System Settings */}
             <Card className="bg-slate-800 border-slate-700">
               <CardHeader>
@@ -781,6 +880,298 @@ export default function AdminDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* User Details Modal */}
+      <Dialog open={userModalOpen} onOpenChange={setUserModalOpen}>
+        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-white">
+              Detalles del Usuario
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Información completa del usuario seleccionado
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedUser && (
+            <div className="space-y-6">
+              {/* User Header */}
+              <div className="flex items-center gap-4 p-4 bg-slate-900 rounded-lg">
+                <UserAvatar user={selectedUser} size="lg" />
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold text-white">{selectedUser.name || 'Sin nombre'}</h3>
+                  <p className="text-gray-400">{selectedUser.email}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Badge className={`text-xs ${
+                      selectedUser.role === 'admin' ? 'bg-red-500/20 text-red-400 border-red-400/30' :
+                      selectedUser.role === 'empresa' ? 'bg-orange-500/20 text-orange-400 border-orange-400/30' :
+                      'bg-cyan-500/20 text-cyan-400 border-cyan-400/30'
+                    }`}>
+                      {selectedUser.role}
+                    </Badge>
+                    <Badge className={selectedUser.status === 'active' 
+                      ? 'bg-green-500/20 text-green-400 border-green-400/30'
+                      : 'bg-gray-500/20 text-gray-400 border-gray-400/30'
+                    }>
+                      {selectedUser.status === 'active' ? 'Activo' : 'Inactivo'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* User Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <div className="p-4 bg-slate-900 rounded-lg">
+                    <h4 className="font-semibold text-white mb-2">Información Personal</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">ID:</span>
+                        <span className="text-white">{selectedUser.id}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Nombre:</span>
+                        <span className="text-white">{selectedUser.name || 'No especificado'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Email:</span>
+                        <span className="text-white">{selectedUser.email}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Teléfono:</span>
+                        <span className="text-white">{selectedUser.phone || 'No especificado'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-slate-900 rounded-lg">
+                    <h4 className="font-semibold text-white mb-2">Estado de la Cuenta</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Verificado:</span>
+                        <span className={selectedUser.is_verified ? 'text-green-400' : 'text-red-400'}>
+                          {selectedUser.is_verified ? 'Sí' : 'No'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Estado:</span>
+                        <span className={selectedUser.status === 'active' ? 'text-green-400' : 'text-gray-400'}>
+                          {selectedUser.status === 'active' ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Rol:</span>
+                        <span className="text-white capitalize">{selectedUser.role}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="p-4 bg-slate-900 rounded-lg">
+                    <h4 className="font-semibold text-white mb-2">Información Adicional</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Universidad:</span>
+                        <span className="text-white">{selectedUser.university || 'No especificado'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Carrera:</span>
+                        <span className="text-white">{selectedUser.career || 'No especificado'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Semestre:</span>
+                        <span className="text-white">{selectedUser.semester || 'No especificado'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Ciudad:</span>
+                        <span className="text-white">{selectedUser.city || 'No especificado'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-slate-900 rounded-lg">
+                    <h4 className="font-semibold text-white mb-2">Fechas</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Registro:</span>
+                        <span className="text-white">
+                          {selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString('es-ES', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }) : 'No disponible'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Última actualización:</span>
+                        <span className="text-white">
+                          {selectedUser.updated_at ? new Date(selectedUser.updated_at).toLocaleDateString('es-ES', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }) : 'No disponible'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description/Bio if available */}
+              {selectedUser.description && (
+                <div className="p-4 bg-slate-900 rounded-lg">
+                  <h4 className="font-semibold text-white mb-2">Descripción</h4>
+                  <p className="text-gray-300 text-sm leading-relaxed">{selectedUser.description}</p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-700">
+                <Button
+                  variant="outline"
+                  onClick={() => setUserModalOpen(false)}
+                  className="border-slate-600 text-gray-400 hover:bg-slate-700"
+                >
+                  Cerrar
+                </Button>
+                <Button
+                  onClick={() => {
+                    setUserModalOpen(false);
+                    // You could add navigation to edit user functionality here
+                  }}
+                  className="bg-cyan-500 hover:bg-cyan-600 text-black"
+                >
+                  Editar Usuario
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete User Confirmation Modal */}
+      <Dialog open={deleteModalOpen} onOpenChange={(open) => {
+        setDeleteModalOpen(open);
+        if (!open) {
+          setUserToDelete(null);
+          setDeleteConfirmText('');
+        }
+      }}>
+        <DialogContent className="bg-slate-800 border-slate-700 text-white w-[95vw] max-w-md mx-auto max-h-[90vh] overflow-y-auto m-2">
+          <div className="p-4">
+            <DialogHeader className="space-y-3 pb-4">
+              <DialogTitle className="text-base sm:text-lg font-bold text-red-400 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <span>Confirmar Eliminación</span>
+              </DialogTitle>
+              <DialogDescription className="text-gray-400 text-sm">
+                Esta acción no se puede deshacer
+              </DialogDescription>
+            </DialogHeader>
+          
+          {userToDelete && (
+            <div className="space-y-4">
+              {/* Warning Message */}
+              <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <div className="flex items-center gap-3 mb-3">
+                  <UserAvatar user={userToDelete} size="md" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-white text-sm break-words">{userToDelete.name || 'Usuario sin nombre'}</p>
+                    <p className="text-xs text-gray-400 break-all">{userToDelete.email}</p>
+                    <Badge className={`text-xs mt-1 inline-block ${
+                      userToDelete.role === 'admin' ? 'bg-red-500/20 text-red-400 border-red-400/30' :
+                      userToDelete.role === 'empresa' ? 'bg-orange-500/20 text-orange-400 border-orange-400/30' :
+                      'bg-cyan-500/20 text-cyan-400 border-cyan-400/30'
+                    }`}>
+                      {userToDelete.role}
+                    </Badge>
+                  </div>
+                </div>
+                <p className="text-red-300 text-sm mb-3">
+                  ¿Estás seguro de que deseas eliminar este usuario? Esta acción:
+                </p>
+                <ul className="list-disc text-red-300 text-sm space-y-1 ml-5">
+                  <li>Eliminará permanentemente la cuenta del usuario</li>
+                  <li>Eliminará todos sus datos asociados</li>
+                  <li>Eliminará sus cursos guardados y aplicaciones</li>
+                  <li>No se puede recuperar la información</li>
+                </ul>
+              </div>
+
+              {/* Alternative Action Suggestion */}
+              <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                <p className="text-blue-300 text-sm">
+                  <strong>Alternativa:</strong> Considera desactivar la cuenta en lugar de eliminarla para preservar los datos.
+                </p>
+              </div>
+
+              {/* Confirmation Input */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-300 block">
+                  Para confirmar, escribe "ELIMINAR" en mayúsculas:
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Escribe ELIMINAR para confirmar"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  className="bg-slate-900 border-slate-600 text-white text-sm h-10 w-full"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-700">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setDeleteModalOpen(false);
+                    setUserToDelete(null);
+                    setDeleteConfirmText('');
+                  }}
+                  className="border-slate-600 text-gray-400 hover:bg-slate-700 text-sm h-10 flex-1 sm:flex-none sm:order-1"
+                >
+                  Cancelar
+                </Button>
+                {userToDelete?.status === 'active' && (
+                  <Button
+                    onClick={() => {
+                      handleToggleUserStatus(userToDelete.id);
+                      setDeleteModalOpen(false);
+                      setUserToDelete(null);
+                      setDeleteConfirmText('');
+                    }}
+                    className="bg-orange-600 hover:bg-orange-700 text-white text-sm h-10 flex-1 sm:flex-none sm:order-2"
+                  >
+                    <UserX className="w-4 h-4 mr-2" />
+                    Desactivar
+                  </Button>
+                )}
+                <Button
+                  onClick={() => {
+                    if (deleteConfirmText === 'ELIMINAR') {
+                      confirmDeleteUser();
+                      setDeleteConfirmText('');
+                    } else {
+                      alert('Debes escribir "ELIMINAR" para confirmar la acción');
+                    }
+                  }}
+                  disabled={deleteConfirmText !== 'ELIMINAR'}
+                  className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed text-sm h-10 flex-1 sm:flex-none sm:order-3"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Eliminar
+                </Button>
+              </div>
+            </div>
+          )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

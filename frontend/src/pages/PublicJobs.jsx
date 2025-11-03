@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Briefcase, ExternalLink } from 'lucide-react';
+import { Briefcase, ExternalLink, MessageCircle, MapPin, Building2, DollarSign, Clock } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { useToast } from '../hooks/use-toast';
 import Header from '../components/Header';
 import { useAuth } from '../hooks/useAuth';
@@ -22,8 +23,11 @@ export default function PublicJobs() {
   const [jobs, setJobs] = useState([]);
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [selectedFilter, setSelectedFilter] = useState("all");
+  const [selectedCity, setSelectedCity] = useState("all");
   const [savedItems, setSavedItems] = useState({ jobs: [] });
   const [loading, setLoading] = useState(true);
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchJobs();
@@ -33,12 +37,23 @@ export default function PublicJobs() {
   }, [user]);
 
   useEffect(() => {
-    if (selectedFilter === "all") {
-      setFilteredJobs(jobs);
-    } else {
-      setFilteredJobs(jobs.filter(job => job.modality === selectedFilter));
+    let filtered = jobs;
+
+    // Apply modality filter
+    if (selectedFilter !== "all") {
+      filtered = filtered.filter(job => job.modality === selectedFilter);
     }
-  }, [jobs, selectedFilter]);
+
+    // Apply city filter
+    if (selectedCity !== "all") {
+      filtered = filtered.filter(job => {
+        const jobCity = job.city || job.location || '';
+        return jobCity.toLowerCase().includes(selectedCity.toLowerCase());
+      });
+    }
+
+    setFilteredJobs(filtered);
+  }, [jobs, selectedFilter, selectedCity]);
 
   const fetchJobs = async () => {
     try {
@@ -205,8 +220,57 @@ export default function PublicJobs() {
     { value: "hibrido", label: "Híbrido" }
   ];
 
+  const cityFilters = [
+    { value: "all", label: "Todas las ciudades" },
+    { value: "Asunción", label: "Asunción" },
+    { value: "San Lorenzo", label: "San Lorenzo" },
+    { value: "Luque", label: "Luque" },
+    { value: "Capiatá", label: "Capiatá" },
+    { value: "Lambaré", label: "Lambaré" },
+    { value: "Fernando de la Mora", label: "Fernando de la Mora" },
+    { value: "Limpio", label: "Limpio" },
+    { value: "Ñemby", label: "Ñemby" },
+    { value: "Encarnación", label: "Encarnación" },
+    { value: "Ciudad del Este", label: "Ciudad del Este" },
+    { value: "Pedro Juan Caballero", label: "Pedro Juan Caballero" },
+    { value: "Presidente Franco", label: "Presidente Franco" },
+    { value: "Mariano Roque Alonso", label: "Mariano Roque Alonso" },
+    { value: "Villa Elisa", label: "Villa Elisa" },
+    { value: "Itauguá", label: "Itauguá" },
+    { value: "Coronel Oviedo", label: "Coronel Oviedo" },
+    { value: "Concepción", label: "Concepción" },
+    { value: "Caaguazú", label: "Caaguazú" },
+    { value: "Villarrica", label: "Villarrica" },
+    { value: "Itá", label: "Itá" },
+    { value: "Caacupé", label: "Caacupé" },
+    { value: "Paraguarí", label: "Paraguarí" },
+    { value: "Pilar", label: "Pilar" },
+    { value: "Hernandarias", label: "Hernandarias" },
+    { value: "Salto del Guairá", label: "Salto del Guairá" }
+  ];
+
   const isSaved = (itemId) => {
     return savedItems?.jobs?.some(item => item.id === itemId) || false;
+  };
+
+  const handleOpenJobDetails = (job) => {
+    setSelectedJob(job);
+    setIsModalOpen(true);
+  };
+
+  const handleApply = (job) => {
+    if (job.apply_type === 'externo' && job.apply_url) {
+      window.open(job.apply_url, '_blank');
+    } else if (job.contact_whatsapp) {
+      const message = encodeURIComponent(`Hola, estoy interesado en la vacante: ${job.title}`);
+      window.open(`https://wa.me/${job.contact_whatsapp.replace(/[^0-9]/g, '')}?text=${message}`, '_blank');
+    } else {
+      toast({
+        title: "No disponible",
+        description: "No hay información de contacto disponible para esta vacante",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -251,6 +315,16 @@ export default function PublicJobs() {
                 {user && user.role === 'empresa' && (
                   <CreateJobButton inline={true} onJobCreated={fetchJobs} />
                 )}
+                <Select value={selectedCity} onValueChange={setSelectedCity}>
+                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-48">
+                    <SelectValue placeholder="Filtrar por ciudad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cityFilters.map(filter => (
+                      <SelectItem key={filter.value} value={filter.value}>{filter.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select value={selectedFilter} onValueChange={setSelectedFilter}>
                   <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-48">
                     <SelectValue placeholder="Filtrar por modalidad" />
@@ -285,7 +359,7 @@ export default function PublicJobs() {
                     </div>
                     <CardTitle className="text-white text-sm leading-tight line-clamp-2 h-10">{job.title}</CardTitle>
                     <CardDescription className="text-gray-400 text-xs">
-                      {job.company_name} • {job.city}, {job.country}
+                      {job.company} • {job.city || job.location || 'Paraguay'}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0 flex flex-col justify-between flex-grow">
@@ -295,12 +369,18 @@ export default function PublicJobs() {
                         <Badge variant="outline" className="text-cyan-400 border-cyan-400/30 text-xs">{job.modality}</Badge>
                         <span className="text-cyan-400 font-semibold text-xs">{job.salary_range}</span>
                       </div>
+                      {job.contact_whatsapp && (
+                        <div className="flex items-center gap-1 text-xs text-green-400 bg-green-500/10 rounded px-2 py-1">
+                          <MessageCircle className="w-3 h-3" />
+                          <span>{job.contact_whatsapp}</span>
+                        </div>
+                      )}
                       <Button
                         size="sm"
-                        className="w-full bg-orange-500 hover:bg-orange-600 text-white text-xs"
-                        onClick={() => job.apply_type === 'externo' ? window.open(job.apply_url, '_blank') : alert('Aplicar internamente')}
+                        className="w-full bg-slate-700 hover:bg-slate-600 text-white text-xs"
+                        onClick={() => handleOpenJobDetails(job)}
                       >
-                        Aplicar <ExternalLink className="w-3 h-3 ml-1" />
+                        Más detalles
                       </Button>
                     </div>
                   </CardContent>
@@ -310,6 +390,114 @@ export default function PublicJobs() {
           </>
         )}
       </div>
+
+      {/* Modal de detalles de la vacante */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-slate-900 text-white border-slate-700">
+          {selectedJob && (
+            <>
+              <DialogHeader>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <DialogTitle className="text-2xl mb-2">{selectedJob.title}</DialogTitle>
+                    <DialogDescription className="text-gray-400 flex items-center gap-2">
+                      <Building2 className="w-4 h-4" />
+                      {selectedJob.company}
+                    </DialogDescription>
+                  </div>
+                  <Badge variant="secondary" className="bg-orange-500/20 text-orange-400">
+                    {selectedJob.job_type}
+                  </Badge>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-6 mt-4">
+                {/* Información general */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="w-4 h-4 text-cyan-400" />
+                    <span className="text-gray-300">{selectedJob.city || selectedJob.location || 'Paraguay'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="w-4 h-4 text-cyan-400" />
+                    <Badge variant="outline" className="text-cyan-400 border-cyan-400/30">
+                      {selectedJob.modality}
+                    </Badge>
+                  </div>
+                  {selectedJob.salary_range && (
+                    <div className="flex items-center gap-2 text-sm col-span-2">
+                      <DollarSign className="w-4 h-4 text-cyan-400" />
+                      <span className="text-cyan-400 font-semibold">{selectedJob.salary_range}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Descripción */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Descripción</h3>
+                  <p className="text-gray-300 whitespace-pre-wrap">{selectedJob.description}</p>
+                </div>
+
+                {/* Requisitos */}
+                {selectedJob.requirements && selectedJob.requirements.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Requisitos</h3>
+                    <ul className="list-disc list-inside space-y-1">
+                      {selectedJob.requirements.map((req, idx) => (
+                        <li key={idx} className="text-gray-300">{req}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Tecnologías/Habilidades */}
+                {selectedJob.responsibilities && selectedJob.responsibilities.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Tecnologías y Habilidades</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedJob.responsibilities.map((skill, idx) => (
+                        <Badge key={idx} variant="outline" className="text-cyan-400 border-cyan-400/30">
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Contacto WhatsApp */}
+                {selectedJob.contact_whatsapp && (
+                  <div className="bg-slate-800 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MessageCircle className="w-5 h-5 text-green-500" />
+                      <h3 className="text-lg font-semibold">Contacto por WhatsApp</h3>
+                    </div>
+                    <p className="text-gray-400 text-sm">
+                      Comunícate directamente al: <span className="text-white font-semibold">{selectedJob.contact_whatsapp}</span>
+                    </p>
+                  </div>
+                )}
+
+                {/* Botón de aplicar */}
+                <div className="flex gap-3 pt-4 border-t border-slate-700">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsModalOpen(false)}
+                    className="flex-1 border-slate-600 text-gray-300"
+                  >
+                    Cerrar
+                  </Button>
+                  <Button
+                    onClick={() => handleApply(selectedJob)}
+                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+                  >
+                    Aplicar ahora <ExternalLink className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

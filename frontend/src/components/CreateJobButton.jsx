@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, MessageCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   Dialog,
@@ -30,11 +30,12 @@ export default function CreateJobButton({ onJobCreated, inline = false }) {
     job_type: 'junior',
     seniority_level: 'Junior',
     skills_stack: '',
-    city: '',
+    city: 'none',
     country: 'Paraguay',
     salary_range: '',
     apply_type: 'externo',
-    apply_url: ''
+    apply_url: '',
+    contact_whatsapp: ''
   });
 
   const handleChange = (e) => {
@@ -59,6 +60,7 @@ export default function CreateJobButton({ onJobCreated, inline = false }) {
       // Preparar datos
       const jobData = {
         ...formData,
+        city: formData.city === 'none' ? '' : formData.city,
         requirements: formData.requirements.split('\n').filter(r => r.trim()),
         skills_stack: formData.skills_stack.split(',').map(s => s.trim()).filter(s => s)
       };
@@ -79,11 +81,12 @@ export default function CreateJobButton({ onJobCreated, inline = false }) {
         job_type: 'junior',
         seniority_level: 'Junior',
         skills_stack: '',
-        city: '',
+        city: 'none',
         country: 'Paraguay',
         salary_range: '',
         apply_type: 'externo',
-        apply_url: ''
+        apply_url: '',
+        contact_whatsapp: ''
       });
 
       if (onJobCreated) {
@@ -212,14 +215,39 @@ export default function CreateJobButton({ onJobCreated, inline = false }) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="city">Ciudad</Label>
-                <Input
-                  id="city"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
-                  placeholder="Asunción"
-                  className="bg-slate-800 border-slate-700 text-white"
-                />
+                <Select value={formData.city || "none"} onValueChange={(value) => handleSelectChange('city', value === "none" ? "" : value)}>
+                  <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                    <SelectValue placeholder="Seleccionar ciudad" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    <SelectItem value="none">Sin especificar</SelectItem>
+                    <SelectItem value="Asunción">Asunción</SelectItem>
+                    <SelectItem value="San Lorenzo">San Lorenzo</SelectItem>
+                    <SelectItem value="Luque">Luque</SelectItem>
+                    <SelectItem value="Capiatá">Capiatá</SelectItem>
+                    <SelectItem value="Lambaré">Lambaré</SelectItem>
+                    <SelectItem value="Fernando de la Mora">Fernando de la Mora</SelectItem>
+                    <SelectItem value="Limpio">Limpio</SelectItem>
+                    <SelectItem value="Ñemby">Ñemby</SelectItem>
+                    <SelectItem value="Encarnación">Encarnación</SelectItem>
+                    <SelectItem value="Ciudad del Este">Ciudad del Este</SelectItem>
+                    <SelectItem value="Pedro Juan Caballero">Pedro Juan Caballero</SelectItem>
+                    <SelectItem value="Presidente Franco">Presidente Franco</SelectItem>
+                    <SelectItem value="Mariano Roque Alonso">Mariano Roque Alonso</SelectItem>
+                    <SelectItem value="Villa Elisa">Villa Elisa</SelectItem>
+                    <SelectItem value="Itauguá">Itauguá</SelectItem>
+                    <SelectItem value="Coronel Oviedo">Coronel Oviedo</SelectItem>
+                    <SelectItem value="Concepción">Concepción</SelectItem>
+                    <SelectItem value="Caaguazú">Caaguazú</SelectItem>
+                    <SelectItem value="Villarrica">Villarrica</SelectItem>
+                    <SelectItem value="Itá">Itá</SelectItem>
+                    <SelectItem value="Caacupé">Caacupé</SelectItem>
+                    <SelectItem value="Paraguarí">Paraguarí</SelectItem>
+                    <SelectItem value="Pilar">Pilar</SelectItem>
+                    <SelectItem value="Hernandarias">Hernandarias</SelectItem>
+                    <SelectItem value="Salto del Guairá">Salto del Guairá</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -229,24 +257,42 @@ export default function CreateJobButton({ onJobCreated, inline = false }) {
                   name="salary_range"
                   value={formData.salary_range}
                   onChange={handleChange}
-                  placeholder="$30,000 - $50,000"
+                  placeholder="Gs. 4.000.000 - 6.000.000"
                   className="bg-slate-800 border-slate-700 text-white"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="apply_url">URL para Aplicar *</Label>
+              <Label htmlFor="apply_url">URL para Aplicar</Label>
               <Input
                 id="apply_url"
                 name="apply_url"
                 type="url"
                 value={formData.apply_url}
                 onChange={handleChange}
-                required
                 placeholder="https://ejemplo.com/aplicar"
                 className="bg-slate-800 border-slate-700 text-white"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="contact_whatsapp">Número de WhatsApp</Label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <MessageCircle className="w-5 h-5 text-green-500" />
+                </div>
+                <Input
+                  id="contact_whatsapp"
+                  name="contact_whatsapp"
+                  type="tel"
+                  value={formData.contact_whatsapp}
+                  onChange={handleChange}
+                  placeholder="+595 981 123456"
+                  className="bg-slate-800 border-slate-700 text-white pl-10"
+                />
+              </div>
+              <p className="text-xs text-gray-400">Número de contacto para consultas sobre la vacante</p>
             </div>
 
             <div className="flex justify-end gap-3 pt-4">

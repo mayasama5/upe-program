@@ -1,0 +1,210 @@
+/* Estilos para logos del sistema */
+
+/* Header Top - Barra de logos */
+.th-header-top-fixed {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+/* Logos generales */
+.logo-img {
+  object-fit: contain;
+  display: block;
+}
+
+/* Logos del header - laterales (Universidad y Facultad) - Verticales */
+.logo-left,
+.logo-right {
+  max-height: 70px;
+  max-width: 110px;
+  width: auto;
+  height: auto;
+}
+
+/* Logo central del header (TechHub) - Horizontal */
+.logo-center {
+  max-height: 55px;
+  max-width: 180px;
+  width: auto;
+  height: auto;
+}
+
+/* Logo en páginas de autenticación */
+.logo-auth {
+  max-height: 70px;
+  max-width: 180px;
+  width: auto;
+  height: auto;
+}
+
+/* Logo en footer */
+.logo-footer {
+  max-height: 38px;
+  max-width: 160px;
+  width: auto;
+  height: auto;
+  margin-right: 0.75rem;
+}
+
+.th-footer-logo-row {
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Responsive - Mobile pequeño (hasta 480px) */
+@media (max-width: 480px) {
+  .th-header-top-fixed {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .logo-left,
+  .logo-right {
+    max-height: 45px;
+
+   
+  }
+
+  .logo-center {
+    max-height: 32px;
+    margin-left: 1rem;
+    margin-right: 2rem;
+ 
+  }
+
+  .logo-auth {
+    max-height: 50px;
+
+  }
+
+  .logo-footer {
+    max-height: 16px;
+    max-width: 110px;
+    margin-right: 0.5rem;
+  }
+
+  .th-footer-logo-row {
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Responsive - Mobile (481px - 640px) */
+@media (min-width: 481px) and (max-width: 640px) {
+  .th-header-top-fixed {
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
+
+  .logo-left,
+  .logo-right {
+    max-height: 58px;
+    max-width: 75px;
+    width: auto;
+    height: auto;
+  }
+
+  .logo-center {
+    max-height: 42px;
+    max-width: 145px;
+    width: auto;
+    height: auto;
+  }
+
+  .logo-auth {
+    max-height: 60px;
+    max-width: 150px;
+  }
+
+  .logo-footer {
+    max-height: 30px;
+    max-width: 130px;
+    margin-right: 0.5rem;
+  }
+}
+
+/* Responsive - Tablet (641px - 1024px) */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .th-header-top-fixed {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+
+  .logo-left,
+  .logo-right {
+    max-height: 65px;
+    max-width: 95px;
+    width: auto;
+    height: auto;
+  }
+
+  .logo-center {
+    max-height: 50px;
+    max-width: 165px;
+    width: auto;
+    height: auto;
+  }
+
+  .logo-auth {
+    max-height: 68px;
+    max-width: 170px;
+  }
+
+  .logo-footer {
+    max-height: 35px;
+    max-width: 150px;
+  }
+}
+
+/* Responsive - Desktop (más de 1024px) */
+@media (min-width: 1025px) {
+  .th-header-top-fixed {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .logo-left,
+  .logo-right {
+    max-height: 75px;
+    max-width: 115px;
+    width: auto;
+    height: auto;
+  }
+
+  .logo-center {
+    max-height: 58px;
+    max-width: 190px;
+    width: auto;
+    height: auto;
+  }
+
+  .logo-auth {
+    max-height: 75px;
+    max-width: 190px;
+  }
+
+  .logo-footer {
+    max-height: 40px;
+    max-width: 170px;
+  }
+}
+
+/* Asegurar que los logos se centren correctamente */
+.logo-img {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Animación suave al cargar los logos */
+.logo-img {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

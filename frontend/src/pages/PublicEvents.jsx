@@ -22,6 +22,7 @@ export default function PublicEvents() {
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedFilter, setSelectedFilter] = useState("all");
+  const [selectedCity, setSelectedCity] = useState("all");
   const [savedItems, setSavedItems] = useState({ events: [] });
   const [loading, setLoading] = useState(true);
 
@@ -33,18 +34,28 @@ export default function PublicEvents() {
   }, [user]);
 
   useEffect(() => {
-    if (selectedFilter === "all") {
-      setFilteredEvents(events);
-    } else if (selectedFilter === "online") {
-      setFilteredEvents(events.filter(event => event.is_online));
+    let filtered = events;
+
+    // Apply category/type filter
+    if (selectedFilter === "online") {
+      filtered = filtered.filter(event => event.is_online);
     } else if (selectedFilter === "presencial") {
-      setFilteredEvents(events.filter(event => !event.is_online));
+      filtered = filtered.filter(event => !event.is_online);
     } else if (selectedFilter === "paraguay") {
-      setFilteredEvents(events.filter(event => !event.is_online && event.location.toLowerCase().includes('paraguay')));
-    } else {
-      setFilteredEvents(events.filter(event => event.category === selectedFilter));
+      filtered = filtered.filter(event => !event.is_online && event.location.toLowerCase().includes('paraguay'));
+    } else if (selectedFilter !== "all") {
+      filtered = filtered.filter(event => event.category === selectedFilter);
     }
-  }, [events, selectedFilter]);
+
+    // Apply city filter
+    if (selectedCity !== "all") {
+      filtered = filtered.filter(event =>
+        event.location.toLowerCase().includes(selectedCity.toLowerCase())
+      );
+    }
+
+    setFilteredEvents(filtered);
+  }, [events, selectedFilter, selectedCity]);
 
   const fetchEvents = async () => {
     try {
@@ -191,6 +202,35 @@ export default function PublicEvents() {
     { value: "Gestión de Empresas", label: "Gestión de Empresas" }
   ];
 
+  const cityFilters = [
+    { value: "all", label: "Todas las ciudades" },
+    { value: "Asunción", label: "Asunción" },
+    { value: "San Lorenzo", label: "San Lorenzo" },
+    { value: "Luque", label: "Luque" },
+    { value: "Capiatá", label: "Capiatá" },
+    { value: "Lambaré", label: "Lambaré" },
+    { value: "Fernando de la Mora", label: "Fernando de la Mora" },
+    { value: "Limpio", label: "Limpio" },
+    { value: "Ñemby", label: "Ñemby" },
+    { value: "Encarnación", label: "Encarnación" },
+    { value: "Ciudad del Este", label: "Ciudad del Este" },
+    { value: "Pedro Juan Caballero", label: "Pedro Juan Caballero" },
+    { value: "Presidente Franco", label: "Presidente Franco" },
+    { value: "Mariano Roque Alonso", label: "Mariano Roque Alonso" },
+    { value: "Villa Elisa", label: "Villa Elisa" },
+    { value: "Itauguá", label: "Itauguá" },
+    { value: "Coronel Oviedo", label: "Coronel Oviedo" },
+    { value: "Concepción", label: "Concepción" },
+    { value: "Caaguazú", label: "Caaguazú" },
+    { value: "Villarrica", label: "Villarrica" },
+    { value: "Itá", label: "Itá" },
+    { value: "Caacupé", label: "Caacupé" },
+    { value: "Paraguarí", label: "Paraguarí" },
+    { value: "Pilar", label: "Pilar" },
+    { value: "Hernandarias", label: "Hernandarias" },
+    { value: "Salto del Guairá", label: "Salto del Guairá" }
+  ];
+
   const isSaved = (itemId) => {
     return savedItems?.events?.some(item => item.id === itemId) || false;
   };
@@ -237,6 +277,16 @@ export default function PublicEvents() {
                 {user && user.role === 'empresa' && (
                   <CreateEventButton inline={true} onEventCreated={fetchEvents} />
                 )}
+                <Select value={selectedCity} onValueChange={setSelectedCity}>
+                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-48">
+                    <SelectValue placeholder="Filtrar por ciudad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cityFilters.map(filter => (
+                      <SelectItem key={filter.value} value={filter.value}>{filter.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select value={selectedFilter} onValueChange={setSelectedFilter}>
                   <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-48">
                     <SelectValue placeholder="Filtrar eventos" />

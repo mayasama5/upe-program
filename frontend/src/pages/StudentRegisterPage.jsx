@@ -6,7 +6,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Eye, EyeOff, UserPlus, BookOpen } from 'lucide-react';
-import { useSystemSettings } from '../hooks/useSystemSettings';
+import techHubLogo from '../images/LOGO_TECH_HUB(1).png';
 
 export default function StudentRegisterPage() {
   const navigate = useNavigate();
@@ -22,7 +22,6 @@ export default function StudentRegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const { settings } = useSystemSettings();
 
   const handleChange = (e) => {
     setFormData({
@@ -68,13 +67,7 @@ export default function StudentRegisterPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-6 sm:mb-8">
-          {settings.techhub_logo ? (
-            <img src={settings.techhub_logo} alt="TechHub UPE" className="logo-img logo-auth mx-auto mb-3 sm:mb-4" />
-          ) : (
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center mx-auto mb-3 sm:mb-4">
-              <span className="text-black font-bold text-xl sm:text-2xl">TH</span>
-            </div>
-          )}
+          <img src={techHubLogo} alt="TechHub UPE" className="logo-img logo-auth mx-auto mb-3 sm:mb-4" />
           <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">TechHub UPE</h1>
           <p className="text-sm sm:text-base text-gray-400">Crea tu cuenta de estudiante</p>
         </div>
