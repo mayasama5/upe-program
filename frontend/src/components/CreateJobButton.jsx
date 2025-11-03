@@ -33,7 +33,7 @@ export default function CreateJobButton({ onJobCreated, inline = false }) {
     city: 'none',
     country: 'Paraguay',
     salary_range: '',
-    apply_type: 'externo',
+    apply_type: 'interno',
     apply_url: '',
     contact_whatsapp: ''
   });
@@ -84,7 +84,7 @@ export default function CreateJobButton({ onJobCreated, inline = false }) {
         city: 'none',
         country: 'Paraguay',
         salary_range: '',
-        apply_type: 'externo',
+        apply_type: 'interno',
         apply_url: '',
         contact_whatsapp: ''
       });

@@ -12,8 +12,9 @@ import { Textarea } from "./components/ui/textarea";
 import { Label } from "./components/ui/label";
 import { useToast } from "./hooks/use-toast";
 import { Toaster } from "./components/ui/toaster";
-import { Search, BookOpen, Calendar, Briefcase, MapPin, ExternalLink, User, Building, LogOut, Filter, UserCheck, Users, Newspaper, TrendingUp, Target, Lightbulb, Upload, Plus } from "lucide-react";
+import { Search, BookOpen, Calendar, Briefcase, MapPin, ExternalLink, User, Building, LogOut, Filter, UserCheck, Users, Newspaper, TrendingUp, Target, Lightbulb, Upload, Plus, FileText } from "lucide-react";
 import Footer from "./components/Footer";
+import JobApplicationForm from './components/JobApplicationForm';
 import ChatButton from "./components/ChatButton";
 import CreateEventButton from "./components/CreateEventButton";
 import CreateJobButton from "./components/CreateJobButton";
@@ -29,6 +30,7 @@ import PublicJobs from "./pages/PublicJobs";
 import Scholarships from "./pages/Scholarships";
 import Certifications from "./pages/Certifications";
 import Companies from "./pages/Companies";
+import CompanyDetail from "./pages/CompanyDetail";
 import CareerAdvice from "./pages/CareerAdvice";
 import News from "./pages/News";
 import Support from "./pages/Support";
@@ -47,8 +49,8 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL ||
   (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 
    'https://upe-rfchnhw6m-gustavogamarra95s-projects.vercel.app');
 
-console.log('🔗 Backend URL:', BACKEND_URL);
-console.log('🌍 Environment:', process.env.NODE_ENV);
+console.log('Backend URL:', BACKEND_URL);
+console.log('Environment:', process.env.NODE_ENV);
 const API = BACKEND_URL; // Remove /api from here since it's added in individual calls
 
 import { useAuth } from "./hooks/useAuth";
@@ -58,6 +60,13 @@ import LoginPage from "./pages/LoginPage";
 import StudentRegisterPage from "./pages/StudentRegisterPage";
 import CompanyRegisterPage from "./pages/CompanyRegisterPage";
 import AuthCallback from "./pages/AuthCallback";
+import ViewCandidates from "./pages/ViewCandidates";
+import MyJobs from "./pages/MyJobs";
+import MyApplications from "./pages/MyApplications";
+import JobApplicationPage from "./pages/JobApplicationPage";
+import UsersList from "./pages/UsersList";
+import StudentProfile from "./pages/StudentProfile";
+import CompanyProfile from "./pages/CompanyProfile";
 
 // Auth & Landing Page
 const AuthLandingPage = () => {
@@ -1039,8 +1048,6 @@ const DashboardHeader = ({ user, logout }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const userMenuRef = useRef(null);
-  const { settings } = useSystemSettings();
-  const [techhubError, setTechhubError] = useState(false);
 
   const handleProfileClick = () => {
     navigate('/profile');
@@ -1064,40 +1071,21 @@ const DashboardHeader = ({ user, logout }) => {
   return (
     <>
       {/* Top bar with logos */}
-  <div className="bg-slate-800 border-b border-slate-700 px-4 th-header-top-fixed">
-        <div className="max-w-7xl mx-auto grid grid-cols-3 items-center">
-          <div className="flex items-center justify-center justify-self-end">
-            {settings.faculty_logo ? (
-              <img src={settings.faculty_logo} alt="Facultad" className="logo-img logo-left" />
-            ) : (
-              <span className="text-gray-400 text-xs">Facultad</span>
-            )}
-          </div>
-          
-          <div className="flex items-center justify-center space-x-2">
-            {settings.techhub_logo && !techhubError ? (
-              <img
-                src={settings.techhub_logo}
-                alt="TechHub UPE"
-                className="logo-img logo-center"
-                onError={() => setTechhubError(true)}
-              />
-            ) : (
-              <>
-                <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
-                  <span className="text-black font-bold text-lg">TH</span>
-                </div>
-                <h1 className="text-2xl font-bold text-white">TechHub UPE</h1>
-              </>
-            )}
-          </div>
-          
+      <div className="bg-slate-800 border-b border-slate-700 th-header-top-fixed">
+        <div className="max-w-7xl mx-auto grid grid-cols-[1fr_auto_1fr] items-center gap-4 sm:gap-6 md:gap-8 px-2 sm:px-4">
+          {/* Logo izquierdo - UPE */}
           <div className="flex items-center justify-center">
-            {settings.university_logo ? (
-              <img src={settings.university_logo} alt="Universidad" className="logo-img logo-right" />
-            ) : (
-              <span className="text-gray-400 text-xs">Universidad</span>
-            )}
+            <img src={upeLogo} alt="Universidad Privada del Este" className="logo-img logo-left" />
+          </div>
+
+          {/* Logo centro - TechHub */}
+          <div className="flex items-center justify-center">
+            <img src={techHubLogo} alt="TechHub UPE" className="logo-img logo-center" />
+          </div>
+
+          {/* Logo derecho - Facultad de Informática */}
+          <div className="flex items-center justify-center">
+            <img src={facultadLogo} alt="Facultad de Ciencias de la Informática" className="logo-img logo-right" />
           </div>
         </div>
       </div>
@@ -1153,6 +1141,15 @@ const DashboardHeader = ({ user, logout }) => {
                 <Briefcase className="w-4 h-4 mr-2" />
                 <span className="whitespace-nowrap">Vacantes</span>
               </Button>
+              <Button
+                key="empresas-btn"
+                variant="ghost"
+                onClick={() => navigate('/companies')}
+                className="text-gray-300 hover:text-cyan-400 px-3 md:px-4"
+              >
+                <Building className="w-4 h-4 mr-2" />
+                <span className="whitespace-nowrap">Empresas</span>
+              </Button>
             </div>
 
             {/* Mobile dropdown (absolute) */}
@@ -1163,6 +1160,7 @@ const DashboardHeader = ({ user, logout }) => {
                   <button onClick={() => { navigate('/courses'); setMobileOpen(false); }} className="text-left px-4 py-2 text-gray-300 hover:bg-slate-800 hover:text-white rounded"><BookOpen className="w-4 h-4 inline mr-2"/>Cursos</button>
                   <button onClick={() => { navigate('/events'); setMobileOpen(false); }} className="text-left px-4 py-2 text-gray-300 hover:bg-slate-800 hover:text-white rounded"><Calendar className="w-4 h-4 inline mr-2"/>Eventos</button>
                   <button onClick={() => { navigate('/jobs'); setMobileOpen(false); }} className="text-left px-4 py-2 text-gray-300 hover:bg-slate-800 hover:text-white rounded"><Briefcase className="w-4 h-4 inline mr-2"/>Vacantes</button>
+                  <button onClick={() => { navigate('/companies'); setMobileOpen(false); }} className="text-left px-4 py-2 text-gray-300 hover:bg-slate-800 hover:text-white rounded"><Building className="w-4 h-4 inline mr-2"/>Empresas</button>
                 </div>
               </div>
             )}
@@ -1237,6 +1235,22 @@ const DashboardHome = ({ user }) => {
     courses: 0,
     users: 0
   });
+  
+  // Company-specific stats
+  const [companyStats, setCompanyStats] = useState({
+    applications: 0,
+    pendingApplications: 0,
+    activeJobs: 0,
+    totalJobs: 0
+  });
+
+  // Student-specific stats
+  const [studentStats, setStudentStats] = useState({
+    totalApplications: 0,
+    pendingApplications: 0,
+    interviewApplications: 0,
+    offers: 0
+  });
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -1250,6 +1264,68 @@ const DashboardHome = ({ user }) => {
     
     fetchStats();
   }, []);
+
+  useEffect(() => {
+    const fetchCompanyStats = async () => {
+      if (user.role === 'empresa') {
+        try {
+          const token = localStorage.getItem('authToken');
+          
+          // Fetch company jobs
+          const jobsResponse = await axios.get(`${API}/api/company/jobs`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+            withCredentials: true
+          });
+          
+          // Fetch company applications
+          const applicationsResponse = await axios.get(`${API}/api/company/applications`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+            withCredentials: true
+          });
+
+          const jobs = jobsResponse.data.jobs || [];
+          const applications = applicationsResponse.data.applications || [];
+          
+          setCompanyStats({
+            applications: applications.length,
+            pendingApplications: applications.filter(app => app.status === 'nuevo').length,
+            activeJobs: jobs.filter(job => job.is_active).length,
+            totalJobs: jobs.length
+          });
+        } catch (error) {
+          console.error('Error fetching company stats:', error);
+        }
+      }
+    };
+
+    const fetchStudentStats = async () => {
+      if (user.role === 'estudiante') {
+        try {
+          const token = localStorage.getItem('authToken');
+          
+          // Fetch student applications
+          const applicationsResponse = await axios.get(`${API}/api/student/applications`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+            withCredentials: true
+          });
+
+          const applications = applicationsResponse.data.applications || [];
+          
+          setStudentStats({
+            totalApplications: applications.length,
+            pendingApplications: applications.filter(app => app.status === 'nuevo').length,
+            interviewApplications: applications.filter(app => app.status === 'entrevista').length,
+            offers: applications.filter(app => app.status === 'oferta').length
+          });
+        } catch (error) {
+          console.error('Error fetching student stats:', error);
+        }
+      }
+    };
+    
+    fetchCompanyStats();
+    fetchStudentStats();
+  }, [user.role]);
 
   return (
     <div className="space-y-8">
@@ -1268,8 +1344,16 @@ const DashboardHome = ({ user }) => {
 
           {/* Resource Cards - Fixed dimensions with real data */}
           <div className="grid md:grid-cols-3 gap-4">
-            <Card className="bg-slate-800/50 border-slate-700 h-40">
-              <CardContent className="p-4 text-center h-full flex flex-col justify-center">
+            <Card 
+              className="bg-slate-800/50 border-slate-700 h-40 hover:bg-slate-800/70 transition-colors"
+              onClick={(e) => {
+                // Solo navegar si no se hizo click en el botón de empresa
+                if (!e.target.closest('button')) {
+                  navigate('/events');
+                }
+              }}
+            >
+              <CardContent className="p-4 text-center h-full flex flex-col justify-center cursor-pointer">
                 <Calendar className="w-8 h-8 text-green-400 mx-auto mb-2" />
                 <h3 className="text-white font-semibold mb-1 text-sm">Eventos</h3>
                 <p className="text-gray-400 text-xs mb-3">{stats.events} eventos disponibles</p>
@@ -1292,8 +1376,16 @@ const DashboardHome = ({ user }) => {
                 )}
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700 h-40">
-              <CardContent className="p-4 text-center h-full flex flex-col justify-center">
+            <Card 
+              className="bg-slate-800/50 border-slate-700 h-40 hover:bg-slate-800/70 transition-colors"
+              onClick={(e) => {
+                // Solo navegar si no se hizo click en el botón de empresa
+                if (!e.target.closest('button')) {
+                  navigate('/jobs');
+                }
+              }}
+            >
+              <CardContent className="p-4 text-center h-full flex flex-col justify-center cursor-pointer">
                 <Briefcase className="w-8 h-8 text-blue-400 mx-auto mb-2" />
                 <h3 className="text-white font-semibold mb-1 text-sm">Oportunidades</h3>
                 <p className="text-gray-400 text-xs mb-3">{stats.jobs} vacantes registradas</p>
@@ -1316,16 +1408,221 @@ const DashboardHome = ({ user }) => {
                 )}
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 border-slate-700 h-40">
-              <CardContent className="p-4 text-center h-full flex flex-col justify-center">
-                <Users className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-                <h3 className="text-white font-semibold mb-1 text-sm">Comunidad</h3>
-                <p className="text-gray-400 text-xs">{stats.users} usuarios registrados</p>
+            <Card 
+              className="bg-slate-800/50 border-slate-700 h-40 hover:bg-slate-800/70 transition-colors"
+              onClick={(e) => {
+                // Solo navegar si no se hizo click en el botón de empresa
+                if (!e.target.closest('button')) {
+                  navigate('/companies');
+                }
+              }}
+            >
+              <CardContent className="p-4 text-center h-full flex flex-col justify-center cursor-pointer">
+                <Building className="w-8 h-8 text-orange-400 mx-auto mb-2" />
+                <h3 className="text-white font-semibold mb-1 text-sm">Empresas</h3>
+                <p className="text-gray-400 text-xs">Empresas colaboradoras</p>
               </CardContent>
             </Card>
           </div>
         </div>
       </section>
+
+      {/* Company Management Section - Only for companies */}
+      {user.role === 'empresa' && (
+        <section className="py-8 px-4 bg-gradient-to-r from-orange-900/20 to-yellow-900/20 rounded-xl border border-orange-500/20">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+              <Building className="w-6 h-6 text-orange-400" />
+              Gestión Empresarial
+            </h2>
+            
+            <div className="grid md:grid-cols-3 gap-6">
+              <Card className="bg-slate-800/50 border-slate-700 hover:border-orange-500/50 transition-all cursor-pointer" onClick={() => navigate('/candidates')}>
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2 text-lg">
+                    <Users className="w-5 h-5 text-orange-400" />
+                    Ver Candidatos
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Revisa las aplicaciones a tus vacantes laborales
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-2xl font-bold text-white">{companyStats.pendingApplications}</p>
+                      <p className="text-xs text-gray-400">
+                        {companyStats.pendingApplications === 1 ? 'Aplicación pendiente' : 'Aplicaciones pendientes'}
+                      </p>
+                      {companyStats.applications > companyStats.pendingApplications && (
+                        <p className="text-xs text-cyan-400 mt-1">
+                          {companyStats.applications} total
+                        </p>
+                      )}
+                    </div>
+                    <Button className="bg-orange-500 hover:bg-orange-600 text-black">
+                      Ver Todas
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-slate-700 hover:border-blue-500/50 transition-all cursor-pointer" onClick={() => navigate('/my-jobs')}>
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2 text-lg">
+                    <Briefcase className="w-5 h-5 text-blue-400" />
+                    Mis Vacantes
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Administra tus ofertas laborales publicadas
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-2xl font-bold text-white">{companyStats.activeJobs}</p>
+                      <p className="text-xs text-gray-400">
+                        {companyStats.activeJobs === 1 ? 'Vacante activa' : 'Vacantes activas'}
+                      </p>
+                      {companyStats.totalJobs > companyStats.activeJobs && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {companyStats.totalJobs} total
+                        </p>
+                      )}
+                    </div>
+                    <Button variant="outline" className="border-blue-500 text-blue-400 hover:bg-blue-500/10">
+                      Gestionar
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-slate-700 hover:border-green-500/50 transition-all cursor-pointer" onClick={() => navigate('/profile')}>
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2 text-lg">
+                    <Building className="w-5 h-5 text-green-400" />
+                    Perfil Empresarial
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Actualiza la información de tu empresa
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-white font-medium">{user.company_name || 'Sin nombre'}</p>
+                      <p className="text-xs text-gray-400">Perfil empresarial</p>
+                    </div>
+                    <Button variant="outline" className="border-green-500 text-green-400 hover:bg-green-500/10">
+                      Editar
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Student Progress Section - Only for students */}
+      {user.role === 'estudiante' && (
+        <section className="py-8 px-4 bg-gradient-to-r from-cyan-900/20 to-blue-900/20 rounded-xl border border-cyan-500/20">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+              <User className="w-6 h-6 text-cyan-400" />
+              Mi Progreso Profesional
+            </h2>
+            
+            <div className="grid md:grid-cols-3 gap-6">
+              <Card className="bg-slate-800/50 border-slate-700 hover:border-cyan-500/50 transition-all cursor-pointer" onClick={() => navigate('/my-applications')}>
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2 text-lg">
+                    <FileText className="w-5 h-5 text-cyan-400" />
+                    Mis Aplicaciones
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Haz seguimiento de tus postulaciones laborales
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-2xl font-bold text-white">{studentStats.totalApplications}</p>
+                      <p className="text-xs text-gray-400">
+                        {studentStats.totalApplications === 1 ? 'Aplicación enviada' : 'Aplicaciones enviadas'}
+                      </p>
+                      {studentStats.offers > 0 && (
+                        <p className="text-xs text-green-400 mt-1">
+                          {studentStats.offers} {studentStats.offers === 1 ? 'oferta' : 'ofertas'}
+                        </p>
+                      )}
+                    </div>
+                    <Button className="bg-cyan-500 hover:bg-cyan-600 text-black">
+                      Ver Estado
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-slate-700 hover:border-green-500/50 transition-all cursor-pointer" onClick={() => navigate('/jobs')}>
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2 text-lg">
+                    <Briefcase className="w-5 h-5 text-green-400" />
+                    Buscar Vacantes
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Encuentra nuevas oportunidades laborales
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-white font-medium">Explorar trabajos</p>
+                      <p className="text-xs text-gray-400">Nuevas oportunidades disponibles</p>
+                      {studentStats.interviewApplications > 0 && (
+                        <p className="text-xs text-purple-400 mt-1">
+                          {studentStats.interviewApplications} {studentStats.interviewApplications === 1 ? 'entrevista' : 'entrevistas'} pendientes
+                        </p>
+                      )}
+                    </div>
+                    <Button variant="outline" className="border-green-500 text-green-400 hover:bg-green-500/10">
+                      Explorar
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-slate-700 hover:border-purple-500/50 transition-all cursor-pointer" onClick={() => navigate('/profile')}>
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2 text-lg">
+                    <User className="w-5 h-5 text-purple-400" />
+                    Mi Perfil
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Actualiza tu información y CV
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-white font-medium">{user.name}</p>
+                      <p className="text-xs text-gray-400">Perfil profesional</p>
+                      {studentStats.pendingApplications > 0 && (
+                        <p className="text-xs text-yellow-400 mt-1">
+                          {studentStats.pendingApplications} {studentStats.pendingApplications === 1 ? 'respuesta' : 'respuestas'} pendientes
+                        </p>
+                      )}
+                    </div>
+                    <Button variant="outline" className="border-purple-500 text-purple-400 hover:bg-purple-500/10">
+                      Editar
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* News & Tips Section - Fixed dimensions */}
       <div className="grid lg:grid-cols-3 gap-8">
@@ -1499,11 +1796,33 @@ const SavedItemsPage = ({ user }) => {
   const navigate = useNavigate();
   const [savedItems, setSavedItems] = useState({ courses: [], events: [], jobs: [] });
   const [loading, setLoading] = useState(true);
+  const [isApplicationFormOpen, setIsApplicationFormOpen] = useState(false);
+  const [selectedJobForApplication, setSelectedJobForApplication] = useState(null);
+  const [userApplications, setUserApplications] = useState([]);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchSavedItems();
+    if (user && user.role === 'estudiante') {
+      fetchUserApplications();
+    }
   }, []);
+
+  // Escuchar actualizaciones de aplicaciones
+  useEffect(() => {
+    const handleApplicationsUpdate = () => {
+      console.log('🔄 SavedItems - Applications updated event received');
+      if (user && user.role === 'estudiante') {
+        fetchUserApplications();
+      }
+    };
+
+    window.addEventListener('applicationsUpdated', handleApplicationsUpdate);
+    
+    return () => {
+      window.removeEventListener('applicationsUpdated', handleApplicationsUpdate);
+    };
+  }, [user]);
 
   const fetchSavedItems = async () => {
     try {
@@ -1546,6 +1865,77 @@ const SavedItemsPage = ({ user }) => {
         description: "Error al eliminar el item",
         variant: "destructive"
       });
+    }
+  };
+
+  const fetchUserApplications = async () => {
+    try {
+      const response = await axios.get(`${API}/api/student/applications`, { 
+        withCredentials: true 
+      });
+      setUserApplications(response.data.applications || []);
+    } catch (error) {
+      console.error('Error fetching user applications:', error);
+      setUserApplications([]);
+    }
+  };
+
+  const hasApplied = (jobId) => {
+    const applied = userApplications.some(app => {
+      // El campo correcto es job_vacancy_id según el schema
+      const appJobId = String(app.job_vacancy_id);
+      const currentJobId = String(jobId);
+      return appJobId === currentJobId;
+    });
+    
+    return applied;
+  };
+
+  const handleApply = (job) => {
+    // Si el usuario no está autenticado, redirigir al login
+    if (!user) {
+      toast({
+        title: "Inicia sesión",
+        description: "Debes iniciar sesión para aplicar a vacantes",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Si el usuario no es estudiante, no puede aplicar
+    if (user.role !== 'estudiante') {
+      toast({
+        title: "Acceso restringido",
+        description: "Solo los estudiantes pueden aplicar a vacantes",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    console.log('Job apply_type:', job.apply_type);
+
+    // PRIORIDAD 1: Si es aplicación externa explícita, abrir URL externa
+    if (job.apply_type === 'externo' && job.apply_url) {
+      console.log('App.js opening external URL:', job.apply_url);
+      window.open(job.apply_url, '_blank');
+    }
+    // PRIORIDAD 2: Por defecto, siempre usar formulario interno para estudiantes
+    else {
+      console.log('App.js using internal form. Navigating to:', `/apply/${job.id}`);
+      navigate(`/apply/${job.id}`);
+    }
+  };
+
+  const handleApplicationSent = () => {
+    // Actualizar datos o mostrar notificación de éxito
+    toast({
+      title: "¡Aplicación enviada!",
+      description: "La empresa podrá ver tu aplicación y contactarte",
+    });
+    
+    // Refrescar aplicaciones del usuario
+    if (user && user.role === 'estudiante') {
+      fetchUserApplications();
     }
   };
 
@@ -1694,9 +2084,16 @@ const SavedItemsPage = ({ user }) => {
                   <Card key={job.id} className="bg-slate-800 border-slate-700 h-80 flex flex-col">
                     <CardHeader className="pb-3 flex-shrink-0">
                       <div className="flex justify-between items-start mb-2">
-                        <Badge variant="secondary" className="bg-orange-500/20 text-orange-400 text-xs">
-                          {job.job_type}
-                        </Badge>
+                        <div className="flex gap-2">
+                          <Badge variant="secondary" className="bg-orange-500/20 text-orange-400 text-xs">
+                            {job.job_type}
+                          </Badge>
+                          {user && user.role === 'estudiante' && hasApplied(job.id) && (
+                            <Badge variant="secondary" className="bg-green-500/20 text-green-400 text-xs">
+                              Postulado
+                            </Badge>
+                          )}
+                        </div>
                         <Button
                           size="sm"
                           variant="ghost"
@@ -1713,10 +2110,18 @@ const SavedItemsPage = ({ user }) => {
                       <div className="flex-grow"></div>
                       <Button 
                         size="sm"
-                        className="w-full bg-orange-500 hover:bg-orange-600 text-white text-xs"
-                        onClick={() => window.open(job.apply_url, '_blank')}
+                        className={`w-full text-xs ${
+                          user && user.role === 'estudiante' && hasApplied(job.id)
+                            ? "bg-green-600/50 hover:bg-green-600/70 text-green-200 cursor-default"
+                            : "bg-orange-500 hover:bg-orange-600 text-white"
+                        }`}
+                        onClick={() => hasApplied(job.id) ? null : handleApply(job)}
+                        disabled={user && user.role === 'estudiante' && hasApplied(job.id)}
                       >
-                        Aplicar <ExternalLink className="w-3 h-3 ml-1" />
+                        {user && user.role === 'estudiante' && hasApplied(job.id) 
+                          ? "Ya Aplicado" 
+                          : "Aplicar"} 
+                        {!hasApplied(job.id) && <ExternalLink className="w-3 h-3 ml-1" />}
                       </Button>
                     </CardContent>
                   </Card>
@@ -1726,6 +2131,15 @@ const SavedItemsPage = ({ user }) => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Job Application Form */}
+      <JobApplicationForm
+        isOpen={isApplicationFormOpen}
+        onClose={() => setIsApplicationFormOpen(false)}
+        job={selectedJobForApplication}
+        user={user}
+        onApplicationSent={handleApplicationSent}
+      />
     </div>
   );
 };
@@ -1808,6 +2222,38 @@ function App() {
                 <Navigate to="/" replace />
             }
           />
+          <Route
+            path="/candidates"
+            element={
+              user && user.role === 'empresa' ?
+                <ViewCandidates /> :
+                <Navigate to="/" replace />
+            }
+          />
+          <Route
+            path="/my-jobs"
+            element={
+              user && user.role === 'empresa' ?
+                <MyJobs /> :
+                <Navigate to="/" replace />
+            }
+          />
+          <Route
+            path="/my-applications"
+            element={
+              user && user.role === 'estudiante' ?
+                <MyApplications /> :
+                <Navigate to="/" replace />
+            }
+          />
+          <Route
+            path="/apply/:jobId"
+            element={
+              user && user.role === 'estudiante' ?
+                <JobApplicationPage /> :
+                <Navigate to="/" replace />
+            }
+          />
 
           {/* Admin Route */}
           <Route
@@ -1815,6 +2261,32 @@ function App() {
             element={
               user && user.role === 'admin' ?
                 <AdminDashboard /> :
+                <Navigate to="/" replace />
+            }
+          />
+
+          {/* Users Management Routes */}
+          <Route
+            path="/users"
+            element={
+              user && user.role === 'admin' ?
+                <UsersList /> :
+                <Navigate to="/" replace />
+            }
+          />
+          <Route
+            path="/user/student/:id"
+            element={
+              user && user.role === 'admin' ?
+                <StudentProfile /> :
+                <Navigate to="/" replace />
+            }
+          />
+          <Route
+            path="/user/company/:id"
+            element={
+              user && user.role === 'admin' ?
+                <CompanyProfile /> :
                 <Navigate to="/" replace />
             }
           />
@@ -1832,6 +2304,7 @@ function App() {
           <Route path="/scholarships" element={<Scholarships />} />
           <Route path="/certifications" element={<Certifications />} />
           <Route path="/companies" element={<Companies />} />
+          <Route path="/company/:id" element={<CompanyDetail />} />
           <Route path="/career-advice" element={<CareerAdvice />} />
           <Route path="/news" element={<News />} />
           <Route path="/support" element={<Support />} />

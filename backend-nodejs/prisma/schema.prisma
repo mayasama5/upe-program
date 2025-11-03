@@ -139,6 +139,7 @@ model JobVacancy {
   company             String
   company_logo        String?
   location            String
+  city                String?
   job_type            JobType
   modality            JobModality
   salary_range        String?
@@ -147,6 +148,7 @@ model JobVacancy {
   benefits            String[]          @default([])
   apply_type          ApplyType
   external_url        String?
+  contact_whatsapp    String?
   posted_by_user_id   String?
   is_active           Boolean           @default(true)
   category            String
@@ -186,17 +188,21 @@ model SavedItem {
 
 // Job Application Model
 model JobApplication {
-  id              String            @id @default(uuid())
-  job_vacancy_id  String
-  applicant_id    String
-  cover_letter    String?
-  status          ApplicationStatus @default(nuevo)
-  created_at      DateTime          @default(now())
-  updated_at      DateTime          @updatedAt
+  id                 String            @id @default(uuid())
+  job_vacancy_id     String
+  applicant_id       String
+  cover_letter       String?
+  contact_info       Json              @default("{}")
+  experience_summary String?
+  availability       String            @default("inmediata")
+  additional_info    Json              @default("{}")
+  status             ApplicationStatus @default(nuevo)
+  created_at         DateTime          @default(now())
+  updated_at         DateTime          @updatedAt
 
   // Relations
-  job_vacancy     JobVacancy        @relation(fields: [job_vacancy_id], references: [id], onDelete: Cascade)
-  applicant       User              @relation(fields: [applicant_id], references: [id], onDelete: Cascade)
+  job_vacancy        JobVacancy        @relation(fields: [job_vacancy_id], references: [id], onDelete: Cascade)
+  applicant          User              @relation(fields: [applicant_id], references: [id], onDelete: Cascade)
 
   @@unique([job_vacancy_id, applicant_id])
   @@map("job_applications")

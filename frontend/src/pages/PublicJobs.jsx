@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Briefcase, ExternalLink, MessageCircle, MapPin, Building2, DollarSign, Clock } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { useToast } from '../hooks/use-toast';
 import Header from '../components/Header';
+import JobApplicationForm from '../components/JobApplicationForm';
 import { useAuth } from '../hooks/useAuth';
 import CreateJobButton from '../components/CreateJobButton';
 import axios from 'axios';
@@ -20,6 +21,7 @@ const API = BACKEND_URL;
 export default function PublicJobs() {
   const { toast } = useToast();
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [selectedFilter, setSelectedFilter] = useState("all");
@@ -28,12 +30,53 @@ export default function PublicJobs() {
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isApplicationFormOpen, setIsApplicationFormOpen] = useState(false);
+  const [selectedJobForApplication, setSelectedJobForApplication] = useState(null);
+  const [userApplications, setUserApplications] = useState([]);
 
   useEffect(() => {
     fetchJobs();
     if (user) {
       fetchSavedItems();
+      if (user.role === 'estudiante') {
+        fetchUserApplications();
+      }
     }
+  }, [user]);
+
+  // Refrescar aplicaciones cuando se monta el componente
+  useEffect(() => {
+    if (user && user.role === 'estudiante') {
+      // Pequeño delay para asegurar que la página esté completamente cargada
+      const timer = setTimeout(() => {
+        fetchUserApplications();
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  // Escuchar actualizaciones de aplicaciones
+  useEffect(() => {
+    const handleApplicationsUpdate = () => {
+      if (user && user.role === 'estudiante') {
+        fetchUserApplications();
+      }
+    };
+
+    const handleWindowFocus = () => {
+      if (user && user.role === 'estudiante') {
+        fetchUserApplications();
+      }
+    };
+
+    window.addEventListener('applicationsUpdated', handleApplicationsUpdate);
+    window.addEventListener('focus', handleWindowFocus);
+    
+    return () => {
+      window.removeEventListener('applicationsUpdated', handleApplicationsUpdate);
+      window.removeEventListener('focus', handleWindowFocus);
+    };
   }, [user]);
 
   useEffect(() => {
@@ -167,6 +210,18 @@ export default function PublicJobs() {
     }
   }, []);
 
+  const fetchUserApplications = async () => {
+    try {
+      const response = await axios.get(`${API}/api/student/applications`, { 
+        withCredentials: true 
+      });
+      setUserApplications(response.data.applications || []);
+    } catch (error) {
+      console.error('Error fetching user applications:', error);
+      setUserApplications([]);
+    }
+  };
+
   const handleSaveItem = useCallback(async (itemId, itemType) => {
     if (!user) {
       toast({
@@ -253,23 +308,63 @@ export default function PublicJobs() {
     return savedItems?.jobs?.some(item => item.id === itemId) || false;
   };
 
+  const hasApplied = (jobId) => {
+    const applied = userApplications.some(app => {
+      // El campo correcto es job_vacancy_id según el schema
+      const appJobId = String(app.job_vacancy_id);
+      const currentJobId = String(jobId);
+      return appJobId === currentJobId;
+    });
+    
+    return applied;
+  };
+
   const handleOpenJobDetails = (job) => {
     setSelectedJob(job);
     setIsModalOpen(true);
   };
 
   const handleApply = (job) => {
-    if (job.apply_type === 'externo' && job.apply_url) {
-      window.open(job.apply_url, '_blank');
-    } else if (job.contact_whatsapp) {
-      const message = encodeURIComponent(`Hola, estoy interesado en la vacante: ${job.title}`);
-      window.open(`https://wa.me/${job.contact_whatsapp.replace(/[^0-9]/g, '')}?text=${message}`, '_blank');
-    } else {
+    // Si el usuario no está autenticado, redirigir al login
+    if (!user) {
       toast({
-        title: "No disponible",
-        description: "No hay información de contacto disponible para esta vacante",
+        title: "Inicia sesión",
+        description: "Debes iniciar sesión para aplicar a vacantes",
         variant: "destructive"
       });
+      return;
+    }
+
+    // Si el usuario no es estudiante, no puede aplicar
+    if (user.role !== 'estudiante') {
+      toast({
+        title: "Acceso restringido",
+        description: "Solo los estudiantes pueden aplicar a vacantes",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // PRIORIDAD 1: Si es aplicación externa explícita, abrir URL externa
+    if (job.apply_type === 'externo' && job.apply_url) {
+      window.open(job.apply_url, '_blank');
+    }
+    // PRIORIDAD 2: Por defecto, siempre usar formulario interno para estudiantes
+    else {
+      navigate(`/apply/${job.id}`);
+    }
+  };
+
+  const handleApplicationSent = () => {
+    // Actualizar datos o mostrar notificación de éxito
+    toast({
+      title: "¡Aplicación enviada!",
+      description: "La empresa podrá ver tu aplicación y contactarte",
+    });
+    
+    // Refrescar aplicaciones del usuario
+    if (user && user.role === 'estudiante') {
+      fetchUserApplications();
     }
   };
 
@@ -338,50 +433,89 @@ export default function PublicJobs() {
               </div>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {filteredJobs.map(job => (
-                <Card key={job.id} className="bg-slate-800 border-slate-700 hover:border-cyan-500/50 transition-all h-80 flex flex-col">
-                  <CardHeader className="pb-3 flex-shrink-0">
+                <Card key={job.id} className="bg-slate-800 border-slate-700 hover:border-cyan-500/50 transition-all flex flex-col h-full">
+                  <CardHeader className="pb-3 flex-shrink-0 p-4 sm:p-6">
                     <div className="flex justify-between items-start mb-2">
-                      <Badge variant="secondary" className="bg-orange-500/20 text-orange-400 text-xs">
-                        {job.job_type}
-                      </Badge>
+                      <div className="flex flex-wrap gap-1 sm:gap-2">
+                        <Badge variant="secondary" className="bg-orange-500/20 text-orange-400 text-xs">
+                          {job.job_type}
+                        </Badge>
+                        {user && user.role === 'estudiante' && hasApplied(job.id) && (
+                          <Badge variant="secondary" className="bg-green-500/20 text-green-400 text-xs">
+                            Postulado
+                          </Badge>
+                        )}
+                      </div>
                       {user && (
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => isSaved(job.id) ? handleUnsaveItem(job.id) : handleSaveItem(job.id, 'job')}
-                          className={isSaved(job.id) ? "text-yellow-400 hover:text-yellow-300 p-1" : "text-gray-400 hover:text-yellow-400 p-1"}
+                          className={isSaved(job.id) ? "text-yellow-400 hover:text-yellow-300 p-1 min-w-8" : "text-gray-400 hover:text-yellow-400 p-1 min-w-8"}
                         >
                           {isSaved(job.id) ? '★' : '☆'}
                         </Button>
                       )}
                     </div>
-                    <CardTitle className="text-white text-sm leading-tight line-clamp-2 h-10">{job.title}</CardTitle>
-                    <CardDescription className="text-gray-400 text-xs">
-                      {job.company} • {job.city || job.location || 'Paraguay'}
+                    <CardTitle className="text-white text-sm sm:text-base leading-tight line-clamp-2 min-h-[2.5rem]">{job.title}</CardTitle>
+                    <CardDescription className="text-gray-400 text-xs sm:text-sm">
+                      <span className="font-medium">{job.company}</span> • {job.city || job.location || 'Paraguay'}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="pt-0 flex flex-col justify-between flex-grow">
-                    <p className="text-gray-300 text-xs mb-4 line-clamp-3 flex-grow">{job.description}</p>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center justify-between">
+                  <CardContent className="pt-0 p-4 sm:p-6 flex flex-col justify-between flex-grow">
+                    <p className="text-gray-300 text-xs sm:text-sm mb-4 line-clamp-3 flex-grow leading-relaxed">{job.description}</p>
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
                         <Badge variant="outline" className="text-cyan-400 border-cyan-400/30 text-xs">{job.modality}</Badge>
-                        <span className="text-cyan-400 font-semibold text-xs">{job.salary_range}</span>
+                        <span className="text-cyan-400 font-semibold text-xs sm:text-sm whitespace-nowrap">{job.salary_range}</span>
                       </div>
                       {job.contact_whatsapp && (
-                        <div className="flex items-center gap-1 text-xs text-green-400 bg-green-500/10 rounded px-2 py-1">
-                          <MessageCircle className="w-3 h-3" />
-                          <span>{job.contact_whatsapp}</span>
+                        <div className="flex items-center gap-2 text-xs text-green-400 bg-green-500/10 rounded p-2">
+                          <MessageCircle className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{job.contact_whatsapp}</span>
                         </div>
                       )}
-                      <Button
-                        size="sm"
-                        className="w-full bg-slate-700 hover:bg-slate-600 text-white text-xs"
-                        onClick={() => handleOpenJobDetails(job)}
-                      >
-                        Más detalles
-                      </Button>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Button
+                          size="sm"
+                          className="flex-1 bg-slate-700 hover:bg-slate-600 text-white text-xs"
+                          onClick={() => handleOpenJobDetails(job)}
+                        >
+                          Ver más
+                        </Button>
+                        {user && user.role === 'estudiante' && (
+                          <Button
+                            size="sm"
+                            className={`flex-1 text-xs ${
+                              hasApplied(job.id) 
+                                ? "bg-green-600/50 hover:bg-green-600/70 text-green-200 cursor-default"
+                                : "bg-orange-500 hover:bg-orange-600 text-white"
+                            }`}
+                            onClick={() => hasApplied(job.id) ? null : handleApply(job)}
+                            disabled={hasApplied(job.id)}
+                          >
+                            {hasApplied(job.id) ? "Aplicado" : "Aplicar"}
+                          </Button>
+                        )}
+                      </div>
+                      
+                      {/* Botón de WhatsApp si está disponible */}
+                      {job.contact_whatsapp && user && user.role === 'estudiante' && (
+                        <Button
+                          size="sm"
+                          className="w-full bg-green-600 hover:bg-green-700 text-white text-xs"
+                          onClick={() => {
+                            const message = encodeURIComponent(`Hola, estoy interesado en la vacante: ${job.title}`);
+                            const whatsappUrl = `https://wa.me/${job.contact_whatsapp.replace(/[^0-9]/g, '')}?text=${message}`;
+                            window.open(whatsappUrl, '_blank');
+                          }}
+                        >
+                          <MessageCircle className="w-3 h-3 mr-1" />
+                          Contactar por WhatsApp
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -477,27 +611,60 @@ export default function PublicJobs() {
                   </div>
                 )}
 
-                {/* Botón de aplicar */}
-                <div className="flex gap-3 pt-4 border-t border-slate-700">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsModalOpen(false)}
-                    className="flex-1 border-slate-600 text-gray-300"
-                  >
-                    Cerrar
-                  </Button>
-                  <Button
-                    onClick={() => handleApply(selectedJob)}
-                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
-                  >
-                    Aplicar ahora <ExternalLink className="w-4 h-4 ml-2" />
-                  </Button>
+                {/* Botones de aplicar */}
+                <div className="flex flex-col gap-3 pt-4 border-t border-slate-700">
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsModalOpen(false)}
+                      className="flex-1 border-slate-600 text-gray-300"
+                    >
+                      Cerrar
+                    </Button>
+                    <Button
+                      onClick={() => handleApply(selectedJob)}
+                      className={`flex-1 ${
+                        user && user.role === 'estudiante' && hasApplied(selectedJob.id)
+                          ? "bg-green-600/50 hover:bg-green-600/70 text-green-200 cursor-default"
+                          : "bg-orange-500 hover:bg-orange-600 text-white"
+                      }`}
+                      disabled={user && user.role === 'estudiante' && hasApplied(selectedJob.id)}
+                    >
+                      {user && user.role === 'estudiante' && hasApplied(selectedJob.id) 
+                        ? "Ya Aplicado" 
+                        : "Aplicar por Formulario"}
+                    </Button>
+                  </div>
+                  
+                  {/* Botón de WhatsApp si está disponible */}
+                  {selectedJob.contact_whatsapp && user && user.role === 'estudiante' && (
+                    <Button
+                      onClick={() => {
+                        const message = encodeURIComponent(`Hola, estoy interesado en la vacante: ${selectedJob.title}`);
+                        const whatsappUrl = `https://wa.me/${selectedJob.contact_whatsapp.replace(/[^0-9]/g, '')}?text=${message}`;
+                        window.open(whatsappUrl, '_blank');
+                      }}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Contactar por WhatsApp
+                    </Button>
+                  )}
                 </div>
               </div>
             </>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Job Application Form */}
+      <JobApplicationForm
+        isOpen={isApplicationFormOpen}
+        onClose={() => setIsApplicationFormOpen(false)}
+        job={selectedJobForApplication}
+        user={user}
+        onApplicationSent={handleApplicationSent}
+      />
     </div>
   );
 }

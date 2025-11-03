@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Calendar, Briefcase } from 'lucide-react';
+import { BookOpen, Calendar, Briefcase, Building } from 'lucide-react';
 import { Button } from './ui/button';
 import techHubLogo from '../images/LOGO_TECH_HUB(1).png';
 import facultadLogo from '../images/logo_upe_infor(1).png';
@@ -108,6 +108,15 @@ export default function Header({ user, logout }) {
                   <Briefcase className="w-4 h-4 mr-2" />
                   <span className="whitespace-nowrap">Vacantes</span>
                 </Button>
+                <Button
+                  key="empresas-btn"
+                  variant="ghost"
+                  onClick={() => navigate('/companies')}
+                  className="text-gray-300 hover:text-cyan-400 px-3 md:px-4"
+                >
+                  <Building className="w-4 h-4 mr-2" />
+                  <span className="whitespace-nowrap">Empresas</span>
+                </Button>
               </div>
 
               {/* Mobile dropdown (absolute) */}
@@ -118,6 +127,7 @@ export default function Header({ user, logout }) {
                     <button onClick={() => { navigate('/courses'); setMobileOpen(false); }} className="text-left px-4 py-2 text-gray-300 hover:bg-slate-800 hover:text-white rounded"><BookOpen className="w-4 h-4 inline mr-2"/>Cursos</button>
                     <button onClick={() => { navigate('/events'); setMobileOpen(false); }} className="text-left px-4 py-2 text-gray-300 hover:bg-slate-800 hover:text-white rounded"><Calendar className="w-4 h-4 inline mr-2"/>Eventos</button>
                     <button onClick={() => { navigate('/jobs'); setMobileOpen(false); }} className="text-left px-4 py-2 text-gray-300 hover:bg-slate-800 hover:text-white rounded"><Briefcase className="w-4 h-4 inline mr-2"/>Vacantes</button>
+                    <button onClick={() => { navigate('/companies'); setMobileOpen(false); }} className="text-left px-4 py-2 text-gray-300 hover:bg-slate-800 hover:text-white rounded"><Building className="w-4 h-4 inline mr-2"/>Empresas</button>
                   </div>
                 </div>
               )}

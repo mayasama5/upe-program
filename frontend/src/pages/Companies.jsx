@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Building, MapPin, Users, ExternalLink } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -15,106 +15,50 @@ const API = BACKEND_URL;
 
 export default function Companies() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [companies, setCompanies] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadCompanies();
   }, []);
 
-  const loadCompanies = () => {
-    const mockCompanies = [
-      {
-        id: 1,
-        name: "Tech Solutions Paraguay",
-        industry: "Tecnología",
-        location: "Asunción, Paraguay",
-        employees: "50-200",
-        description: "Empresa líder en desarrollo de software y soluciones tecnológicas para empresas en Paraguay y Latinoamérica",
-        openPositions: 5,
-        website: "https://techsolutions.com.py"
-      },
-      {
-        id: 2,
-        name: "Digital Marketing Pro",
-        industry: "Marketing Digital",
-        location: "Ciudad del Este, Paraguay",
-        employees: "10-50",
-        description: "Agencia de marketing digital especializada en estrategias de crecimiento para PyMEs",
-        openPositions: 3,
-        website: "https://digitalmarketingpro.py"
-      },
-      {
-        id: 3,
-        name: "FinTech Paraguay",
-        industry: "Finanzas",
-        location: "Asunción, Paraguay",
-        employees: "100-500",
-        description: "Startup fintech revolucionando los servicios financieros en Paraguay",
-        openPositions: 8,
-        website: "https://fintechpy.com"
-      },
-      {
-        id: 4,
-        name: "Design Studio PY",
-        industry: "Diseño",
-        location: "Asunción, Paraguay",
-        employees: "10-50",
-        description: "Estudio de diseño gráfico y branding para marcas nacionales e internacionales",
-        openPositions: 2,
-        website: "https://designstudiopy.com"
-      },
-      {
-        id: 5,
-        name: "Cloud Services SA",
-        industry: "Cloud Computing",
-        location: "Asunción, Paraguay",
-        employees: "50-200",
-        description: "Proveedor de servicios en la nube y migración digital para empresas",
-        openPositions: 6,
-        website: "https://cloudservices.com.py"
-      },
-      {
-        id: 6,
-        name: "E-commerce Giant",
-        industry: "E-commerce",
-        location: "Asunción, Paraguay",
-        employees: "200-500",
-        description: "Plataforma de comercio electrónico líder en Paraguay",
-        openPositions: 12,
-        website: "https://ecommercegiant.py"
-      },
-      {
-        id: 7,
-        name: "Data Analytics Co",
-        industry: "Análisis de Datos",
-        location: "Asunción, Paraguay",
-        employees: "20-100",
-        description: "Empresa especializada en análisis de datos y business intelligence",
-        openPositions: 4,
-        website: "https://dataanalytics.py"
-      },
-      {
-        id: 8,
-        name: "StartUp Hub Paraguay",
-        industry: "Incubadora",
-        location: "Asunción, Paraguay",
-        employees: "10-50",
-        description: "Incubadora de startups tecnológicas en Paraguay",
-        openPositions: 3,
-        website: "https://startuphub.py"
-      },
-      {
-        id: 9,
-        name: "Consulting Group",
-        industry: "Consultoría",
-        location: "Asunción, Paraguay",
-        employees: "50-200",
-        description: "Firma de consultoría empresarial y transformación digital",
-        openPositions: 7,
-        website: "https://consultinggroup.py"
+  const loadCompanies = async () => {
+    try {
+      // Cargar empresas reales de la API
+      const response = await axios.get(`${API}/api/companies`, {
+        withCredentials: true
+      });
+      
+      if (response.data && response.data.success && response.data.companies) {
+        // Formatear los datos de la API para que coincidan con la estructura esperada
+        const formattedCompanies = response.data.companies.map((company, index) => ({
+          id: company.id,
+          name: company.company_name || company.name || 'Empresa sin nombre',
+          industry: company.industry || 'No especificado',
+          location: company.city || company.country || company.address || 'Ubicación no especificada',
+          employees: company.company_size || 'No especificado',
+          description: company.bio || 'Descripción no disponible',
+          openPositions: company.openPositions || 0, 
+          website: company.website || '#',
+          email: company.email,
+          phone: company.phone,
+          benefits: company.benefits
+        }));
+        
+        setCompanies(formattedCompanies);
+      } else {
+        // Si no hay empresas reales, mostrar lista vacía
+        setCompanies([]);
       }
-    ];
-    setCompanies(mockCompanies);
+    } catch (error) {
+      console.error('Error loading companies from API:', error);
+      console.error('Error details:', error.response?.data);
+      // Si falla la API, mostrar lista vacía
+      setCompanies([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -130,7 +74,11 @@ export default function Companies() {
           </p>
         </div>
 
-        {!user ? (
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="text-white text-lg">Cargando empresas...</div>
+          </div>
+        ) : !user ? (
           <div className="bg-slate-800 border border-orange-500/30 rounded-xl p-8 text-center">
             <h2 className="text-2xl font-semibold text-white mb-3">
               Inicia sesión para ver todas las empresas disponibles
@@ -143,6 +91,16 @@ export default function Companies() {
                 Iniciar Sesión / Crear Cuenta
               </Button>
             </Link>
+          </div>
+        ) : companies.length === 0 ? (
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center">
+            <Building className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-semibold text-white mb-3">
+              No hay empresas registradas
+            </h2>
+            <p className="text-gray-400 mb-6 text-lg">
+              Aún no hay empresas colaboradoras registradas en la plataforma
+            </p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -181,9 +139,13 @@ export default function Companies() {
                       </Badge>
                     </div>
                   </div>
-                  <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white text-sm">
-                    Ver perfil <ExternalLink className="w-3 h-3 ml-1" />
-                  </Button>
+                  <Link to={`/company/${company.id}`} className="w-full">
+                    <Button 
+                      className="w-full bg-orange-500 hover:bg-orange-600 text-white text-sm"
+                    >
+                      Ver perfil <ExternalLink className="w-3 h-3 ml-1" />
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
             ))}

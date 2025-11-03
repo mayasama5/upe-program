@@ -716,59 +716,6 @@ router.patch('/settings/maintenance', async (req, res) => {
   }
 });
 
-// Actualizar logos del sistema
-router.post('/settings/logos', require('../middleware/upload').upload.fields([
-  { name: 'university_logo', maxCount: 1 },
-  { name: 'faculty_logo', maxCount: 1 },
-  { name: 'techhub_logo', maxCount: 1 }
-]), async (req, res) => {
-  try {
-    let settings = await prisma.systemSettings.findFirst();
-
-    const updateData = {};
-
-    // Process uploaded logos
-    if (req.files) {
-      if (req.files.university_logo) {
-        const file = req.files.university_logo[0];
-        updateData.university_logo = `/uploads/${req.user.id}/${file.filename}`;
-      }
-      if (req.files.faculty_logo) {
-        const file = req.files.faculty_logo[0];
-        updateData.faculty_logo = `/uploads/${req.user.id}/${file.filename}`;
-      }
-      if (req.files.techhub_logo) {
-        const file = req.files.techhub_logo[0];
-        updateData.techhub_logo = `/uploads/${req.user.id}/${file.filename}`;
-      }
-    }
-
-    if (!settings) {
-      settings = await prisma.systemSettings.create({
-        data: {
-          maintenance_mode: false,
-          maintenance_message: 'El sistema está en mantenimiento. Volveremos pronto.',
-          ...updateData
-        }
-      });
-    } else {
-      settings = await prisma.systemSettings.update({
-        where: { id: settings.id },
-        data: updateData
-      });
-    }
-
-    res.json({
-      success: true,
-      data: settings,
-      message: 'Logos actualizados correctamente'
-    });
-  } catch (error) {
-    console.error('Error updating logos:', error);
-    res.status(500).json({ success: false, message: 'Error al actualizar logos', error: error.message });
-  }
-});
-
 // ============================================
 // NOTIFICACIONES
 // ============================================
@@ -925,6 +872,188 @@ router.get('/dashboard-stats', async (req, res) => {
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
     res.status(500).json({ success: false, message: 'Error al obtener estadísticas' });
+  }
+});
+
+// Get all users for admin management
+router.get('/users', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        first_name: true,
+        last_name: true,
+        role: true,
+        company_name: true,
+        industry: true,
+        career: true,
+        city: true,
+        location: true,
+        phone: true,
+        created_at: true,
+        updated_at: true
+      },
+      orderBy: {
+        created_at: 'desc'
+      }
+    });
+
+    res.json({ success: true, users });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener usuarios' });
+  }
+});
+
+// Get specific user details by ID
+router.get('/users/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        first_name: true,
+        last_name: true,
+        role: true,
+        company_name: true,
+        industry: true,
+        career: true,
+        university: true,
+        graduation_year: true,
+        city: true,
+        location: true,
+        phone: true,
+        website: true,
+        description: true,
+        skills: true,
+        company_size: true,
+        created_at: true,
+        updated_at: true
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    }
+
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener usuario' });
+  }
+});
+
+// Get student applications by user ID
+router.get('/users/:id/applications', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const applications = await prisma.job_application.findMany({
+      where: { applicant_id: id },
+      include: {
+        job_vacancy: {
+          select: {
+            title: true,
+            company: true
+          }
+        }
+      },
+      orderBy: {
+        created_at: 'desc'
+      }
+    });
+
+    // Transform the data to include job details
+    const formattedApplications = applications.map(app => ({
+      ...app,
+      job_title: app.job_vacancy?.title,
+      company_name: app.job_vacancy?.company
+    }));
+
+    res.json({ success: true, applications: formattedApplications });
+  } catch (error) {
+    console.error('Error fetching user applications:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener postulaciones del usuario' });
+  }
+});
+
+// Get company jobs by company ID
+router.get('/companies/:id/jobs', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const jobs = await prisma.job_vacancy.findMany({
+      where: { created_by: id },
+      orderBy: {
+        created_at: 'desc'
+      }
+    });
+
+    res.json({ success: true, jobs });
+  } catch (error) {
+    console.error('Error fetching company jobs:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener trabajos de la empresa' });
+  }
+});
+
+// Get applications for company jobs
+router.get('/companies/:id/applications', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // First get all jobs from this company
+    const companyJobs = await prisma.job_vacancy.findMany({
+      where: { created_by: id },
+      select: { id: true }
+    });
+
+    const jobIds = companyJobs.map(job => job.id);
+
+    if (jobIds.length === 0) {
+      return res.json({ success: true, applications: [] });
+    }
+
+    // Get all applications for these jobs
+    const applications = await prisma.job_application.findMany({
+      where: {
+        job_vacancy_id: {
+          in: jobIds
+        }
+      },
+      include: {
+        job_vacancy: {
+          select: {
+            title: true
+          }
+        },
+        applicant: {
+          select: {
+            first_name: true,
+            last_name: true,
+            email: true
+          }
+        }
+      },
+      orderBy: {
+        created_at: 'desc'
+      }
+    });
+
+    // Transform the data
+    const formattedApplications = applications.map(app => ({
+      ...app,
+      job_title: app.job_vacancy?.title,
+      applicant_name: `${app.applicant?.first_name || ''} ${app.applicant?.last_name || ''}`.trim()
+    }));
+
+    res.json({ success: true, applications: formattedApplications });
+  } catch (error) {
+    console.error('Error fetching company applications:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener postulaciones de la empresa' });
   }
 });
 

@@ -29,17 +29,27 @@ const jobVacancySchema = Joi.object({
   country: Joi.string().default('Paraguay'),
   salary_range: Joi.string().allow('', null),
   apply_type: Joi.string().valid('interno', 'externo').required(),
-  apply_url: Joi.string().uri().when('apply_type', {
-    is: 'externo',
-    then: Joi.required(),
-    otherwise: Joi.allow('', null)
-  }),
+  apply_url: Joi.string().uri().allow('', null),
+  contact_whatsapp: Joi.string().allow('', null),
   knockout_questions: Joi.array().items(Joi.string()).default([])
 });
 
 const jobApplicationSchema = Joi.object({
   cover_letter: Joi.string().allow('', null),
-  answers: Joi.object().default({})
+  contact_info: Joi.object({
+    phone: Joi.string().allow('', null),
+    email: Joi.string().email().allow('', null),
+    linkedin: Joi.string().uri().allow('', null),
+    portfolio: Joi.string().uri().allow('', null)
+  }).default({}),
+  experience_summary: Joi.string().allow('', null),
+  availability: Joi.string().valid('inmediata', '1_semana', '2_semanas', '1_mes', 'a_convenir').default('inmediata'),
+  answers: Joi.object().default({}),
+  additional_info: Joi.object({
+    motivation: Joi.string().allow('', null),
+    skills: Joi.string().allow('', null),
+    salary_expectation: Joi.string().allow('', null)
+  }).default({})
 });
 
 const savedItemSchema = Joi.object({
@@ -238,7 +248,9 @@ router.get('/jobs', optionalAuth, async (req, res) => {
       job_type,
       city,
       skills,
-      search
+      search,
+      company_id,
+      posted_by_user_id
     } = req.query;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -247,7 +259,7 @@ router.get('/jobs', optionalAuth, async (req, res) => {
     // Apply filters
     if (modality) where.modality = modality;
     if (job_type) where.job_type = job_type;
-    if (city) where.location = { contains: city, mode: 'insensitive' };
+    if (city) where.city = { contains: city, mode: 'insensitive' };
     if (skills) {
       const skillsArray = skills.split(',').map(skill => skill.trim());
       where.requirements = { hasSome: skillsArray };
@@ -259,6 +271,9 @@ router.get('/jobs', optionalAuth, async (req, res) => {
         { company: { contains: search, mode: 'insensitive' } }
       ];
     }
+    // Filter by company (using posted_by_user_id for company filtering)
+    if (company_id) where.posted_by_user_id = company_id;
+    if (posted_by_user_id) where.posted_by_user_id = posted_by_user_id;
 
     const [jobs, total] = await Promise.all([
       prisma.jobVacancy.findMany({
@@ -307,6 +322,7 @@ router.post('/jobs', requireCompany, async (req, res) => {
         description: value.description,
         company: req.user.company_name || req.user.name,
         location: value.city || value.country || 'Paraguay',
+        city: value.city || null,
         job_type: value.job_type,
         modality: value.modality,
         salary_range: value.salary_range,
@@ -314,6 +330,7 @@ router.post('/jobs', requireCompany, async (req, res) => {
         responsibilities: value.skills_stack || [],
         apply_type: value.apply_type,
         external_url: value.apply_url,
+        contact_whatsapp: value.contact_whatsapp,
         posted_by_user_id: req.user.id,
         category: 'Tecnología'
       }
@@ -407,7 +424,11 @@ router.post('/jobs/:jobId/apply', requireStudent, async (req, res) => {
       data: {
         job_vacancy_id: jobId,
         applicant_id: req.user.id,
-        cover_letter: value.cover_letter
+        cover_letter: value.cover_letter,
+        contact_info: value.contact_info || {},
+        experience_summary: value.experience_summary,
+        availability: value.availability || 'inmediata',
+        additional_info: value.additional_info || {}
       }
     });
 
@@ -531,6 +552,221 @@ router.put('/company/applications/:applicationId/status', requireCompany, async 
     res.status(500).json({
       error: 'Internal server error',
       message: 'An error occurred while updating application status'
+    });
+  }
+});
+
+// Get company jobs (company only)
+router.get('/company/jobs', requireCompany, async (req, res) => {
+  try {
+    const jobs = await prisma.jobVacancy.findMany({
+      where: {
+        posted_by_user_id: req.user.id
+      },
+      orderBy: { created_at: 'desc' },
+      include: {
+        _count: {
+          select: {
+            applications: true
+          }
+        }
+      }
+    });
+
+    res.json({
+      jobs: jobs.map(job => ({
+        id: job.id,
+        title: job.title,
+        description: job.description,
+        location: job.location,
+        city: job.city,
+        job_type: job.job_type,
+        modality: job.modality,
+        is_active: job.is_active,
+        created_at: job.created_at,
+        applications_count: job._count.applications
+      }))
+    });
+
+  } catch (error) {
+    console.error('Get company jobs error:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'An error occurred while fetching company jobs'
+    });
+  }
+});
+
+// Update job status (company only)
+router.put('/company/jobs/:jobId/status', requireCompany, async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    const { is_active } = req.body;
+
+    if (typeof is_active !== 'boolean') {
+      return res.status(400).json({
+        error: 'Invalid status',
+        message: 'is_active must be a boolean value'
+      });
+    }
+
+    const job = await prisma.jobVacancy.findUnique({
+      where: { id: jobId }
+    });
+
+    if (!job) {
+      return res.status(404).json({
+        error: 'Job not found',
+        message: 'Job vacancy not found'
+      });
+    }
+
+    // Verify this job belongs to this company
+    if (job.posted_by_user_id !== req.user.id) {
+      return res.status(403).json({
+        error: 'Access denied',
+        message: 'You can only update your own job postings'
+      });
+    }
+
+    const updatedJob = await prisma.jobVacancy.update({
+      where: { id: jobId },
+      data: { is_active }
+    });
+
+    res.json({
+      message: 'Job status updated successfully',
+      job: {
+        id: updatedJob.id,
+        title: updatedJob.title,
+        is_active: updatedJob.is_active
+      }
+    });
+
+  } catch (error) {
+    console.error('Update job status error:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'An error occurred while updating job status'
+    });
+  }
+});
+
+// Get student applications (student only)
+router.get('/student/applications', requireStudent, async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      status
+    } = req.query;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const where = {
+      applicant_id: req.user.id
+    };
+
+    if (status) where.status = status;
+
+    const [applications, total] = await Promise.all([
+      prisma.jobApplication.findMany({
+        where,
+        include: {
+          job_vacancy: {
+            select: {
+              id: true,
+              title: true,
+              company: true,
+              location: true,
+              city: true,
+              job_type: true,
+              modality: true,
+              description: true,
+              created_at: true
+            }
+          }
+        },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: parseInt(limit)
+      }),
+      prisma.jobApplication.count({ where })
+    ]);
+
+    res.json({
+      applications,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+
+  } catch (error) {
+    console.error('Get student applications error:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'An error occurred while fetching applications'
+    });
+  }
+});
+
+// Get all companies
+router.get('/companies', async (req, res) => {
+  try {
+    const companies = await prisma.user.findMany({
+      where: {
+        role: 'empresa'
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        company_name: true,
+        industry: true,
+        city: true,
+        country: true,
+        address: true,
+        phone: true,
+        website: true,
+        bio: true,
+        company_size: true,
+        benefits: true,
+        created_at: true
+      },
+      orderBy: {
+        created_at: 'desc'
+      }
+    });
+
+    // Obtener el conteo de vacantes activas para cada empresa
+    const companiesWithJobCount = await Promise.all(
+      companies.map(async (company) => {
+        const jobCount = await prisma.jobVacancy.count({
+          where: {
+            posted_by_user_id: company.id,
+            is_active: true
+          }
+        });
+        
+        return {
+          ...company,
+          openPositions: jobCount
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      companies: companiesWithJobCount
+    });
+
+  } catch (error) {
+    console.error('Get companies error:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'An error occurred while fetching companies'
     });
   }
 });
