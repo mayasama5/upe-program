@@ -43,15 +43,10 @@ import Maintenance from "./pages/Maintenance";
 import StudentOnboarding from "./pages/StudentOnboarding";
 import CompanyOnboarding from "./pages/CompanyOnboarding";
 
-// Backend URL configuration
-// Priority: Environment variable > Development localhost > Production fallback
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 
-  (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 
-   'https://upe-rfchnhw6m-gustavogamarra95s-projects.vercel.app');
+// Backend URL configuration from config.js
+import { getBackendUrl } from './config';
 
-console.log('Backend URL:', BACKEND_URL);
-console.log('Environment:', process.env.NODE_ENV);
-const API = BACKEND_URL; // Remove /api from here since it's added in individual calls
+const API = getBackendUrl(); // Remove /api from here since it's added in individual calls
 
 import { useAuth } from "./hooks/useAuth";
 

@@ -363,16 +363,18 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
-  
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`API Documentation available at: http://localhost:${PORT}/api`);
-    console.log(`File uploads served from: http://localhost:${PORT}/uploads`);
-  }
-});
+// Start server only if not running in serverless environment
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Health check: http://localhost:${PORT}/health`);
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`API Documentation available at: http://localhost:${PORT}/api`);
+      console.log(`File uploads served from: http://localhost:${PORT}/uploads`);
+    }
+  });
+}
 
 module.exports = app;

@@ -1,9 +1,10 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import axios from 'axios';
 import { useToast } from './use-toast';
+import { getBackendUrl } from '../config';
 
-// Use environment variable or fallback to localhost for development
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+// Get backend URL at runtime
+const getUrl = () => getBackendUrl();
 
 // Create Auth Context
 const AuthContext = createContext(null);
@@ -74,7 +75,7 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      const response = await axios.get(`${BACKEND_URL}/api/auth/me`, {
+      const response = await axios.get(`${getUrl()}/api/auth/me`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -92,7 +93,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post(`${BACKEND_URL}/api/auth/login`, {
+      const response = await axios.post(`${getUrl()}/api/auth/login`, {
         email,
         password
       });
@@ -136,7 +137,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const response = await axios.post(`${BACKEND_URL}/api/auth/register`, userData);
+      const response = await axios.post(`${getUrl()}/api/auth/register`, userData);
 
       const { token, user } = response.data;
       localStorage.setItem('token', token);
@@ -183,7 +184,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.post(`${BACKEND_URL}/api/auth/logout`);
+      await axios.post(`${getUrl()}/api/auth/logout`);
 
       localStorage.removeItem('token');
       setUser(null);
@@ -207,7 +208,7 @@ export const AuthProvider = ({ children }) => {
   const loginWithGoogle = async (role = 'estudiante') => {
     try {
       // Get Google OAuth URL from backend with role parameter
-      const response = await axios.get(`${BACKEND_URL}/api/auth/google`, {
+      const response = await axios.get(`${getUrl()}/api/auth/google`, {
         params: { role }
       });
       const { url } = response.data;

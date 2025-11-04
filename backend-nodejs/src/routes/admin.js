@@ -23,7 +23,7 @@ const {
   createNotificationDTO
 } = require('../dto/notification.dto');
 
-// Aplicar autenticación de Clerk y permisos de admin a todas las rutas
+// Aplicar autenticación y permisos de admin a todas las rutas
 router.use(requireAdmin);
 
 // Endpoint para poblar la base de datos en producción

@@ -5,6 +5,7 @@ const { generateToken } = require('../config/jwt.config');
 const { authenticateJWT } = require('../middleware/jwtAuth');
 const { v4: uuidv4 } = require('uuid');
 const { getAuthUrl, getTokensFromCode, getUserInfo } = require('../config/google.config');
+const { normalizeObjectUrls } = require('../utils/urlHelper');
 
 const router = express.Router();
 
@@ -85,11 +86,12 @@ router.post('/register', async (req, res) => {
 
     // Return user data (without password)
     const { password: _, ...userWithoutPassword } = user;
+    const normalizedUser = normalizeObjectUrls(userWithoutPassword, req);
 
     res.status(201).json({
       message: 'Usuario registrado exitosamente',
       token,
-      user: userWithoutPassword
+      user: normalizedUser
     });
 
   } catch (error) {
@@ -158,11 +160,12 @@ router.post('/login', async (req, res) => {
 
     // Return user data (without password)
     const { password: _, ...userWithoutPassword } = user;
+    const normalizedUser = normalizeObjectUrls(userWithoutPassword, req);
 
     res.json({
       message: 'Inicio de sesión exitoso',
       token,
-      user: userWithoutPassword
+      user: normalizedUser
     });
 
   } catch (error) {
@@ -211,8 +214,11 @@ router.get('/me', authenticateJWT, async (req, res) => {
       });
     }
 
+    // Normalize image URLs to use production URL instead of localhost
+    const normalizedUser = normalizeObjectUrls(user, req);
+
     res.json({
-      user
+      user: normalizedUser
     });
 
   } catch (error) {

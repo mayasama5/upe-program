@@ -1,6 +1,4 @@
 import React from 'react';
-import { SignUp } from '@clerk/clerk-react';
-import { esES } from '@clerk/localizations';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -120,46 +118,21 @@ const StudentSignUp = () => {
                 </p>
               </div>
             </div>
-            {/* LEFT SIDE - Clerk SignUp Form */}
+            {/* LEFT SIDE - Registration Form */}
             <div className="flex flex-col justify-center">
-              <SignUp
-                localization={esES}
-                appearance={{
-                  elements: {
-                    rootBox: "w-full",
-                    card: "bg-slate-800 border-slate-700 shadow-xl w-full",
-                    headerTitle: "text-white",
-                    headerSubtitle: "text-gray-400",
-                    formButtonPrimary: "bg-cyan-500 hover:bg-cyan-600 text-black font-semibold",
-                    formFieldLabel: "text-white",
-                    formFieldInput: "bg-slate-700 border-slate-600 text-white",
-                    footerActionLink: "text-cyan-400 hover:text-cyan-300",
-                    identityPreviewText: "text-white",
-                    formFieldInputShowPasswordButton: "text-gray-400 hover:text-white",
-                    dividerLine: "bg-slate-600",
-                    dividerText: "text-gray-400",
-                    socialButtonsBlockButton: "bg-slate-700 border-slate-600 text-white hover:bg-slate-600",
-                    socialButtonsBlockButtonText: "text-white font-medium",
-                    formFieldSuccessText: "text-green-400",
-                    formFieldErrorText: "text-red-400",
-                    alertText: "text-gray-300",
-                    formFieldAction: "text-cyan-400 hover:text-cyan-300",
-                    otpCodeFieldInput: "bg-slate-700 border-slate-600 text-white"
-                  },
-                  variables: {
-                    colorPrimary: "#06B6D4",
-                    colorText: "white",
-                    colorBackground: "#1e293b",
-                    colorInputBackground: "#334155",
-                    colorInputText: "white"
-                  }
-                }}
-                redirectUrl={`${window.location.origin}/onboarding-estudiante`}
-                afterSignUpUrl={`${window.location.origin}/onboarding-estudiante`}
-                signInUrl="/login"
-              />
-
-              
+              <Card className="bg-slate-800 border-slate-700 shadow-xl w-full">
+                <CardHeader>
+                  <CardTitle className="text-white">Registro de Estudiante</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Crea tu cuenta de estudiante para comenzar
+                  </CardDescription>
+                </CardHeader>
+                <div className="px-6 pb-6">
+                  <p className="text-gray-400 text-center">
+                    El formulario de registro estará disponible próximamente.
+                  </p>
+                </div>
+              </Card>
             </div>
 
           </div>

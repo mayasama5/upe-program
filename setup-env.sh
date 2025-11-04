@@ -45,16 +45,6 @@ echo -e "${YELLOW}1. DATABASE_URL (PostgreSQL/Supabase)${NC}"
 echo "   Ejemplo: postgresql://user:password@host:5432/database?schema=public"
 DATABASE_URL=$(read_with_default "   DATABASE_URL" "")
 
-# Clerk Keys
-echo ""
-echo -e "${YELLOW}2. Clerk Secret Key${NC}"
-echo "   Obtén esto en: https://dashboard.clerk.com"
-CLERK_SECRET_KEY=$(read_with_default "   CLERK_SECRET_KEY" "")
-
-echo ""
-echo -e "${YELLOW}3. Clerk Publishable Key${NC}"
-CLERK_PUBLISHABLE_KEY=$(read_with_default "   CLERK_PUBLISHABLE_KEY" "")
-
 # URLs
 BACKEND_URL="https://upe-m89ktwybr-gustavogamarra95s-projects.vercel.app"
 FRONTEND_URL="https://upe-9cvj71k8t-gustavogamarra95s-projects.vercel.app"
@@ -68,8 +58,6 @@ echo ""
 # Confirmación
 echo -e "${BLUE}📝 Resumen de configuración:${NC}"
 echo "   DATABASE_URL: ${DATABASE_URL:0:50}..."
-echo "   CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:0:20}..."
-echo "   CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY:0:20}..."
 echo "   SESSION_SECRET: ${SESSION_SECRET:0:20}..."
 echo "   JWT_SECRET: ${JWT_SECRET:0:20}..."
 echo "   ENCRYPTION_KEY: $ENCRYPTION_KEY"
@@ -91,8 +79,6 @@ cd backend-nodejs
 echo "$DATABASE_URL" | vercel env add DATABASE_URL production --yes
 echo "production" | vercel env add NODE_ENV production --yes
 echo "$FRONTEND_URL" | vercel env add FRONTEND_URL production --yes
-echo "$CLERK_SECRET_KEY" | vercel env add CLERK_SECRET_KEY production --yes
-echo "$CLERK_PUBLISHABLE_KEY" | vercel env add CLERK_PUBLISHABLE_KEY production --yes
 echo "$SESSION_SECRET" | vercel env add SESSION_SECRET production --yes
 echo "$JWT_SECRET" | vercel env add JWT_SECRET production --yes
 echo "24h" | vercel env add JWT_EXPIRES_IN production --yes
@@ -111,7 +97,6 @@ echo -e "${GREEN}⚙️  Configurando variables del FRONTEND...${NC}"
 cd frontend
 
 # Frontend environment variables
-echo "$CLERK_PUBLISHABLE_KEY" | vercel env add REACT_APP_CLERK_PUBLISHABLE_KEY production --yes
 echo "$BACKEND_URL" | vercel env add REACT_APP_BACKEND_URL production --yes
 
 echo -e "${GREEN}✓ Variables del frontend configuradas${NC}"
@@ -126,7 +111,6 @@ echo -e "${BLUE}📋 Próximos pasos:${NC}"
 echo "   1. Ejecutar migración de base de datos"
 echo "   2. Re-deploy del backend: cd backend-nodejs && vercel --prod --yes"
 echo "   3. Re-deploy del frontend: cd frontend && vercel --prod --yes"
-echo "   4. Configurar URLs en Clerk Dashboard"
 echo ""
 echo -e "${YELLOW}⚠️  Importante: Guarda estas claves en un lugar seguro${NC}"
 echo ""

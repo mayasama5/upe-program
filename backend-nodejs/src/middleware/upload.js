@@ -127,7 +127,13 @@ const handleMulterError = (error, req, res, next) => {
 
 // Helper function to get file URL
 const getFileUrl = (req, filePath) => {
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  // In production, use FRONTEND_URL or construct from request
+  let baseUrl;
+  if (process.env.NODE_ENV === 'production' && process.env.FRONTEND_URL) {
+    baseUrl = process.env.FRONTEND_URL;
+  } else {
+    baseUrl = `${req.protocol}://${req.get('host')}`;
+  }
   const relativePath = path.relative(path.join(__dirname, '../../'), filePath);
   return `${baseUrl}/${relativePath.replace(/\\/g, '/')}`;
 };

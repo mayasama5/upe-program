@@ -1,6 +1,4 @@
 import React from 'react';
-import { SignIn } from '@clerk/clerk-react';
-import { esES } from '@clerk/localizations';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -42,37 +40,21 @@ const Login = () => {
           </CardHeader>
         </Card>
 
-        {/* Clerk SignIn Component */}
+        {/* Login Form */}
         <div className="flex justify-center">
-          <SignIn
-            localization={esES}
-            appearance={{
-              elements: {
-                rootBox: "mx-auto",
-                card: "bg-slate-800 border-slate-700 shadow-xl",
-                headerTitle: "text-white",
-                headerSubtitle: "text-gray-400",
-                formButtonPrimary: "bg-cyan-500 hover:bg-cyan-600 text-black font-semibold",
-                formFieldLabel: "text-white",
-                formFieldInput: "bg-slate-700 border-slate-600 text-white",
-                footerActionLink: "text-cyan-400 hover:text-cyan-300",
-                identityPreviewText: "text-white",
-                formFieldInputShowPasswordButton: "text-gray-400 hover:text-white",
-                dividerLine: "bg-slate-600",
-                dividerText: "text-gray-400",
-                socialButtonsBlockButton: "bg-slate-700 border-slate-600 text-white hover:bg-slate-600",
-                socialButtonsBlockButtonText: "text-white font-medium",
-                formFieldSuccessText: "text-green-400",
-                formFieldErrorText: "text-red-400",
-                alertText: "text-gray-300",
-                formFieldAction: "text-cyan-400 hover:text-cyan-300",
-                otpCodeFieldInput: "bg-slate-700 border-slate-600 text-white"
-              }
-            }}
-            redirectUrl={`${window.location.origin}/dashboard`}
-            afterSignInUrl={`${window.location.origin}/dashboard`}
-            signUpUrl="/registro-estudiante"
-          />
+          <Card className="bg-slate-800 border-slate-700 shadow-xl w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="text-white">Iniciar Sesión</CardTitle>
+              <CardDescription className="text-gray-400">
+                Ingresa tus credenciales para acceder
+              </CardDescription>
+            </CardHeader>
+            <div className="px-6 pb-6">
+              <p className="text-gray-400 text-center">
+                El formulario de inicio de sesión estará disponible próximamente.
+              </p>
+            </div>
+          </Card>
         </div>
 
         {/* Additional Info */}
