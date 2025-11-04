@@ -98,6 +98,8 @@ const corsOptions = {
     
     // Allow specific deployment URLs that might not match the pattern
     const allowedOrigins = [
+      'https://techhubupe.com', // Custom domain
+      'https://www.techhubupe.com', // Custom domain with www
       'https://upe-8gd0xyqyk-gustavogamarra95s-projects.vercel.app',
       'https://upe-program.vercel.app',
       'https://upe-program-git-main-gustavogamarra95s-projects.vercel.app',
@@ -161,6 +163,8 @@ app.options('*', (req, res) => {
   ];
   const vercelPattern = /^https:\/\/.*\.vercel\.app$/;
   const allowedOrigins = [
+    'https://techhubupe.com', // Custom domain
+    'https://www.techhubupe.com', // Custom domain with www
     'https://upe-8gd0xyqyk-gustavogamarra95s-projects.vercel.app',
     'https://upe-program.vercel.app',
     'https://upe-program-git-main-gustavogamarra95s-projects.vercel.app',
