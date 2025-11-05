@@ -65,7 +65,11 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "dev": "react-scripts start"
+    "dev": "react-scripts start",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "styleguide": "styleguidist server",
+    "styleguide:build": "styleguidist build"
   },
   "browserslist": {
     "production": [
@@ -81,9 +85,17 @@
   },
   "devDependencies": {
     "@craco/craco": "^5.9.0",
+    "@storybook/addon-docs": "^10.0.4",
+    "@storybook/addon-onboarding": "^10.0.4",
+    "@storybook/preset-create-react-app": "^10.0.4",
+    "@storybook/react-webpack5": "^10.0.4",
     "autoprefixer": "^10.4.16",
     "html-webpack-plugin": "^5.6.4",
     "postcss": "^8.4.32",
-    "tailwindcss": "^3.3.6"
+    "prop-types": "^15.8.1",
+    "react-styleguidist": "^13.1.4",
+    "storybook": "^10.0.4",
+    "tailwindcss": "^3.3.6",
+    "webpack": "^5.102.1"
   }
 }

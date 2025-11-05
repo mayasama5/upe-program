@@ -1,3 +1,9 @@
+/**
+ * @file Button Component
+ * @description Un componente de botón versátil basado en Radix UI con múltiples variantes y tamaños.
+ * Soporta composición mediante Slot de Radix UI para mayor flexibilidad.
+ */
+
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva } from "class-variance-authority";
@@ -34,6 +40,37 @@ const buttonVariants = cva(
   }
 )
 
+/**
+ * Componente Button
+ *
+ * Un botón altamente personalizable con múltiples variantes y tamaños.
+ *
+ * @component
+ * @example
+ * ```jsx
+ * // Botón primario básico
+ * <Button>Click me</Button>
+ *
+ * // Botón secundario
+ * <Button variant="secondary">Secondary</Button>
+ *
+ * // Botón destructivo pequeño
+ * <Button variant="destructive" size="sm">Delete</Button>
+ *
+ * // Botón como enlace usando asChild
+ * <Button asChild>
+ *   <a href="/path">Link Button</a>
+ * </Button>
+ * ```
+ *
+ * @param {Object} props - Propiedades del componente
+ * @param {string} [props.className] - Clases CSS adicionales
+ * @param {('default'|'destructive'|'outline'|'secondary'|'ghost'|'link')} [props.variant='default'] - Variante visual del botón
+ * @param {('default'|'sm'|'lg'|'icon')} [props.size='default'] - Tamaño del botón
+ * @param {boolean} [props.asChild=false] - Si es true, el botón se renderiza como su hijo usando Radix Slot
+ * @param {React.Ref} ref - Ref del elemento
+ * @returns {React.ReactElement} Elemento Button renderizado
+ */
 const Button = React.forwardRef(({ className, variant, size, asChild = false, ...props }, ref) => {
   const Comp = asChild ? Slot : "button"
   return (
