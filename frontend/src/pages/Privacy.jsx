@@ -2,11 +2,14 @@ import React from 'react';
 import { Shield } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import Header from '../components/Header';
+import { useAuth } from '../hooks/useAuth';
 
 export default function Privacy() {
+  const { user, logout } = useAuth();
+
   return (
     <div className="min-h-screen bg-slate-950">
-      <Header user={null} logout={null} />
+      <Header user={user} logout={logout} />
 
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 py-12">

@@ -6,6 +6,8 @@ const { authenticateJWT } = require('../middleware/jwtAuth');
 const { v4: uuidv4 } = require('uuid');
 const { getAuthUrl, getTokensFromCode, getUserInfo } = require('../config/google.config');
 const { normalizeObjectUrls } = require('../utils/urlHelper');
+const { validateEmail, normalizeEmail } = require('../utils/emailValidator');
+const { validatePassword } = require('../utils/passwordValidator');
 
 const router = express.Router();
 
@@ -33,26 +35,37 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    // Normalize and validate email
+    const normalizedEmail = normalizeEmail(email);
+    const emailValidation = await validateEmail(normalizedEmail, {
+      checkMX: true,
+      blockDisposable: true
+    });
+
+    if (!emailValidation.valid) {
       return res.status(400).json({
         error: 'Invalid email',
-        message: 'Por favor proporciona un correo electrónico válido'
+        message: emailValidation.error
       });
     }
 
-    // Validate password length
-    if (password.length < 6) {
+    // Validate password strength
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
       return res.status(400).json({
         error: 'Weak password',
-        message: 'La contraseña debe tener al menos 6 caracteres'
+        message: passwordValidation.errors[0],
+        details: {
+          errors: passwordValidation.errors,
+          suggestions: passwordValidation.suggestions,
+          strength: passwordValidation.strength
+        }
       });
     }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() }
+      where: { email: normalizedEmail }
     });
 
     if (existingUser) {
@@ -69,7 +82,7 @@ router.post('/register', async (req, res) => {
     const user = await prisma.user.create({
       data: {
         id: uuidv4(),
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         name: name.trim(),
         password: hashedPassword,
         role: role,
@@ -416,20 +429,32 @@ router.get('/google', (req, res) => {
  */
 router.get('/google/callback', async (req, res) => {
   try {
+    console.log('Google callback received:', {
+      code: req.query.code ? 'present' : 'missing',
+      state: req.query.state,
+      frontendUrl: process.env.FRONTEND_URL,
+      redirectUri: process.env.GOOGLE_REDIRECT_URI
+    });
+
     const { code, state } = req.query;
 
     if (!code) {
+      console.error('No code received from Google');
       return res.redirect(`${process.env.FRONTEND_URL}/login?error=no_code`);
     }
 
     // Get role from state parameter (default to 'estudiante')
     const role = state && ['estudiante', 'empresa'].includes(state) ? state : 'estudiante';
 
+    console.log('Exchanging code for tokens...');
     // Exchange code for tokens
     const tokens = await getTokensFromCode(code);
+    console.log('Tokens received successfully');
 
     // Get user info from Google
+    console.log('Fetching user info from Google...');
     const googleUser = await getUserInfo(tokens.access_token);
+    console.log('User info received:', { email: googleUser.email, name: googleUser.name });
 
     // Check if user exists
     let user = await prisma.user.findUnique({
@@ -437,6 +462,7 @@ router.get('/google/callback', async (req, res) => {
     });
 
     if (!user) {
+      console.log('Creating new user...');
       // Create new user with specified role
       user = await prisma.user.create({
         data: {
@@ -450,7 +476,9 @@ router.get('/google/callback', async (req, res) => {
           updated_at: new Date()
         }
       });
+      console.log('New user created:', user.id);
     } else {
+      console.log('Updating existing user...');
       // Update user info if changed
       user = await prisma.user.update({
         where: { id: user.id },
@@ -461,17 +489,30 @@ router.get('/google/callback', async (req, res) => {
           updated_at: new Date()
         }
       });
+      console.log('User updated:', user.id);
     }
 
     // Generate JWT token
     const token = generateToken(user);
+    console.log('JWT token generated, redirecting to frontend...');
 
-    // Redirect to frontend with token
-    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);
+    // Use meta refresh for instant redirect (avoids serverless redirect issues with long URLs)
+    const redirectUrl = `${process.env.FRONTEND_URL}/auth/callback?token=${encodeURIComponent(token)}`;
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=${redirectUrl}"></head><body></body></html>`;
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Content-Length', Buffer.byteLength(html));
+    return res.status(200).send(html);
 
   } catch (error) {
     console.error('Google callback error:', error);
-    res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+
+    return res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed&message=${encodeURIComponent(error.message)}`);
   }
 });
 

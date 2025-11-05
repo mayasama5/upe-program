@@ -16,12 +16,12 @@ export default function Footer() {
           </p>
         </div>
 
-        {/* Grid de 3 columnas en mobile, 4 en desktop */}
-        <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+        {/* Grid de 3 columnas en todos los dispositivos */}
+        <div className="grid grid-cols-3 gap-4 sm:gap-6 md:gap-8">
           {/* Recursos */}
           <div>
-            <h4 className="text-white font-semibold mb-2 sm:mb-3 md:mb-4 text-xs sm:text-sm md:text-base">Recursos</h4>
-            <ul className="space-y-1 sm:space-y-1.5 md:space-y-2 text-gray-400 text-[10px] sm:text-xs md:text-sm">
+            <h4 className="text-white font-semibold mb-3 sm:mb-3 md:mb-4 text-sm sm:text-sm md:text-base">Recursos</h4>
+            <ul className="space-y-2 sm:space-y-1.5 md:space-y-2 text-gray-400 text-xs sm:text-xs md:text-sm">
               <li><Link to="/courses" className="hover:text-cyan-400 transition-colors inline-block">Cursos</Link></li>
               <li><Link to="/events" className="hover:text-cyan-400 transition-colors inline-block">Eventos</Link></li>
               <li><Link to="/scholarships" className="hover:text-cyan-400 transition-colors inline-block">Becas</Link></li>
@@ -31,8 +31,8 @@ export default function Footer() {
 
           {/* Empleo */}
           <div>
-            <h4 className="text-white font-semibold mb-2 sm:mb-3 md:mb-4 text-xs sm:text-sm md:text-base">Empleo</h4>
-            <ul className="space-y-1 sm:space-y-1.5 md:space-y-2 text-gray-400 text-[10px] sm:text-xs md:text-sm">
+            <h4 className="text-white font-semibold mb-3 sm:mb-3 md:mb-4 text-sm sm:text-sm md:text-base">Empleo</h4>
+            <ul className="space-y-2 sm:space-y-1.5 md:space-y-2 text-gray-400 text-xs sm:text-xs md:text-sm">
               <li><Link to="/jobs" className="hover:text-cyan-400 transition-colors inline-block">Vacantes</Link></li>
               <li><Link to="/companies" className="hover:text-cyan-400 transition-colors inline-block">Empresas</Link></li>
               <li><Link to="/career-advice" className="hover:text-cyan-400 transition-colors inline-block">Consejos</Link></li>
@@ -41,8 +41,8 @@ export default function Footer() {
 
           {/* Contacto */}
           <div>
-            <h4 className="text-white font-semibold mb-2 sm:mb-3 md:mb-4 text-xs sm:text-sm md:text-base">Contacto</h4>
-            <ul className="space-y-1 sm:space-y-1.5 md:space-y-2 text-gray-400 text-[10px] sm:text-xs md:text-sm">
+            <h4 className="text-white font-semibold mb-3 sm:mb-3 md:mb-4 text-sm sm:text-sm md:text-base">Contacto</h4>
+            <ul className="space-y-2 sm:space-y-1.5 md:space-y-2 text-gray-400 text-xs sm:text-xs md:text-sm">
               <li><Link to="/support" className="hover:text-cyan-400 transition-colors inline-block">Soporte</Link></li>
               <li><Link to="/terms" className="hover:text-cyan-400 transition-colors inline-block">Términos</Link></li>
               <li><Link to="/privacy" className="hover:text-cyan-400 transition-colors inline-block">Privacidad</Link></li>

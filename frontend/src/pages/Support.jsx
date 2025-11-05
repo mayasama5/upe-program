@@ -3,11 +3,14 @@ import { HelpCircle, Mail, MessageCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import Header from '../components/Header';
+import { useAuth } from '../hooks/useAuth';
 
 export default function Support() {
+  const { user, logout } = useAuth();
+
   return (
     <div className="min-h-screen bg-slate-950">
-      <Header user={null} logout={null} />
+      <Header user={user} logout={logout} />
 
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 py-12">

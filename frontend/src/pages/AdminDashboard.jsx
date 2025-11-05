@@ -76,6 +76,12 @@ import {
   FolderOpen,
   UserCog
 } from 'lucide-react';
+import {
+  BarChart, Bar, PieChart, Pie,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer, Cell
+} from 'recharts';
+import { saveAs } from 'file-saver';
 import Header from '../components/Header';
 import ContentManagement from '../components/admin/ContentManagement';
 import NotificationSystem from '../components/admin/NotificationSystem';
@@ -85,6 +91,24 @@ import { exportToExcel } from '../utils/exportUtils';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+
+const COLORS = {
+  nuevo: '#3B82F6',      // blue
+  en_revision: '#F59E0B', // amber
+  entrevista: '#8B5CF6',  // purple
+  oferta: '#10B981',      // emerald-500 (green)
+  contratado: '#06B6D4',  // cyan-500 (light blue/cyan)
+  rechazado: '#EF4444'    // red
+};
+
+const STATUS_LABELS = {
+  nuevo: 'Nuevo',
+  en_revision: 'En Revisión',
+  entrevista: 'Entrevista',
+  oferta: 'Oferta',
+  contratado: 'Contratado',
+  rechazado: 'Rechazado'
+};
 
 export default function AdminDashboard() {
   const { user, loading, logout } = useAuth();
@@ -113,6 +137,16 @@ export default function AdminDashboard() {
   const [userToDelete, setUserToDelete] = useState(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
+  // Reports state
+  const [reportsLoading, setReportsLoading] = useState(false);
+  const [applicationsStats, setApplicationsStats] = useState(null);
+  const [usersStats, setUsersStats] = useState(null);
+  const [jobsStats, setJobsStats] = useState(null);
+  const [dateRange, setDateRange] = useState({
+    startDate: '',
+    endDate: ''
+  });
+
   useEffect(() => {
     if (user && user.role === 'admin') {
       fetchStats();
@@ -120,6 +154,7 @@ export default function AdminDashboard() {
       fetchLogs();
       fetchAnalytics();
       fetchMaintenanceStatus();
+      fetchReports(); // Auto-load reports on mount
     }
   }, [user]);
 
@@ -280,6 +315,117 @@ export default function AdminDashboard() {
       alert('Error al cambiar el modo de mantenimiento');
     } finally {
       setMaintenanceLoading(false);
+    }
+  };
+
+  // Reports functions
+  const fetchReports = async (customDateRange = dateRange) => {
+    setReportsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      const queryParams = new URLSearchParams();
+      if (customDateRange.startDate) queryParams.append('startDate', customDateRange.startDate);
+      if (customDateRange.endDate) queryParams.append('endDate', customDateRange.endDate);
+      const queryString = queryParams.toString();
+
+      const [applicationsRes, usersRes, jobsRes] = await Promise.all([
+        fetch(`${BACKEND_URL}/api/reports/applications-stats?${queryString}`, { headers }),
+        fetch(`${BACKEND_URL}/api/reports/users-stats?${queryString}`, { headers }),
+        fetch(`${BACKEND_URL}/api/reports/jobs-stats?${queryString}`, { headers })
+      ]);
+
+      const applicationsData = await applicationsRes.json();
+      const usersData = await usersRes.json();
+      const jobsData = await jobsRes.json();
+
+      console.log('📊 Full Applications Response:', applicationsData);
+      console.log('📊 Applications Stats:', applicationsData.data);
+      console.log('📈 By Month:', applicationsData.data?.byMonth);
+      console.log('🏢 Top Jobs:', applicationsData.data?.topJobs);
+      console.log('✅ Response Status - Apps:', applicationsRes.status);
+      console.log('✅ Response OK - Apps:', applicationsRes.ok);
+
+      if (!applicationsData.success) {
+        console.error('❌ Backend returned error:', applicationsData);
+        const errorMsg = `Error: ${applicationsData.message || 'No se pudieron cargar los reportes'}\n\nDetalles: ${applicationsData.details || applicationsData.error || 'Sin detalles'}`;
+        alert(errorMsg);
+        return;
+      }
+
+      setApplicationsStats(applicationsData.data);
+      setUsersStats(usersData.data);
+      setJobsStats(jobsData.data);
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      alert('Error al cargar los reportes');
+    } finally {
+      setReportsLoading(false);
+    }
+  };
+
+  const handleDateRangeChange = (e) => {
+    const { name, value } = e.target;
+    const newDateRange = { ...dateRange, [name]: value };
+    setDateRange(newDateRange);
+  };
+
+  const applyFilters = () => {
+    fetchReports(dateRange);
+  };
+
+  const clearFilters = () => {
+    const cleared = { startDate: '', endDate: '' };
+    setDateRange(cleared);
+    fetchReports(cleared);
+  };
+
+  const exportToCSV = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const queryParams = new URLSearchParams();
+      if (dateRange.startDate) queryParams.append('startDate', dateRange.startDate);
+      if (dateRange.endDate) queryParams.append('endDate', dateRange.endDate);
+      queryParams.append('format', 'csv');
+
+      const response = await fetch(`${BACKEND_URL}/api/reports/export/applications?${queryParams.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const blob = await response.blob();
+      saveAs(blob, `reporte-aplicaciones-${new Date().toISOString().split('T')[0]}.csv`);
+    } catch (error) {
+      console.error('Error exporting:', error);
+      alert('Error al exportar el reporte');
+    }
+  };
+
+  const exportToJSON = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const queryParams = new URLSearchParams();
+      if (dateRange.startDate) queryParams.append('startDate', dateRange.startDate);
+      if (dateRange.endDate) queryParams.append('endDate', dateRange.endDate);
+      queryParams.append('format', 'json');
+
+      const response = await fetch(`${BACKEND_URL}/api/reports/export/applications?${queryParams.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      saveAs(blob, `reporte-aplicaciones-${new Date().toISOString().split('T')[0]}.json`);
+    } catch (error) {
+      console.error('Error exporting:', error);
+      alert('Error al exportar el reporte');
     }
   };
 
@@ -753,6 +899,421 @@ export default function AdminDashboard() {
 
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-3 sm:space-y-4">
+            {/* Reports Section */}
+            <Card className="bg-slate-800 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white">Reportes y Estadísticas de Aplicaciones</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Análisis de entrevistas, contrataciones y rechazos
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Filters */}
+                <div className="flex flex-wrap gap-4 items-end mb-6">
+                  <div className="flex-1 min-w-[180px]">
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Fecha Inicio
+                    </label>
+                    <Input
+                      type="date"
+                      name="startDate"
+                      value={dateRange.startDate}
+                      onChange={handleDateRangeChange}
+                      className="bg-slate-900 border-slate-600 text-white"
+                    />
+                  </div>
+
+                  <div className="flex-1 min-w-[180px]">
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Fecha Fin
+                    </label>
+                    <Input
+                      type="date"
+                      name="endDate"
+                      value={dateRange.endDate}
+                      onChange={handleDateRangeChange}
+                      className="bg-slate-900 border-slate-600 text-white"
+                    />
+                  </div>
+
+                  <Button
+                    onClick={applyFilters}
+                    disabled={reportsLoading}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {reportsLoading ? 'Cargando...' : 'Aplicar Filtros'}
+                  </Button>
+
+                  <Button
+                    onClick={clearFilters}
+                    disabled={reportsLoading}
+                    variant="outline"
+                    className="border-slate-600 text-gray-300"
+                  >
+                    Limpiar
+                  </Button>
+
+                  <div className="ml-auto flex gap-2">
+                    <Button
+                      onClick={exportToCSV}
+                      disabled={reportsLoading || !applicationsStats}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      CSV
+                    </Button>
+                    <Button
+                      onClick={exportToJSON}
+                      disabled={reportsLoading || !applicationsStats}
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      JSON
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Summary Cards */}
+                {applicationsStats && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                      <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                        <h3 className="text-sm font-medium text-gray-400 mb-2">Total Aplicaciones</h3>
+                        <p className="text-3xl font-bold text-white">{applicationsStats.summary?.total || 0}</p>
+                      </div>
+
+                      <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                        <h3 className="text-sm font-medium text-gray-400 mb-2">En Entrevista</h3>
+                        <p className="text-3xl font-bold text-purple-400">{applicationsStats.summary?.entrevista || 0}</p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {applicationsStats.summary?.conversionRates?.interviewRate}% del total
+                        </p>
+                      </div>
+
+                      <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                        <h3 className="text-sm font-medium text-gray-400 mb-2">Oferta</h3>
+                        <p className="text-3xl font-bold text-green-400">{applicationsStats.summary?.oferta || 0}</p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {applicationsStats.summary?.conversionRates?.offerRate}% del total
+                        </p>
+                      </div>
+
+                      <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                        <h3 className="text-sm font-medium text-gray-400 mb-2">Contratados</h3>
+                        <p className="text-3xl font-bold text-cyan-400">{applicationsStats.summary?.contratado || 0}</p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Finalizados
+                        </p>
+                      </div>
+
+                      <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                        <h3 className="text-sm font-medium text-gray-400 mb-2">Rechazados</h3>
+                        <p className="text-3xl font-bold text-red-400">{applicationsStats.summary?.rechazado || 0}</p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {applicationsStats.summary?.conversionRates?.rejectionRate}% del total
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Charts */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                      {/* Pie Chart */}
+                      <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                        <h2 className="text-lg font-bold text-white mb-4">
+                          Distribución por Estado
+                        </h2>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <PieChart>
+                            <Pie
+                              data={[
+                                { name: STATUS_LABELS.nuevo, value: applicationsStats.summary.nuevo, color: COLORS.nuevo },
+                                { name: STATUS_LABELS.en_revision, value: applicationsStats.summary.en_revision, color: COLORS.en_revision },
+                                { name: STATUS_LABELS.entrevista, value: applicationsStats.summary.entrevista, color: COLORS.entrevista },
+                                { name: STATUS_LABELS.oferta, value: applicationsStats.summary.oferta, color: COLORS.oferta },
+                                { name: STATUS_LABELS.contratado, value: applicationsStats.summary.contratado, color: COLORS.contratado },
+                                { name: STATUS_LABELS.rechazado, value: applicationsStats.summary.rechazado, color: COLORS.rechazado }
+                              ].filter(item => item.value > 0)}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                              outerRadius={80}
+                              fill="#8884d8"
+                              dataKey="value"
+                            >
+                              {[
+                                { name: STATUS_LABELS.nuevo, value: applicationsStats.summary.nuevo, color: COLORS.nuevo },
+                                { name: STATUS_LABELS.en_revision, value: applicationsStats.summary.en_revision, color: COLORS.en_revision },
+                                { name: STATUS_LABELS.entrevista, value: applicationsStats.summary.entrevista, color: COLORS.entrevista },
+                                { name: STATUS_LABELS.oferta, value: applicationsStats.summary.oferta, color: COLORS.oferta },
+                                { name: STATUS_LABELS.contratado, value: applicationsStats.summary.contratado, color: COLORS.contratado },
+                                { name: STATUS_LABELS.rechazado, value: applicationsStats.summary.rechazado, color: COLORS.rechazado }
+                              ].filter(item => item.value > 0).map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* Bar Chart */}
+                      <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                        <h2 className="text-lg font-bold text-white mb-4">
+                          Cantidad por Estado
+                        </h2>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <BarChart data={[
+                            { name: STATUS_LABELS.nuevo, value: applicationsStats.summary.nuevo, color: COLORS.nuevo },
+                            { name: STATUS_LABELS.en_revision, value: applicationsStats.summary.en_revision, color: COLORS.en_revision },
+                            { name: STATUS_LABELS.entrevista, value: applicationsStats.summary.entrevista, color: COLORS.entrevista },
+                            { name: STATUS_LABELS.oferta, value: applicationsStats.summary.oferta, color: COLORS.oferta },
+                            { name: STATUS_LABELS.contratado, value: applicationsStats.summary.contratado, color: COLORS.contratado },
+                            { name: STATUS_LABELS.rechazado, value: applicationsStats.summary.rechazado, color: COLORS.rechazado }
+                          ].filter(item => item.value > 0)}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                            <XAxis dataKey="name" stroke="#9CA3AF" />
+                            <YAxis stroke="#9CA3AF" />
+                            <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }} />
+                            <Bar dataKey="value" fill="#3B82F6">
+                              {[
+                                { name: STATUS_LABELS.nuevo, value: applicationsStats.summary.nuevo, color: COLORS.nuevo },
+                                { name: STATUS_LABELS.en_revision, value: applicationsStats.summary.en_revision, color: COLORS.en_revision },
+                                { name: STATUS_LABELS.entrevista, value: applicationsStats.summary.entrevista, color: COLORS.entrevista },
+                                { name: STATUS_LABELS.oferta, value: applicationsStats.summary.oferta, color: COLORS.oferta },
+                                { name: STATUS_LABELS.contratado, value: applicationsStats.summary.contratado, color: COLORS.contratado },
+                                { name: STATUS_LABELS.rechazado, value: applicationsStats.summary.rechazado, color: COLORS.rechazado }
+                              ].filter(item => item.value > 0).map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* Additional Bar Charts */}
+                    <div className="grid grid-cols-1 gap-6 mb-6">
+                      {/* Applications by Month - Line/Bar Chart */}
+                      {applicationsStats.byMonth && applicationsStats.byMonth.length > 0 && (
+                        <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                          <h2 className="text-lg font-bold text-white mb-4">
+                            Tendencia de Aplicaciones por Mes
+                          </h2>
+                          <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={applicationsStats.byMonth.slice(0, 12).reverse().map(item => {
+                              const date = new Date(item.month);
+                              return {
+                                month: date.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }),
+                                [STATUS_LABELS[item.status] || item.status]: parseInt(item.count),
+                                status: item.status
+                              };
+                            }).reduce((acc, curr) => {
+                              const existing = acc.find(item => item.month === curr.month);
+                              if (existing) {
+                                Object.assign(existing, curr);
+                              } else {
+                                acc.push(curr);
+                              }
+                              return acc;
+                            }, [])}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                              <XAxis dataKey="month" stroke="#9CA3AF" />
+                              <YAxis stroke="#9CA3AF" />
+                              <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }} />
+                              <Legend />
+                              <Bar dataKey={STATUS_LABELS.nuevo} stackId="a" fill={COLORS.nuevo} />
+                              <Bar dataKey={STATUS_LABELS.en_revision} stackId="a" fill={COLORS.en_revision} />
+                              <Bar dataKey={STATUS_LABELS.entrevista} stackId="a" fill={COLORS.entrevista} />
+                              <Bar dataKey={STATUS_LABELS.oferta} stackId="a" fill={COLORS.oferta} />
+                              <Bar dataKey={STATUS_LABELS.contratado} stackId="a" fill={COLORS.contratado} />
+                              <Bar dataKey={STATUS_LABELS.rechazado} stackId="a" fill={COLORS.rechazado} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+
+                      {/* Top Jobs Bar Chart */}
+                      {applicationsStats.topJobs && applicationsStats.topJobs.length > 0 && (
+                        <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                          <h2 className="text-lg font-bold text-white mb-4">
+                            Top 10 Empleos por Aplicaciones
+                          </h2>
+                          <ResponsiveContainer width="100%" height={400}>
+                            <BarChart
+                              data={applicationsStats.topJobs.slice(0, 10)}
+                              layout="vertical"
+                              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                              <XAxis type="number" stroke="#9CA3AF" />
+                              <YAxis
+                                dataKey="title"
+                                type="category"
+                                stroke="#9CA3AF"
+                                width={150}
+                                tick={{ fontSize: 12 }}
+                              />
+                              <Tooltip
+                                contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }}
+                                formatter={(value, name, props) => [
+                                  `${value} aplicaciones`,
+                                  props.payload.company
+                                ]}
+                              />
+                              <Bar dataKey="applicationsCount" fill="#3B82F6" radius={[0, 4, 4, 0]}>
+                                {applicationsStats.topJobs.slice(0, 10).map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={`hsl(${220 - index * 15}, 70%, 50%)`} />
+                                ))}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Top Jobs Table */}
+                    {applicationsStats.topJobs && applicationsStats.topJobs.length > 0 && (
+                      <div className="bg-slate-900 rounded-lg p-4 border border-slate-700 mb-6">
+                        <h2 className="text-lg font-bold text-white mb-4">
+                          Top 10 Empleos con Más Aplicaciones
+                        </h2>
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-slate-700">
+                            <thead className="bg-slate-800">
+                              <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                  Puesto
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                  Empresa
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                  Tipo
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                  Modalidad
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                  Aplicaciones
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-700">
+                              {applicationsStats.topJobs.map((job, index) => (
+                                <tr key={job.id} className={index % 2 === 0 ? 'bg-slate-900' : 'bg-slate-800'}>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
+                                    {job.title}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                                    {job.company}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                                    {job.job_type}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                                    {job.modality}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-400">
+                                    {job.applicationsCount}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Additional Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Users Stats */}
+                      {usersStats && (
+                        <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                          <h2 className="text-lg font-bold text-white mb-4">
+                            Estadísticas de Usuarios
+                          </h2>
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Total Usuarios:</span>
+                              <span className="font-semibold text-white">{usersStats.summary.total}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Verificados:</span>
+                              <span className="font-semibold text-white">{usersStats.summary.verified}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Estudiantes:</span>
+                              <span className="font-semibold text-white">{usersStats.summary.byRole?.estudiante || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Empresas:</span>
+                              <span className="font-semibold text-white">{usersStats.summary.byRole?.empresa || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Administradores:</span>
+                              <span className="font-semibold text-white">{usersStats.summary.byRole?.admin || 0}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Jobs Stats */}
+                      {jobsStats && (
+                        <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                          <h2 className="text-lg font-bold text-white mb-4">
+                            Estadísticas de Empleos
+                          </h2>
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Total Empleos:</span>
+                              <span className="font-semibold text-white">{jobsStats.summary.total}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Activos:</span>
+                              <span className="font-semibold text-green-400">{jobsStats.summary.active}</span>
+                            </div>
+                            <div className="border-t border-slate-700 pt-3 mt-3">
+                              <p className="text-sm font-medium text-gray-300 mb-2">Por Tipo:</p>
+                              {Object.entries(jobsStats.summary.byType).map(([type, count]) => (
+                                <div key={type} className="flex justify-between text-sm">
+                                  <span className="text-gray-400 capitalize">{type}:</span>
+                                  <span className="text-white">{count}</span>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="border-t border-slate-700 pt-3 mt-3">
+                              <p className="text-sm font-medium text-gray-300 mb-2">Por Modalidad:</p>
+                              {Object.entries(jobsStats.summary.byModality).map(([modality, count]) => (
+                                <div key={modality} className="flex justify-between text-sm">
+                                  <span className="text-gray-400 capitalize">{modality}:</span>
+                                  <span className="text-white">{count}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {!applicationsStats && !reportsLoading && (
+                  <div className="text-center py-8">
+                    <p className="text-gray-400">No hay datos disponibles para mostrar</p>
+                  </div>
+                )}
+
+                {reportsLoading && (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-400">Cargando reportes...</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Original Analytics Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
               <UserGrowthChart data={analyticsData.userGrowth} />
               <CategoryActivityChart data={analyticsData.categoryActivity} />

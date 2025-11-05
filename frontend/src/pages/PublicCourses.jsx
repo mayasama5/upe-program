@@ -227,12 +227,12 @@ export default function PublicCourses() {
           </div>
         ) : (
           <>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-white">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-white">
                 Todos los Cursos ({filteredCourses.length})
               </h2>
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-48">
+                <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-full sm:w-48">
                   <SelectValue placeholder="Filtrar por categoría" />
                 </SelectTrigger>
                 <SelectContent>

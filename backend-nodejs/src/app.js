@@ -28,6 +28,7 @@ const contentRoutes = require('./routes/content');
 const savedItemsRoutes = require('./routes/saved-items');
 const statsRoutes = require('./routes/stats');
 const adminRoutes = require('./routes/admin');
+const reportsRoutes = require('./routes/reports');
 // const careerAdviceRoutes = require('./routes/career-advice'); // Temporarily disabled
 const careerAdviceRoutes = require('./routes/career-advice');
 
@@ -36,6 +37,9 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 8000;
+
+// Trust proxy - required for Vercel and rate limiting
+app.set('trust proxy', true);
 
 // Connect to database
 connectDB();
@@ -263,6 +267,7 @@ app.use('/api', contentRoutes);
 app.use('/api/saved-items', savedItemsRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/reports', reportsRoutes);
 app.use('/api/career-advice', careerAdviceRoutes);
 
 // File upload error handling middleware

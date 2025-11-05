@@ -269,16 +269,16 @@ export default function PublicEvents() {
           </div>
         ) : (
           <>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-white">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-white">
                 Todos los Eventos ({filteredEvents.length})
               </h2>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                 {user && user.role === 'empresa' && (
                   <CreateEventButton inline={true} onEventCreated={fetchEvents} />
                 )}
                 <Select value={selectedCity} onValueChange={setSelectedCity}>
-                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-48">
+                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-full sm:w-48">
                     <SelectValue placeholder="Filtrar por ciudad" />
                   </SelectTrigger>
                   <SelectContent>
@@ -288,7 +288,7 @@ export default function PublicEvents() {
                   </SelectContent>
                 </Select>
                 <Select value={selectedFilter} onValueChange={setSelectedFilter}>
-                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-48">
+                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white w-full sm:w-48">
                     <SelectValue placeholder="Filtrar eventos" />
                   </SelectTrigger>
                   <SelectContent>
