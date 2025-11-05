@@ -24,8 +24,9 @@ import {
 import { Bell, Send, AlertCircle, Info, CheckCircle, XCircle, Plus } from 'lucide-react';
 import { useToast } from '../../hooks/use-toast';
 import axios from 'axios';
+import { getBackendUrl } from '../../config';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+const BACKEND_URL = getBackendUrl();
 
 export default function NotificationSystem() {
   const { toast } = useToast();
@@ -91,9 +92,25 @@ export default function NotificationSystem() {
         });
       }
     } catch (error) {
+      console.error('Error creating notification:', error);
+
+      let errorMessage = 'Error al enviar notificación';
+
+      if (error.response) {
+        // El servidor respondió con un código de error
+        if (error.response.data?.errors) {
+          errorMessage = error.response.data.errors.map(e => e.message).join(', ');
+        } else if (error.response.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error.request) {
+        // La petición se hizo pero no hubo respuesta
+        errorMessage = 'No se pudo conectar con el servidor';
+      }
+
       toast({
         title: 'Error',
-        description: 'Error al enviar notificación',
+        description: errorMessage,
         variant: 'destructive'
       });
     }
@@ -293,12 +310,14 @@ export default function NotificationSystem() {
               </div>
 
               <div>
-                <Label className="text-gray-300">Mensaje</Label>
+                <Label className="text-gray-300">Mensaje (mínimo 10 caracteres)</Label>
                 <Textarea
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   className="bg-slate-800 border-slate-700 text-white"
                   rows={4}
+                  placeholder="Escribe un mensaje descriptivo (mínimo 10 caracteres)"
+                  minLength={10}
                   required
                 />
               </div>

@@ -343,13 +343,6 @@ export default function AdminDashboard() {
       const usersData = await usersRes.json();
       const jobsData = await jobsRes.json();
 
-      console.log('📊 Full Applications Response:', applicationsData);
-      console.log('📊 Applications Stats:', applicationsData.data);
-      console.log('📈 By Month:', applicationsData.data?.byMonth);
-      console.log('🏢 Top Jobs:', applicationsData.data?.topJobs);
-      console.log('✅ Response Status - Apps:', applicationsRes.status);
-      console.log('✅ Response OK - Apps:', applicationsRes.ok);
-
       if (!applicationsData.success) {
         console.error('❌ Backend returned error:', applicationsData);
         const errorMsg = `Error: ${applicationsData.message || 'No se pudieron cargar los reportes'}\n\nDetalles: ${applicationsData.details || applicationsData.error || 'Sin detalles'}`;
@@ -426,6 +419,47 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error exporting:', error);
       alert('Error al exportar el reporte');
+    }
+  };
+
+  const exportApplicationsToExcel = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const queryParams = new URLSearchParams();
+      if (dateRange.startDate) queryParams.append('startDate', dateRange.startDate);
+      if (dateRange.endDate) queryParams.append('endDate', dateRange.endDate);
+      queryParams.append('format', 'json');
+
+      const response = await fetch(`${BACKEND_URL}/api/reports/export/applications?${queryParams.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data && data.data.length > 0) {
+        // Formatear datos para Excel
+        const formattedData = data.data.map(app => ({
+          'ID': app.id,
+          'Fecha': new Date(app.created_at).toLocaleDateString('es-ES'),
+          'Estado': app.status,
+          'Puesto': app.job_vacancy?.title || 'N/A',
+          'Empresa': app.job_vacancy?.company || 'N/A',
+          'Tipo': app.job_vacancy?.job_type || 'N/A',
+          'Modalidad': app.job_vacancy?.modality || 'N/A',
+          'Candidato': app.applicant?.name || 'N/A',
+          'Email': app.applicant?.email || 'N/A',
+          'Carrera': app.applicant?.career || 'N/A'
+        }));
+
+        exportToExcel(formattedData, `reporte-aplicaciones-${new Date().toISOString().split('T')[0]}`);
+      } else {
+        alert('No hay datos para exportar');
+      }
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      alert('Error al exportar el reporte a Excel');
     }
   };
 
@@ -954,6 +988,14 @@ export default function AdminDashboard() {
                   </Button>
 
                   <div className="ml-auto flex gap-2">
+                    <Button
+                      onClick={exportApplicationsToExcel}
+                      disabled={reportsLoading || !applicationsStats}
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Excel
+                    </Button>
                     <Button
                       onClick={exportToCSV}
                       disabled={reportsLoading || !applicationsStats}
