@@ -17,6 +17,8 @@ const {
   updateEventDTO,
   createJobDTO,
   updateJobDTO,
+  createNewsDTO,
+  updateNewsDTO,
   contentIdDTO
 } = require('../dto/content.dto');
 const {
@@ -366,25 +368,39 @@ router.get('/content/events', async (req, res) => {
 
 router.post('/content/events', createLimiter, createEventDTO, validate, async (req, res) => {
   try {
+    const eventData = {
+      ...req.body,
+      event_date: new Date(req.body.event_date)
+    };
+
     const event = await prisma.event.create({
-      data: req.body
+      data: eventData
     });
     res.json({ success: true, event });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error al crear evento' });
+    console.error('Error creating event:', error);
+    res.status(500).json({ success: false, message: 'Error al crear evento', error: error.message });
   }
 });
 
 router.put('/content/events/:id', updateEventDTO, validate, async (req, res) => {
   try {
     const { id } = req.params;
+    const updateData = { ...req.body };
+
+    // Convert event_date to Date if it exists
+    if (updateData.event_date) {
+      updateData.event_date = new Date(updateData.event_date);
+    }
+
     const event = await prisma.event.update({
       where: { id },
-      data: { ...req.body, updated_at: new Date() }
+      data: updateData
     });
     res.json({ success: true, event });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error al actualizar evento' });
+    console.error('Error updating event:', error);
+    res.status(500).json({ success: false, message: 'Error al actualizar evento', error: error.message });
   }
 });
 
@@ -448,11 +464,75 @@ router.delete('/content/jobs/:id', contentIdDTO, validate, async (req, res) => {
 });
 
 // ============================================
+// GESTIÓN DE CONTENIDO - NOTICIAS
+// ============================================
+
+router.get('/content/news', async (req, res) => {
+  try {
+    const news = await prisma.news.findMany({
+      orderBy: { published_at: 'desc' }
+    });
+    res.json({ success: true, news });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error al obtener noticias' });
+  }
+});
+
+router.post('/content/news', createLimiter, createNewsDTO, validate, async (req, res) => {
+  try {
+    console.log('📰 Creating news with data:', JSON.stringify(req.body, null, 2));
+
+    const news = await prisma.news.create({
+      data: req.body
+    });
+
+    console.log('✅ News created successfully:', news.id);
+    res.json({ success: true, news });
+  } catch (error) {
+    console.error('❌ Error creating news:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al crear noticia',
+      error: error.message
+    });
+  }
+});
+
+router.put('/content/news/:id', updateNewsDTO, validate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const news = await prisma.news.update({
+      where: { id },
+      data: { ...req.body, updated_at: new Date() }
+    });
+    res.json({ success: true, news });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error al actualizar noticia' });
+  }
+});
+
+router.delete('/content/news/:id', contentIdDTO, validate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.news.delete({ where: { id } });
+    res.json({ success: true, message: 'Noticia eliminada' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error al eliminar noticia' });
+  }
+});
+
+// ============================================
 // ANALYTICS
 // ============================================
 
 router.get('/analytics', async (req, res) => {
   try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+
     // Usuarios por rol
     const usersByRole = await prisma.user.groupBy({
       by: ['role'],
@@ -479,12 +559,117 @@ router.get('/analytics', async (req, res) => {
       _count: true
     });
 
+    // ===== NUEVOS DATOS PARA RESUMEN DE ACTIVIDAD (30 días) =====
+
+    // Nuevos usuarios en últimos 30 días
+    const newUsersLast30Days = await prisma.user.count({
+      where: {
+        created_at: {
+          gte: thirtyDaysAgo
+        }
+      }
+    });
+
+    // Nuevos usuarios en 30 días anteriores (para calcular porcentaje)
+    const newUsersPrevious30Days = await prisma.user.count({
+      where: {
+        created_at: {
+          gte: sixtyDaysAgo,
+          lt: thirtyDaysAgo
+        }
+      }
+    });
+
+    // Cursos guardados en últimos 30 días
+    const coursesLast30Days = await prisma.savedItem.count({
+      where: {
+        item_type: 'course',
+        created_at: {
+          gte: thirtyDaysAgo
+        }
+      }
+    });
+
+    const coursesPrevious30Days = await prisma.savedItem.count({
+      where: {
+        item_type: 'course',
+        created_at: {
+          gte: sixtyDaysAgo,
+          lt: thirtyDaysAgo
+        }
+      }
+    });
+
+    // Eventos registrados en últimos 30 días
+    const eventsLast30Days = await prisma.savedItem.count({
+      where: {
+        item_type: 'event',
+        created_at: {
+          gte: thirtyDaysAgo
+        }
+      }
+    });
+
+    const eventsPrevious30Days = await prisma.savedItem.count({
+      where: {
+        item_type: 'event',
+        created_at: {
+          gte: sixtyDaysAgo,
+          lt: thirtyDaysAgo
+        }
+      }
+    });
+
+    // Aplicaciones enviadas en últimos 30 días
+    const applicationsLast30Days = await prisma.jobApplication.count({
+      where: {
+        created_at: {
+          gte: thirtyDaysAgo
+        }
+      }
+    });
+
+    const applicationsPrevious30Days = await prisma.jobApplication.count({
+      where: {
+        created_at: {
+          gte: sixtyDaysAgo,
+          lt: thirtyDaysAgo
+        }
+      }
+    });
+
+    // Calcular porcentajes de crecimiento
+    const calculateGrowthPercentage = (current, previous) => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return Math.round(((current - previous) / previous) * 100);
+    };
+
+    const activitySummary = {
+      newUsers: {
+        count: newUsersLast30Days,
+        percentage: calculateGrowthPercentage(newUsersLast30Days, newUsersPrevious30Days)
+      },
+      savedCourses: {
+        count: coursesLast30Days,
+        percentage: calculateGrowthPercentage(coursesLast30Days, coursesPrevious30Days)
+      },
+      registeredEvents: {
+        count: eventsLast30Days,
+        percentage: calculateGrowthPercentage(eventsLast30Days, eventsPrevious30Days)
+      },
+      applications: {
+        count: applicationsLast30Days,
+        percentage: calculateGrowthPercentage(applicationsLast30Days, applicationsPrevious30Days)
+      }
+    };
+
     res.json({
       success: true,
       analytics: {
         usersByRole,
         savedItemsActivity,
-        userGrowth
+        userGrowth,
+        activitySummary
       }
     });
   } catch (error) {

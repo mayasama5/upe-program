@@ -32,13 +32,19 @@ const helmetConfig = helmet({
  */
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // límite de 100 requests por ventana
+  max: 500, // límite de 500 requests por ventana (aumentado para admin dashboard)
   message: {
     success: false,
     message: 'Demasiadas peticiones desde esta IP, por favor intenta de nuevo más tarde.'
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Configuración para desarrollo con trust proxy
+  validate: { trustProxy: false },
+  // En desarrollo, usar una clave única basada en sessionID o IP
+  keyGenerator: (req) => {
+    return req.headers['x-session-id'] || req.ip || 'default-key';
+  }
 });
 
 /**
@@ -51,7 +57,11 @@ const authLimiter = rateLimit({
     success: false,
     message: 'Demasiados intentos de autenticación, por favor intenta de nuevo más tarde.'
   },
-  skipSuccessfulRequests: true
+  skipSuccessfulRequests: true,
+  validate: { trustProxy: false },
+  keyGenerator: (req) => {
+    return req.headers['x-session-id'] || req.ip || 'default-key';
+  }
 });
 
 /**
@@ -63,6 +73,10 @@ const createLimiter = rateLimit({
   message: {
     success: false,
     message: 'Límite de creación alcanzado, por favor intenta de nuevo más tarde.'
+  },
+  validate: { trustProxy: false },
+  keyGenerator: (req) => {
+    return req.headers['x-session-id'] || req.ip || 'default-key';
   }
 });
 

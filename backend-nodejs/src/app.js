@@ -59,10 +59,7 @@ app.use(preventInjection);
 // Security logging para operaciones críticas
 app.use(securityLogger);
 
-// Rate limiting para toda la API
-app.use('/api/', apiLimiter);
-
-// CORS configuration
+// CORS configuration (MUST be before rate limiter to handle preflight)
 const corsOptions = {
   origin: function (origin, callback) {
     console.log(`🔍 CORS check for origin: ${origin}`);
@@ -153,6 +150,15 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Rate limiting para toda la API (AFTER CORS to not block preflight requests)
+app.use('/api/', (req, res, next) => {
+  // Skip rate limiting for OPTIONS requests (CORS preflight)
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
+  return apiLimiter(req, res, next);
+});
 
 // Explicit OPTIONS handler for preflight requests
 app.options('*', (req, res) => {

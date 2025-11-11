@@ -54,6 +54,8 @@ import { useAuth } from "./hooks/useAuth";
 import LoginPage from "./pages/LoginPage";
 import StudentRegisterPage from "./pages/StudentRegisterPage";
 import CompanyRegisterPage from "./pages/CompanyRegisterPage";
+import ChangePasswordPage from "./pages/ChangePasswordPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import AuthCallback from "./pages/AuthCallback";
 import ViewCandidates from "./pages/ViewCandidates";
 import MyJobs from "./pages/MyJobs";
@@ -1247,7 +1249,9 @@ const DashboardHome = ({ user }) => {
     offers: 0
   });
 
-  useEffect(() => {
+    // News state
+    const [news, setNews] = useState([]);
+    const [newsLoading, setNewsLoading] = useState(true);  useEffect(() => {
     const fetchStats = async () => {
       try {
         const response = await axios.get(`${API}/api/stats`, { withCredentials: true });
@@ -1322,7 +1326,27 @@ const DashboardHome = ({ user }) => {
     fetchStudentStats();
   }, [user.role]);
 
-  return (
+    useEffect(() => {
+      const fetchNews = async () => {
+        try {
+          setNewsLoading(true);
+          const response = await axios.get(`${API}/api/news`, {
+            params: { limit: 3 }
+          });
+          if (response.data.success) {
+            setNews(response.data.news || []);
+          }
+        } catch (error) {
+          console.error('Error fetching news:', error);
+          console.error('URL attempted:', `${API}/api/news`);
+          console.error('Error details:', error.response?.data || error.message);
+        } finally {
+          setNewsLoading(false);
+        }
+      };
+
+      fetchNews();
+    }, []);  return (
     <div className="space-y-8">
       {/* Welcome Section */}
       <section className="py-8 px-4 bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl">
@@ -1629,19 +1653,37 @@ const DashboardHome = ({ user }) => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 overflow-y-auto" style={{ maxHeight: '280px' }}>
-            <div className="p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors">
-              <h4 className="text-white font-medium mb-1 text-sm">SNPP lanza nuevos cursos técnicos</h4>
-              <p className="text-gray-400 text-xs">El Servicio Nacional de Promoción Profesional amplía su oferta educativa.</p>
-            </div>
-            <div className="p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors">
-              <h4 className="text-white font-medium mb-1 text-sm">Becas 100% Paraguay 2024</h4>
-              <p className="text-gray-400 text-xs">Abierta convocatoria para 500 becas de estudio en universidades.</p>
-            </div>
-            <div className="p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors">
-              <h4 className="text-white font-medium mb-1 text-sm">UPE inaugura nuevo campus</h4>
-              <p className="text-gray-400 text-xs">La Universidad expande sus instalaciones en Ciudad del Este.</p>
-            </div>
-            <Button className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-semibold text-xs">
+            {newsLoading ? (
+              <div className="p-3 bg-slate-700/50 rounded-lg">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-slate-600 rounded mb-2"></div>
+                  <div className="h-3 bg-slate-600 rounded w-3/4 mb-2"></div>
+                  <div className="h-2 bg-slate-600 rounded w-1/2"></div>
+                </div>
+              </div>
+            ) : news.length > 0 ? (
+              news.map((newsItem) => (
+                <div key={newsItem.id} className="p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors">
+                  <h4 className="text-white font-medium mb-1 text-sm line-clamp-2">{newsItem.title}</h4>
+                  <p className="text-gray-400 text-xs line-clamp-2">{newsItem.excerpt}</p>
+                  <p className="text-gray-500 text-xs mt-2">
+                    {new Date(newsItem.published_at || newsItem.created_at).toLocaleDateString('es-ES', { 
+                      year: 'numeric', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <div className="p-3 bg-slate-700/50 rounded-lg">
+                <p className="text-gray-400 text-xs text-center">No hay noticias disponibles</p>
+              </div>
+            )}
+            <Button 
+              className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-semibold text-xs"
+              onClick={() => navigate('/news')}
+            >
               Ver Todas las Noticias
             </Button>
           </CardContent>
@@ -2290,6 +2332,7 @@ function App() {
           <Route path="/registro-estudiante" element={user ? <Navigate to="/dashboard" replace /> : <StudentRegisterPage />} />
           <Route path="/registro-empresa" element={user ? <Navigate to="/dashboard" replace /> : <CompanyRegisterPage />} />
           <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
+          <Route path="/forgot-password" element={user ? <Navigate to="/dashboard" replace /> : <ForgotPasswordPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
 
           {/* Public Pages */}
@@ -2302,6 +2345,7 @@ function App() {
           <Route path="/company/:id" element={<CompanyDetail />} />
           <Route path="/career-advice" element={<CareerAdvice />} />
           <Route path="/news" element={<News />} />
+          <Route path="/change-password" element={user ? <ChangePasswordPage /> : <Navigate to="/login" replace />} />
           <Route path="/support" element={<Support />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />

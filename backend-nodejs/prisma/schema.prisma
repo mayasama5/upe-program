@@ -52,7 +52,7 @@ model User {
   password          String?           // Hashed password for email/password auth
   picture           String?
   role              UserRole          @default(estudiante)
-  is_verified       Boolean           @default(false)
+  is_verified       Boolean           @default(true)
 
   // Company fields (contact person)
   contact_name      String?
@@ -80,6 +80,10 @@ model User {
   city              String?
   country           String?
   benefits          String?
+
+  // Password reset fields
+  reset_password_token   String?
+  reset_password_expiry  DateTime?
 
   created_at        DateTime          @default(now())
   updated_at        DateTime          @updatedAt
@@ -220,6 +224,23 @@ model CareerAdvice {
   created_at  DateTime @default(now())
 
   @@map("career_advice")
+}
+
+// News Model
+model News {
+  id          String   @id @default(uuid())
+  title       String
+  excerpt     String
+  content     String
+  category    String
+  image_url   String?
+  author      String   @default("TechHub UPE")
+  is_published Boolean @default(true)
+  published_at DateTime @default(now())
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("news")
 }
 
 // System Settings Model

@@ -396,8 +396,6 @@ router.delete('/degrees/:degreeId', requireAuth, async (req, res) => {
   }
 });
 
-module.exports = router;
-
 // Complete profile endpoint (used by frontend after signup/onboarding)
 // This updates only allowed fields and avoids using any non-existent Prisma fields
 router.post('/complete-profile', requireAuth, async (req, res) => {
@@ -458,3 +456,171 @@ router.post('/complete-profile', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'Internal server error', message: 'Could not complete profile' });
   }
 });
+
+// Change password endpoint
+router.put('/change-password', requireAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    // Validation
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Se requiere contraseña actual y nueva contraseña'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'La nueva contraseña debe tener al menos 6 caracteres'
+      });
+    }
+
+    // Get user with password
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
+
+    if (!user || !user.password) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se puede cambiar la contraseña para este usuario'
+      });
+    }
+
+    // Verify current password
+    const bcrypt = require('bcrypt');
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'La contraseña actual es incorrecta'
+      });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { password: hashedPassword }
+    });
+
+    res.json({
+      success: true,
+      message: 'Contraseña actualizada correctamente'
+    });
+
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'No se pudo cambiar la contraseña'
+    });
+  }
+});
+
+// Verify email endpoint - Step 1: Check if email exists
+router.post('/verify-email', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Validation
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Por favor proporciona un correo electrónico válido'
+      });
+    }
+
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No se encontró una cuenta con este correo electrónico'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Email verificado correctamente'
+    });
+
+  } catch (error) {
+    console.error('Verify email error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'No se pudo verificar el correo electrónico'
+    });
+  }
+});
+
+// Reset password endpoint - Step 2: Update password directly
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    // Validation
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Por favor proporciona un correo electrónico válido'
+      });
+    }
+
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'La contraseña debe tener al menos 8 caracteres'
+      });
+    }
+
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No se encontró una cuenta con este correo electrónico'
+      });
+    }
+
+    // Hash new password
+    const bcrypt = require('bcrypt');
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Contraseña actualizada exitosamente'
+    });
+
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'No se pudo actualizar la contraseña'
+    });
+  }
+});
+
+module.exports = router;

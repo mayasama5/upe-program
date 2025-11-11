@@ -118,9 +118,14 @@ export default function ContentManagement({ type }) {
       setIsDialogOpen(false);
       fetchItems();
     } catch (error) {
+      console.error('Error saving content:', error.response?.data || error);
+      const errorMessage = error.response?.data?.errors
+        ? error.response.data.errors.map(e => `${e.field}: ${e.message}`).join(', ')
+        : error.response?.data?.message || 'Error al guardar elemento';
+
       toast({
         title: 'Error',
-        description: 'Error al guardar elemento',
+        description: errorMessage,
         variant: 'destructive'
       });
     }
@@ -168,6 +173,16 @@ export default function ContentManagement({ type }) {
           external_url: '',
           is_active: true,
           category: 'Tecnología'
+        };
+      case 'news':
+        return {
+          title: '',
+          excerpt: '',
+          content: '',
+          category: 'Educación',
+          image_url: '',
+          author: 'TechHub UPE',
+          is_published: true
         };
       default:
         return {};
@@ -404,6 +419,102 @@ export default function ContentManagement({ type }) {
           </div>
         );
 
+      case 'news':
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label>Título de la Noticia</Label>
+              <Input
+                value={formData.title || ''}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="bg-slate-900 border-slate-700"
+                required
+                placeholder="Mínimo 3 caracteres"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {(formData.title || '').length}/200 caracteres
+              </p>
+            </div>
+            <div>
+              <Label>Extracto (resumen breve)</Label>
+              <Textarea
+                value={formData.excerpt || ''}
+                onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+                className="bg-slate-900 border-slate-700"
+                rows={2}
+                required
+                placeholder="Mínimo 10 caracteres"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {(formData.excerpt || '').length}/500 caracteres (mínimo 10)
+              </p>
+            </div>
+            <div>
+              <Label>Contenido Completo</Label>
+              <Textarea
+                value={formData.content || ''}
+                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                className="bg-slate-900 border-slate-700"
+                rows={6}
+                required
+                placeholder="Mínimo 20 caracteres"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {(formData.content || '').length}/10000 caracteres (mínimo 20)
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Categoría</Label>
+                <Select
+                  value={formData.category || 'Educación'}
+                  onValueChange={(value) => setFormData({ ...formData, category: value })}
+                >
+                  <SelectTrigger className="bg-slate-900 border-slate-700">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Educación">Educación</SelectItem>
+                    <SelectItem value="Becas">Becas</SelectItem>
+                    <SelectItem value="Empleo">Empleo</SelectItem>
+                    <SelectItem value="Eventos">Eventos</SelectItem>
+                    <SelectItem value="Comunidad">Comunidad</SelectItem>
+                    <SelectItem value="Certificaciones">Certificaciones</SelectItem>
+                    <SelectItem value="Universidad">Universidad</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Autor</Label>
+                <Input
+                  value={formData.author || 'TechHub UPE'}
+                  onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                  className="bg-slate-900 border-slate-700"
+                />
+              </div>
+            </div>
+            <div>
+              <Label>URL de Imagen</Label>
+              <Input
+                value={formData.image_url || ''}
+                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                className="bg-slate-900 border-slate-700"
+                placeholder="https://..."
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="is_published"
+                checked={formData.is_published !== false}
+                onChange={(e) => setFormData({ ...formData, is_published: e.target.checked })}
+                className="w-4 h-4"
+              />
+              <Label htmlFor="is_published">Publicar noticia</Label>
+            </div>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -497,6 +608,33 @@ export default function ContentManagement({ type }) {
           </div>
         );
 
+      case 'news':
+        return (
+          <div className="flex items-center justify-between p-4 bg-slate-900 rounded-lg border border-slate-700 hover:border-cyan-500/50 transition-all">
+            <div className="flex-1">
+              <h3 className="text-white font-medium">{item.title}</h3>
+              <p className="text-sm text-gray-400">{item.category} • {item.author}</p>
+              <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.excerpt}</p>
+              <div className="flex gap-2 mt-2">
+                <Badge variant={item.is_published ? 'default' : 'secondary'} className={item.is_published ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}>
+                  {item.is_published ? 'Publicado' : 'Borrador'}
+                </Badge>
+                <Badge variant="outline" className="text-gray-400">
+                  {new Date(item.published_at || item.created_at).toLocaleDateString('es-ES')}
+                </Badge>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="ghost" onClick={() => handleEdit(item)}>
+                <Edit className="w-4 h-4" />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => handleDelete(item.id)}>
+                <Trash2 className="w-4 h-4 text-red-400" />
+              </Button>
+            </div>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -509,7 +647,7 @@ export default function ContentManagement({ type }) {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-white">
-                Gestión de {type === 'courses' ? 'Cursos' : type === 'events' ? 'Eventos' : 'Vacantes'}
+                Gestión de {type === 'courses' ? 'Cursos' : type === 'events' ? 'Eventos' : type === 'jobs' ? 'Vacantes' : 'Noticias'}
               </CardTitle>
               <CardDescription className="text-gray-400">
                 {items.length} elementos en total
@@ -543,7 +681,7 @@ export default function ContentManagement({ type }) {
         <DialogContent className="bg-slate-900 border-slate-700 max-w-2xl">
           <DialogHeader>
             <DialogTitle className="text-white">
-              {editingItem ? 'Editar' : 'Crear Nuevo'} {type === 'courses' ? 'Curso' : type === 'events' ? 'Evento' : 'Vacante'}
+              {editingItem ? 'Editar' : 'Crear Nuevo'} {type === 'courses' ? 'Curso' : type === 'events' ? 'Evento' : type === 'jobs' ? 'Vacante' : 'Noticia'}
             </DialogTitle>
             <DialogDescription className="text-gray-400">
               Completa la información requerida

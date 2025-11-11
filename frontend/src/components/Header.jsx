@@ -20,6 +20,11 @@ export default function Header({ user, logout }) {
     navigate('/saved');
   };
 
+  const handleChangePasswordClick = () => {
+    setShowUserMenu(false);
+    navigate('/change-password');
+  };
+
   const handleLoginClick = () => {
     navigate('/');
   };
@@ -177,6 +182,8 @@ export default function Header({ user, logout }) {
                           <button onClick={handleSavedClick} className="text-left px-3 py-2 text-gray-200 hover:bg-slate-700 rounded">Guardados</button>
                         </>
                       )}
+                      {/* Cambiar Contraseña para usuarios con cuenta por formulario */}
+                      <button onClick={handleChangePasswordClick} className="text-left px-3 py-2 text-gray-200 hover:bg-slate-700 rounded">Cambiar Contraseña</button>
                       <button onClick={() => {
                         setShowUserMenu(false);
                         if (logout && typeof logout === 'function') {

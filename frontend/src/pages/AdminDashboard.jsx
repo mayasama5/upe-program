@@ -74,7 +74,8 @@ import {
   RefreshCw,
   Bell,
   FolderOpen,
-  UserCog
+  UserCog,
+  Newspaper
 } from 'lucide-react';
 import {
   BarChart, Bar, PieChart, Pie,
@@ -124,10 +125,18 @@ export default function AdminDashboard() {
   const [logs, setLogs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [usersPerPage] = useState(10);
   const [analyticsData, setAnalyticsData] = useState({
     userGrowth: [],
     categoryActivity: { courses: 0, events: 0, jobs: 0 },
-    usersByRole: []
+    usersByRole: [],
+    activitySummary: {
+      newUsers: { count: 0, percentage: 0 },
+      savedCourses: { count: 0, percentage: 0 },
+      registeredEvents: { count: 0, percentage: 0 },
+      applications: { count: 0, percentage: 0 }
+    }
   });
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [maintenanceLoading, setMaintenanceLoading] = useState(false);
@@ -263,7 +272,13 @@ export default function AdminDashboard() {
           categoryActivity: categoryData,
           usersByRole: roleData.length > 0 ? roleData : [
             { role: 'estudiante', count: 0 }
-          ]
+          ],
+          activitySummary: analytics.activitySummary || {
+            newUsers: { count: 0, percentage: 0 },
+            savedCourses: { count: 0, percentage: 0 },
+            registeredEvents: { count: 0, percentage: 0 },
+            applications: { count: 0, percentage: 0 }
+          }
         });
       }
     } catch (error) {
@@ -272,7 +287,13 @@ export default function AdminDashboard() {
       setAnalyticsData({
         userGrowth: [{ month: 1, year: 2025, count: 0 }],
         categoryActivity: { courses: 0, events: 0, jobs: 0 },
-        usersByRole: [{ role: 'estudiante', count: 0 }]
+        usersByRole: [{ role: 'estudiante', count: 0 }],
+        activitySummary: {
+          newUsers: { count: 0, percentage: 0 },
+          savedCourses: { count: 0, percentage: 0 },
+          registeredEvents: { count: 0, percentage: 0 },
+          applications: { count: 0, percentage: 0 }
+        }
       });
     }
   };
@@ -562,6 +583,33 @@ export default function AdminDashboard() {
     u.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Pagination logic
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
   const handleExportUsers = () => {
     if (users.length === 0) {
       alert('No hay usuarios para exportar');
@@ -610,7 +658,9 @@ export default function AdminDashboard() {
               <Shield className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-cyan-400" />
               Panel de Administración
             </h1>
-            <p className="text-gray-400 mt-1 sm:mt-2 text-sm sm:text-base">Gestión completa del sistema UPE</p>
+            <p className="text-gray-400 mt-1 sm:mt-2 text-sm sm:text-base">
+              Bienvenido, <span className="text-cyan-400 font-medium">{user.name}</span> • Gestión completa del sistema UPE
+            </p>
           </div>
           <Button
             onClick={handleRefresh}
@@ -769,7 +819,12 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent className="p-3 sm:p-6">
                 <div className="space-y-2 sm:space-y-3">
-                  {filteredUsers.map((user) => (
+                  {currentUsers.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400">
+                      No se encontraron usuarios
+                    </div>
+                  ) : (
+                    currentUsers.map((user) => (
                     <div
                       key={user.id}
                       className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 sm:p-4 bg-slate-900 rounded-lg border border-slate-700 hover:border-cyan-500/50 transition-all"
@@ -844,8 +899,72 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                    ))
+                  )}
                 </div>
+
+                {/* Pagination Controls */}
+                {filteredUsers.length > 0 && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-700">
+                    <div className="text-sm text-gray-400">
+                      Mostrando {indexOfFirstUser + 1} a {Math.min(indexOfLastUser, filteredUsers.length)} de {filteredUsers.length} usuarios
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePreviousPage}
+                        disabled={currentPage === 1}
+                        className="border-slate-700 text-gray-400 hover:text-white hover:border-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Anterior
+                      </Button>
+
+                      <div className="flex gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => {
+                          // Show only 5 page numbers at a time
+                          if (
+                            pageNumber === 1 ||
+                            pageNumber === totalPages ||
+                            (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                          ) {
+                            return (
+                              <Button
+                                key={pageNumber}
+                                variant={currentPage === pageNumber ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handlePageChange(pageNumber)}
+                                className={currentPage === pageNumber
+                                  ? "bg-cyan-500 text-black hover:bg-cyan-600"
+                                  : "border-slate-700 text-gray-400 hover:text-white hover:border-cyan-500"
+                                }
+                              >
+                                {pageNumber}
+                              </Button>
+                            );
+                          } else if (
+                            pageNumber === currentPage - 2 ||
+                            pageNumber === currentPage + 2
+                          ) {
+                            return <span key={pageNumber} className="text-gray-400 px-2">...</span>;
+                          }
+                          return null;
+                        })}
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleNextPage}
+                        disabled={currentPage === totalPages}
+                        className="border-slate-700 text-gray-400 hover:text-white hover:border-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Siguiente
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -866,6 +985,10 @@ export default function AdminDashboard() {
                   <Briefcase className="w-4 h-4 mr-2" />
                   Vacantes
                 </TabsTrigger>
+                <TabsTrigger value="news" className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
+                  <Newspaper className="w-4 h-4 mr-2" />
+                  Noticias
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="courses">
@@ -878,6 +1001,10 @@ export default function AdminDashboard() {
 
               <TabsContent value="jobs">
                 <ContentManagement type="jobs" />
+              </TabsContent>
+
+              <TabsContent value="news">
+                <ContentManagement type="news" />
               </TabsContent>
             </Tabs>
           </TabsContent>
@@ -1018,41 +1145,41 @@ export default function AdminDashboard() {
                 {/* Summary Cards */}
                 {applicationsStats && (
                   <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                      <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
-                        <h3 className="text-sm font-medium text-gray-400 mb-2">Total Aplicaciones</h3>
-                        <p className="text-3xl font-bold text-white">{applicationsStats.summary?.total || 0}</p>
+                    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+                      <div className="bg-slate-900 rounded-lg p-3 sm:p-4 border border-slate-700">
+                        <h3 className="text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">Total Aplicaciones</h3>
+                        <p className="text-2xl sm:text-3xl font-bold text-white break-words">{applicationsStats.summary?.total || 0}</p>
                       </div>
 
-                      <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
-                        <h3 className="text-sm font-medium text-gray-400 mb-2">En Entrevista</h3>
-                        <p className="text-3xl font-bold text-purple-400">{applicationsStats.summary?.entrevista || 0}</p>
-                        <p className="text-sm text-gray-500 mt-1">
-                          {applicationsStats.summary?.conversionRates?.interviewRate}% del total
+                      <div className="bg-slate-900 rounded-lg p-3 sm:p-4 border border-slate-700">
+                        <h3 className="text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">En Entrevista</h3>
+                        <p className="text-2xl sm:text-3xl font-bold text-purple-400 break-words">{applicationsStats.summary?.entrevista || 0}</p>
+                        <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                          {applicationsStats.summary?.conversionRates?.interviewRate || 0}% del total
                         </p>
                       </div>
 
-                      <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
-                        <h3 className="text-sm font-medium text-gray-400 mb-2">Oferta</h3>
-                        <p className="text-3xl font-bold text-green-400">{applicationsStats.summary?.oferta || 0}</p>
-                        <p className="text-sm text-gray-500 mt-1">
-                          {applicationsStats.summary?.conversionRates?.offerRate}% del total
+                      <div className="bg-slate-900 rounded-lg p-3 sm:p-4 border border-slate-700">
+                        <h3 className="text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">Oferta</h3>
+                        <p className="text-2xl sm:text-3xl font-bold text-green-400 break-words">{applicationsStats.summary?.oferta || 0}</p>
+                        <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                          {applicationsStats.summary?.conversionRates?.offerRate || 0}% del total
                         </p>
                       </div>
 
-                      <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
-                        <h3 className="text-sm font-medium text-gray-400 mb-2">Contratados</h3>
-                        <p className="text-3xl font-bold text-cyan-400">{applicationsStats.summary?.contratado || 0}</p>
-                        <p className="text-sm text-gray-500 mt-1">
+                      <div className="bg-slate-900 rounded-lg p-3 sm:p-4 border border-slate-700">
+                        <h3 className="text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">Contratados</h3>
+                        <p className="text-2xl sm:text-3xl font-bold text-cyan-400 break-words">{applicationsStats.summary?.contratado || 0}</p>
+                        <p className="text-xs sm:text-sm text-gray-500 mt-1">
                           Finalizados
                         </p>
                       </div>
 
-                      <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
-                        <h3 className="text-sm font-medium text-gray-400 mb-2">Rechazados</h3>
-                        <p className="text-3xl font-bold text-red-400">{applicationsStats.summary?.rechazado || 0}</p>
-                        <p className="text-sm text-gray-500 mt-1">
-                          {applicationsStats.summary?.conversionRates?.rejectionRate}% del total
+                      <div className="bg-slate-900 rounded-lg p-3 sm:p-4 border border-slate-700">
+                        <h3 className="text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">Rechazados</h3>
+                        <p className="text-2xl sm:text-3xl font-bold text-red-400 break-words">{applicationsStats.summary?.rechazado || 0}</p>
+                        <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                          {applicationsStats.summary?.conversionRates?.rejectionRate || 0}% del total
                         </p>
                       </div>
                     </div>
@@ -1375,10 +1502,12 @@ export default function AdminDashboard() {
                         </div>
                         <div>
                           <p className="text-sm text-gray-400">Nuevos usuarios (30 días)</p>
-                          <p className="text-xl font-bold text-white">267</p>
+                          <p className="text-xl font-bold text-white">{analyticsData.activitySummary.newUsers.count}</p>
                         </div>
                       </div>
-                      <div className="text-green-400 text-sm font-medium">+23%</div>
+                      <div className={`text-sm font-medium ${analyticsData.activitySummary.newUsers.percentage >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {analyticsData.activitySummary.newUsers.percentage >= 0 ? '+' : ''}{analyticsData.activitySummary.newUsers.percentage}%
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-slate-900 rounded-lg">
@@ -1388,10 +1517,12 @@ export default function AdminDashboard() {
                         </div>
                         <div>
                           <p className="text-sm text-gray-400">Cursos guardados (30 días)</p>
-                          <p className="text-xl font-bold text-white">450</p>
+                          <p className="text-xl font-bold text-white">{analyticsData.activitySummary.savedCourses.count}</p>
                         </div>
                       </div>
-                      <div className="text-green-400 text-sm font-medium">+15%</div>
+                      <div className={`text-sm font-medium ${analyticsData.activitySummary.savedCourses.percentage >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {analyticsData.activitySummary.savedCourses.percentage >= 0 ? '+' : ''}{analyticsData.activitySummary.savedCourses.percentage}%
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-slate-900 rounded-lg">
@@ -1401,10 +1532,12 @@ export default function AdminDashboard() {
                         </div>
                         <div>
                           <p className="text-sm text-gray-400">Eventos registrados (30 días)</p>
-                          <p className="text-xl font-bold text-white">320</p>
+                          <p className="text-xl font-bold text-white">{analyticsData.activitySummary.registeredEvents.count}</p>
                         </div>
                       </div>
-                      <div className="text-green-400 text-sm font-medium">+12%</div>
+                      <div className={`text-sm font-medium ${analyticsData.activitySummary.registeredEvents.percentage >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {analyticsData.activitySummary.registeredEvents.percentage >= 0 ? '+' : ''}{analyticsData.activitySummary.registeredEvents.percentage}%
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-slate-900 rounded-lg">
@@ -1414,10 +1547,12 @@ export default function AdminDashboard() {
                         </div>
                         <div>
                           <p className="text-sm text-gray-400">Aplicaciones enviadas (30 días)</p>
-                          <p className="text-xl font-bold text-white">180</p>
+                          <p className="text-xl font-bold text-white">{analyticsData.activitySummary.applications.count}</p>
                         </div>
                       </div>
-                      <div className="text-green-400 text-sm font-medium">+8%</div>
+                      <div className={`text-sm font-medium ${analyticsData.activitySummary.applications.percentage >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {analyticsData.activitySummary.applications.percentage >= 0 ? '+' : ''}{analyticsData.activitySummary.applications.percentage}%
+                      </div>
                     </div>
                   </div>
                 </CardContent>

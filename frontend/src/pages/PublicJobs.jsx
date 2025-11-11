@@ -319,6 +319,12 @@ export default function PublicJobs() {
     return applied;
   };
 
+  // Función para validar si una vacante tiene URL externa válida
+  const hasExternalUrl = (job) => {
+    const url = job.external_url || job.apply_url;
+    return job.apply_type === 'externo' && url && url.trim() !== '' && url !== 'undefined' && url !== 'null';
+  };
+
   const handleOpenJobDetails = (job) => {
     setSelectedJob(job);
     setIsModalOpen(true);
@@ -346,8 +352,8 @@ export default function PublicJobs() {
     }
 
     // PRIORIDAD 1: Si es aplicación externa explícita, abrir URL externa
-    if (job.apply_type === 'externo' && job.apply_url) {
-      window.open(job.apply_url, '_blank');
+    if (hasExternalUrl(job)) {
+      window.open(job.external_url || job.apply_url, '_blank');
     }
     // PRIORIDAD 2: Por defecto, siempre usar formulario interno para estudiantes
     else {
@@ -442,6 +448,12 @@ export default function PublicJobs() {
                         <Badge variant="secondary" className="bg-orange-500/20 text-orange-400 text-xs">
                           {job.job_type}
                         </Badge>
+                        {hasExternalUrl(job) && (
+                          <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-400 text-xs">
+                            <ExternalLink className="w-2 h-2 mr-1" />
+                            Externo
+                          </Badge>
+                        )}
                         {user && user.role === 'estudiante' && hasApplied(job.id) && (
                           <Badge variant="secondary" className="bg-green-500/20 text-green-400 text-xs">
                             Postulado
@@ -477,27 +489,43 @@ export default function PublicJobs() {
                           <span className="truncate">{job.contact_whatsapp}</span>
                         </div>
                       )}
-                      <div className="flex flex-col sm:flex-row gap-2">
+                      <div className="flex flex-col gap-2">
                         <Button
                           size="sm"
-                          className="flex-1 bg-slate-700 hover:bg-slate-600 text-white text-xs"
+                          className="w-full bg-slate-700 hover:bg-slate-600 text-white text-xs"
                           onClick={() => handleOpenJobDetails(job)}
                         >
                           Ver más
                         </Button>
                         {user && user.role === 'estudiante' && (
-                          <Button
-                            size="sm"
-                            className={`flex-1 text-xs ${
-                              hasApplied(job.id) 
-                                ? "bg-green-600/50 hover:bg-green-600/70 text-green-200 cursor-default"
-                                : "bg-orange-500 hover:bg-orange-600 text-white"
-                            }`}
-                            onClick={() => hasApplied(job.id) ? null : handleApply(job)}
-                            disabled={hasApplied(job.id)}
-                          >
-                            {hasApplied(job.id) ? "Aplicado" : "Aplicar"}
-                          </Button>
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            {/* Botón de aplicar interno (formulario) */}
+                            <Button
+                              size="sm"
+                              className={`flex-1 text-xs ${
+                                hasApplied(job.id) 
+                                  ? "bg-green-600/50 hover:bg-green-600/70 text-green-200 cursor-default"
+                                  : "bg-orange-500 hover:bg-orange-600 text-white"
+                              }`}
+                              onClick={() => hasApplied(job.id) ? null : navigate(`/apply/${job.id}`)}
+                              disabled={hasApplied(job.id)}
+                            >
+                              {hasApplied(job.id) ? "Aplicado" : "Aplicar"}
+                            </Button>
+                            
+                            {/* Botón de aplicar externo si está disponible */}
+                            {hasExternalUrl(job) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1 text-xs border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/10"
+                                onClick={() => window.open(job.external_url || job.apply_url, '_blank')}
+                              >
+                                <ExternalLink className="w-3 h-3 mr-1" />
+                                Aplicar Externamente
+                              </Button>
+                            )}
+                          </div>
                         )}
                       </div>
                       
@@ -598,6 +626,19 @@ export default function PublicJobs() {
                   </div>
                 )}
 
+                {/* Aplicación Externa */}
+                {hasExternalUrl(selectedJob) && (
+                  <div className="bg-slate-800 border border-cyan-500/30 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <ExternalLink className="w-5 h-5 text-cyan-400" />
+                      <h3 className="text-lg font-semibold">Aplicación Externa Disponible</h3>
+                    </div>
+                    <p className="text-gray-400 text-sm">
+                      Esta empresa también acepta aplicaciones através de su sitio web oficial.
+                    </p>
+                  </div>
+                )}
+
                 {/* Contacto WhatsApp */}
                 {selectedJob.contact_whatsapp && (
                   <div className="bg-slate-800 rounded-lg p-4">
@@ -621,20 +662,38 @@ export default function PublicJobs() {
                     >
                       Cerrar
                     </Button>
-                    <Button
-                      onClick={() => handleApply(selectedJob)}
-                      className={`flex-1 ${
-                        user && user.role === 'estudiante' && hasApplied(selectedJob.id)
-                          ? "bg-green-600/50 hover:bg-green-600/70 text-green-200 cursor-default"
-                          : "bg-orange-500 hover:bg-orange-600 text-white"
-                      }`}
-                      disabled={user && user.role === 'estudiante' && hasApplied(selectedJob.id)}
-                    >
-                      {user && user.role === 'estudiante' && hasApplied(selectedJob.id) 
-                        ? "Ya Aplicado" 
-                        : "Aplicar por Formulario"}
-                    </Button>
                   </div>
+                  
+                  {user && user.role === 'estudiante' && (
+                    <div className="flex flex-col gap-2">
+                      {/* Botón de aplicar interno (formulario) */}
+                      <Button
+                        onClick={() => navigate(`/apply/${selectedJob.id}`)}
+                        className={`w-full ${
+                          hasApplied(selectedJob.id)
+                            ? "bg-green-600/50 hover:bg-green-600/70 text-green-200 cursor-default"
+                            : "bg-orange-500 hover:bg-orange-600 text-white"
+                        }`}
+                        disabled={hasApplied(selectedJob.id)}
+                      >
+                        {hasApplied(selectedJob.id) 
+                          ? "Ya Aplicado por Formulario" 
+                          : "Aplicar por Formulario Interno"}
+                      </Button>
+                      
+                      {/* Botón de aplicar externo si está disponible */}
+                      {hasExternalUrl(selectedJob) && (
+                        <Button
+                          onClick={() => window.open(selectedJob.external_url || selectedJob.apply_url, '_blank')}
+                          variant="outline"
+                          className="w-full border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/10"
+                        >
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          Aplicar en Sitio Web de la Empresa
+                        </Button>
+                      )}
+                    </div>
+                  )}
                   
                   {/* Botón de WhatsApp si está disponible */}
                   {selectedJob.contact_whatsapp && user && user.role === 'estudiante' && (

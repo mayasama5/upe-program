@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Newspaper, Calendar, ExternalLink, ArrowRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -6,12 +6,43 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Badge } from '../components/ui/badge';
 import Header from '../components/Header';
 import { useAuth } from '../hooks/useAuth';
+import axios from 'axios';
+import { getBackendUrl } from '../config';
+
+const BACKEND_URL = getBackendUrl();
 
 export default function News() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [newsArticles, setNewsArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState("all");
 
-  const newsArticles = [
+  useEffect(() => {
+    fetchNews();
+  }, [selectedCategory]);
+
+  const fetchNews = async () => {
+    try {
+      setLoading(true);
+      const params = selectedCategory !== 'all' ? { category: selectedCategory } : {};
+      const response = await axios.get(`${BACKEND_URL}/api/news`, { params });
+
+      if (response.data.success) {
+        setNewsArticles(response.data.news || []);
+      }
+    } catch (error) {
+      console.error('Error fetching news:', error);
+      console.error('URL attempted:', `${BACKEND_URL}/api/news`);
+      console.error('Error details:', error.response?.data || error.message);
+      setNewsArticles([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Datos hardcodeados como fallback (se mantienen por si hay error en la API)
+  const fallbackNewsArticles = [
     {
       id: 1,
       title: "SNPP lanza nuevos cursos técnicos para 2025",
@@ -122,8 +153,6 @@ export default function News() {
     }
   ];
 
-  const [selectedCategory, setSelectedCategory] = useState("all");
-
   const categories = [
     { value: "all", label: "Todas las Noticias" },
     { value: "Educación", label: "Educación" },
@@ -134,9 +163,12 @@ export default function News() {
     { value: "Certificaciones", label: "Certificaciones" }
   ];
 
+  // Usa las noticias del backend si están disponibles, de lo contrario usa fallback
+  const displayNews = newsArticles.length > 0 ? newsArticles : fallbackNewsArticles;
+  
   const filteredNews = selectedCategory === "all"
-    ? newsArticles
-    : newsArticles.filter(article => article.category === selectedCategory);
+    ? displayNews
+    : displayNews.filter(article => article.category === selectedCategory);
 
   const getCategoryColor = (category) => {
     const colors = {
@@ -196,59 +228,71 @@ export default function News() {
           </h2>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredNews.map(article => (
-            <Card key={article.id} className="bg-slate-800 border-slate-700 hover:border-cyan-500/50 transition-all flex flex-col overflow-hidden">
-              {/* Image */}
-              <div className="w-full h-48 overflow-hidden">
-                <img
-                  src={article.image}
-                  alt={article.title}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                />
-              </div>
-
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start mb-2">
-                  <Badge variant="outline" className={`text-xs ${getCategoryColor(article.category)}`}>
-                    {article.category}
-                  </Badge>
-                  <div className="flex items-center text-gray-400 text-xs">
-                    <Calendar className="w-3 h-3 mr-1" />
-                    {new Date(article.date).toLocaleDateString('es-ES', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric'
-                    })}
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400"></div>
+            <p className="text-gray-400 mt-4">Cargando noticias...</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredNews.map(article => (
+              <Card key={article.id} className="bg-slate-800 border-slate-700 hover:border-cyan-500/50 transition-all flex flex-col overflow-hidden">
+                {/* Image */}
+                {article.image_url && (
+                  <div className="w-full h-48 overflow-hidden">
+                    <img
+                      src={article.image_url}
+                      alt={article.title}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
                   </div>
-                </div>
-                <CardTitle className="text-white text-lg leading-tight line-clamp-2">
-                  {article.title}
-                </CardTitle>
-              </CardHeader>
+                )}
 
-              <CardContent className="flex-grow flex flex-col">
-                <CardDescription className="text-gray-400 text-sm mb-4 line-clamp-3 flex-grow">
-                  {article.excerpt}
-                </CardDescription>
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start mb-2">
+                    <Badge variant="outline" className={`text-xs ${getCategoryColor(article.category)}`}>
+                      {article.category}
+                    </Badge>
+                    <div className="flex items-center text-gray-400 text-xs">
+                      <Calendar className="w-3 h-3 mr-1" />
+                      {new Date(article.published_at || article.created_at).toLocaleDateString('es-ES', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                      })}
+                    </div>
+                  </div>
+                  <CardTitle className="text-white text-lg leading-tight line-clamp-2">
+                    {article.title}
+                  </CardTitle>
+                </CardHeader>
 
-                <Button
-                  size="sm"
-                  className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-semibold"
-                  onClick={() => {
-                    // Aquí podrías navegar a una página de detalle de noticia
-                    // Por ahora, mostraremos un alert con el contenido
-                    alert(`${article.title}\n\n${article.content}`);
-                  }}
-                >
-                  Leer Noticia <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                <CardContent className="flex-grow flex flex-col">
+                  <CardDescription className="text-gray-400 text-sm mb-4 line-clamp-3 flex-grow">
+                    {article.excerpt}
+                  </CardDescription>
 
-        {filteredNews.length === 0 && (
+                  <Button
+                    size="sm"
+                    className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-semibold"
+                    onClick={() => {
+                      // Aquí podrías navegar a una página de detalle de noticia
+                      // Por ahora, mostraremos un alert con el contenido
+                      alert(`${article.title}\n\n${article.content}`);
+                    }}
+                  >
+                    Leer Noticia <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {!loading && filteredNews.length === 0 && (
           <div className="text-center py-12">
             <Newspaper className="w-16 h-16 text-gray-600 mx-auto mb-4" />
             <p className="text-gray-400 text-lg">No hay noticias en esta categoría</p>

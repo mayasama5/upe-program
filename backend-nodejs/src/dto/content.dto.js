@@ -34,8 +34,11 @@ const createCourseDTO = [
     .isBoolean()
     .withMessage('is_free debe ser booleano'),
   body('image_url')
-    .optional()
-    .isURL()
+    .optional({ nullable: true, checkFalsy: true })
+    .custom((value) => {
+      if (!value || value === '') return true;
+      return /^https?:\/\/.+/.test(value);
+    })
     .withMessage('URL de imagen inválida')
 ];
 
@@ -62,8 +65,11 @@ const updateCourseDTO = [
     .isLength({ min: 2, max: 100 })
     .withMessage('El proveedor debe tener entre 2 y 100 caracteres'),
   body('url')
-    .optional()
-    .isURL()
+    .optional({ nullable: true, checkFalsy: true })
+    .custom((value) => {
+      if (!value || value === '') return true;
+      return /^https?:\/\/.+/.test(value);
+    })
     .withMessage('URL inválida'),
   body('language')
     .optional()
@@ -93,8 +99,11 @@ const createEventDTO = [
     .isLength({ min: 2, max: 100 })
     .withMessage('El organizador debe tener entre 2 y 100 caracteres'),
   body('url')
-    .optional()
-    .isURL()
+    .optional({ nullable: true, checkFalsy: true })
+    .custom((value) => {
+      if (!value || value === '') return true;
+      return /^https?:\/\/.+/.test(value);
+    })
     .withMessage('URL inválida'),
   body('event_date')
     .isISO8601()
@@ -111,8 +120,11 @@ const createEventDTO = [
     .isLength({ min: 2, max: 50 })
     .withMessage('La categoría debe tener entre 2 y 50 caracteres'),
   body('image_url')
-    .optional()
-    .isURL()
+    .optional({ nullable: true, checkFalsy: true })
+    .custom((value) => {
+      if (!value || value === '') return true;
+      return /^https?:\/\/.+/.test(value);
+    })
     .withMessage('URL de imagen inválida')
 ];
 
@@ -186,8 +198,11 @@ const createJobDTO = [
     .isIn(['interno', 'externo'])
     .withMessage('Tipo de aplicación inválido'),
   body('external_url')
-    .optional()
-    .isURL()
+    .optional({ nullable: true, checkFalsy: true })
+    .custom((value) => {
+      if (!value || value === '') return true;
+      return /^https?:\/\/.+/.test(value);
+    })
     .withMessage('URL externa inválida'),
   body('is_active')
     .optional()
@@ -226,6 +241,77 @@ const updateJobDTO = [
 ];
 
 /**
+ * DTO para crear noticia
+ */
+const createNewsDTO = [
+  body('title')
+    .trim()
+    .isLength({ min: 3, max: 200 })
+    .withMessage('El título debe tener entre 3 y 200 caracteres'),
+  body('excerpt')
+    .trim()
+    .isLength({ min: 10, max: 500 })
+    .withMessage('El extracto debe tener entre 10 y 500 caracteres'),
+  body('content')
+    .trim()
+    .isLength({ min: 20, max: 10000 })
+    .withMessage('El contenido debe tener entre 20 y 10000 caracteres'),
+  body('category')
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('La categoría debe tener entre 2 y 50 caracteres'),
+  body('image_url')
+    .optional({ nullable: true, checkFalsy: true })
+    .custom((value) => {
+      if (!value || value === '') return true;
+      return /^https?:\/\/.+/.test(value);
+    })
+    .withMessage('URL de imagen inválida'),
+  body('author')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('El autor debe tener entre 2 y 100 caracteres'),
+  body('is_published')
+    .optional()
+    .isBoolean()
+    .withMessage('is_published debe ser booleano')
+];
+
+/**
+ * DTO para actualizar noticia
+ */
+const updateNewsDTO = [
+  param('id')
+    .isString()
+    .withMessage('ID de noticia inválido'),
+  body('title')
+    .optional()
+    .trim()
+    .isLength({ min: 3, max: 200 })
+    .withMessage('El título debe tener entre 3 y 200 caracteres'),
+  body('excerpt')
+    .optional()
+    .trim()
+    .isLength({ min: 10, max: 500 })
+    .withMessage('El extracto debe tener entre 10 y 500 caracteres'),
+  body('content')
+    .optional()
+    .trim()
+    .isLength({ min: 20, max: 10000 })
+    .withMessage('El contenido debe tener entre 20 y 10000 caracteres'),
+  body('category')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('La categoría debe tener entre 2 y 50 caracteres'),
+  body('is_published')
+    .optional()
+    .isBoolean()
+    .withMessage('is_published debe ser booleano')
+];
+
+/**
  * DTO para ID genérico
  */
 const contentIdDTO = [
@@ -241,14 +327,19 @@ const validate = (req, res, next) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
+    const errorDetails = errors.array().map(err => ({
+      field: err.path,
+      message: err.msg,
+      value: err.value
+    }));
+
+    console.log('❌ Validation errors:', JSON.stringify(errorDetails, null, 2));
+    console.log('📦 Request body:', JSON.stringify(req.body, null, 2));
+
     return res.status(400).json({
       success: false,
       message: 'Errores de validación',
-      errors: errors.array().map(err => ({
-        field: err.path,
-        message: err.msg,
-        value: err.value
-      }))
+      errors: errorDetails
     });
   }
 
@@ -262,6 +353,8 @@ module.exports = {
   updateEventDTO,
   createJobDTO,
   updateJobDTO,
+  createNewsDTO,
+  updateNewsDTO,
   contentIdDTO,
   validate
 };

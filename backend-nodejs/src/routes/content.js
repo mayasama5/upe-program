@@ -771,4 +771,94 @@ router.get('/companies', async (req, res) => {
   }
 });
 
+// ============================================
+// NEWS/NOTICIAS ROUTES
+// ============================================
+
+// Get all news (public endpoint)
+router.get('/news', async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      category,
+      search
+    } = req.query;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const where = { is_published: true };
+
+    // Apply filters
+    if (category && category !== 'all') {
+      where.category = category;
+    }
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { excerpt: { contains: search, mode: 'insensitive' } },
+        { content: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    const [news, total] = await Promise.all([
+      prisma.news.findMany({
+        where,
+        orderBy: { published_at: 'desc' },
+        skip,
+        take: parseInt(limit)
+      }),
+      prisma.news.count({ where })
+    ]);
+
+    res.json({
+      success: true,
+      news,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+
+  } catch (error) {
+    console.error('Get news error:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'An error occurred while fetching news'
+    });
+  }
+});
+
+// Get single news by ID (public endpoint)
+router.get('/news/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const news = await prisma.news.findUnique({
+      where: { id }
+    });
+
+    if (!news) {
+      return res.status(404).json({
+        error: 'Not found',
+        message: 'Noticia no encontrada'
+      });
+    }
+
+    res.json({
+      success: true,
+      news
+    });
+
+  } catch (error) {
+    console.error('Get news by ID error:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'An error occurred while fetching news'
+    });
+  }
+});
+
 module.exports = router;
