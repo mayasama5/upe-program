@@ -1,8 +1,16 @@
 #!/bin/bash
 
-# Script de Deploy para Vercel - UPE Program
-echo "UPE Program - Deploy a Vercel"
-echo "================================"
+# Banner de inicio
+echo -e "${CYAN}"
+echo "██╗   ██╗██████╗ ███████╗    ██████╗ ███████╗██████╗ ██╗      ██████╗ ██╗   ██╗"
+echo "██║   ██║██╔══██╗██╔════╝    ██╔══██╗██╔════╝██╔══██╗██║     ██╔═══██╗╚██╗ ██╔╝"
+echo "██║   ██║██████╔╝█████╗      ██║  ██║█████╗  ██████╔╝██║     ██║   ██║ ╚████╔╝ "
+echo "██║   ██║██╔═══╝ ██╔══╝      ██║  ██║██╔══╝  ██╔═══╝ ██║     ██║   ██║  ╚██╔╝  "
+echo "╚██████╔╝██║     ███████╗    ██████╔╝███████╗██║     ███████╗╚██████╔╝   ██║   "
+echo " ╚═════╝ ╚═╝     ╚══════╝    ╚═════╝ ╚══════╝╚═╝     ╚══════╝ ╚═════╝    ╚═╝   "
+echo -e "${NC}"
+echo -e "${GREEN}Deploy Script para Vercel${NC}"
+echo -e "Versión: 1.0.0 | $(date)\n"
 
 # Verificar que estemos en la rama main
 CURRENT_BRANCH=$(git branch --show-current)
