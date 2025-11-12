@@ -287,23 +287,23 @@ cleanup() {
 show_summary() {
     log_header "Resumen del Deploy"
     
-    echo -e "${GREEN}Deploy completado exitosamente${NC}\n"
+    echo -e "${GREEN}✅ Deploy completado exitosamente${NC}\n"
     
     if [ -n "$BACKEND_URL" ]; then
-        echo -e "${CYAN}Backend:${NC} $BACKEND_URL"
+        echo -e "${CYAN}🚀 Backend:${NC} $BACKEND_URL"
     fi
     
     if [ -n "$FRONTEND_URL" ]; then
-        echo -e "${CYAN} Frontend:${NC} $FRONTEND_URL"
+        echo -e "${CYAN}🌐 Frontend:${NC} $FRONTEND_URL"
     fi
     
-    echo -e "\n${YELLOW} Pasos siguientes:${NC}"
+    echo -e "\n${YELLOW}📋 Pasos siguientes:${NC}"
     echo "1. Verifica que ambas URLs funcionen correctamente"
     echo "2. Configura las variables de entorno en Vercel Dashboard si es necesario"
     echo "3. Actualiza los DNS si usas dominio personalizado"
     echo "4. Monitorea los logs en Vercel Dashboard"
     
-    echo -e "\n${CYAN}Enlaces útiles:${NC}"
+    echo -e "\n${CYAN}📚 Enlaces útiles:${NC}"
     echo "• Vercel Dashboard: https://vercel.com/dashboard"
     echo "• Documentación: https://vercel.com/docs"
     echo "• GitHub Repository: https://github.com/$(git config --get remote.origin.url | sed 's/.*github.com[:/]\([^/]*\/[^/]*\).*/\1/' | sed 's/\.git$//')"
@@ -313,11 +313,11 @@ show_summary() {
 main() {
     # Mostrar opciones
     echo -e "${YELLOW}Selecciona el tipo de deploy:${NC}"
-    echo "1. Deploy completo (Backend + Frontend)"
-    echo "2. Solo Backend"
-    echo "3. Solo Frontend" 
-    echo "4. Solo preparar archivos"
-    echo "5. Cancelar"
+    echo "1. 🚀 Deploy completo (Backend + Frontend)"
+    echo "2. 🔧 Solo Backend"
+    echo "3. 🎨 Solo Frontend" 
+    echo "4. ⚙️  Solo preparar archivos"
+    echo "5. ❌ Cancelar"
     echo ""
     
     read -p "Opción [1-5]: " -r option

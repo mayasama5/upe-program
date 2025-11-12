@@ -113,7 +113,9 @@ const corsOptions = {
       'https://upe-oqupv2udb-gustavogamarra95s-projects.vercel.app',
       'https://upe-glj0rn4as-gustavogamarra95s-projects.vercel.app',
       'https://upe-jay2tsfnx-gustavogamarra95s-projects.vercel.app',
-      'https://upe-3b5kfh588-gustavogamarra95s-projects.vercel.app'
+      'https://upe-3b5kfh588-gustavogamarra95s-projects.vercel.app',
+      'https://upe-dnm5f5s03-gustavogamarra95s-projects.vercel.app', // Frontend deploy 1
+      'https://upe-gh6mq8r1v-gustavogamarra95s-projects.vercel.app'  // Frontend deploy 2
     ];
     
     if (allowedOrigins.includes(origin)) {
@@ -187,7 +189,9 @@ app.options('*', (req, res) => {
     'https://upe-oqupv2udb-gustavogamarra95s-projects.vercel.app',
     'https://upe-glj0rn4as-gustavogamarra95s-projects.vercel.app',
     'https://upe-jay2tsfnx-gustavogamarra95s-projects.vercel.app',
-    'https://upe-3b5kfh588-gustavogamarra95s-projects.vercel.app'
+    'https://upe-3b5kfh588-gustavogamarra95s-projects.vercel.app',
+    'https://upe-dnm5f5s03-gustavogamarra95s-projects.vercel.app',
+    'https://upe-gh6mq8r1v-gustavogamarra95s-projects.vercel.app'
   ];
   let allowedOrigin = '';
   if (!origin) {
