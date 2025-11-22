@@ -96,12 +96,12 @@ check_dependencies() {
     fi
     log_success "git $(git --version | cut -d' ' -f3)"
 
-    # Verificar/instalar Vercel CLI
+    # Verificar Vercel CLI; evitar instalación global para no requerir permisos
     if ! command -v vercel &> /dev/null; then
-        log_warning "Vercel CLI no encontrado. Instalando..."
-        npm install -g vercel
-        log_success "Vercel CLI instalado"
+        log_warning "Vercel CLI no encontrado. Usaré 'npx vercel' temporalmente (sin instalación global)."
+        VERCEL_CMD="npx vercel"
     else
+        VERCEL_CMD="vercel"
         log_success "Vercel CLI $(vercel --version)"
     fi
 
@@ -249,13 +249,13 @@ deploy_backend() {
     log_info "Iniciando deploy del backend..."
     echo ""
 
-    # Hacer deploy con Vercel CLI
-    if vercel --prod --yes; then
+    # Hacer deploy con Vercel CLI (usa $VERCEL_CMD, que puede ser 'vercel' o 'npx vercel')
+    if $VERCEL_CMD --prod --yes; then
         echo ""
         log_success "Backend desplegado exitosamente"
 
         # Intentar obtener URL del último deployment
-        BACKEND_URL=$(vercel ls --prod 2>/dev/null | grep "backend" | head -1 | awk '{print $2}')
+        BACKEND_URL=$($VERCEL_CMD ls --prod 2>/dev/null | grep "backend" | head -1 | awk '{print $2}')
         if [ -n "$BACKEND_URL" ]; then
             log_success "Backend URL: ${CYAN}https://$BACKEND_URL${NC}"
             echo "https://$BACKEND_URL" > "$PROJECT_ROOT/.backend-url"
@@ -296,13 +296,13 @@ EOF
     log_info "Iniciando deploy del frontend..."
     echo ""
 
-    # Hacer deploy con Vercel CLI
-    if vercel --prod --yes; then
+    # Hacer deploy con Vercel CLI (usa $VERCEL_CMD, que puede ser 'vercel' o 'npx vercel')
+    if $VERCEL_CMD --prod --yes; then
         echo ""
         log_success "Frontend desplegado exitosamente"
 
         # Intentar obtener URL del último deployment
-        FRONTEND_URL=$(vercel ls --prod 2>/dev/null | grep "frontend" | head -1 | awk '{print $2}')
+        FRONTEND_URL=$($VERCEL_CMD ls --prod 2>/dev/null | grep "frontend" | head -1 | awk '{print $2}')
         if [ -n "$FRONTEND_URL" ]; then
             log_success "Frontend URL: ${CYAN}https://$FRONTEND_URL${NC}"
         fi
