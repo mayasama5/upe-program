@@ -16,8 +16,8 @@ export default function Footer() {
           </p>
         </div>
 
-        {/* Grid de 3 columnas en todos los dispositivos */}
-        <div className="grid grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+        {/* Grid: 1 columna en móvil, 3 en pantallas pequeñas en adelante */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
           {/* Recursos */}
           <div>
             <h4 className="text-white font-semibold mb-3 sm:mb-3 md:mb-4 text-sm sm:text-sm md:text-base">Recursos</h4>
@@ -44,11 +44,11 @@ export default function Footer() {
             <h4 className="text-white font-semibold mb-3 sm:mb-3 md:mb-4 text-sm sm:text-sm md:text-base">Contacto</h4>
             <ul className="space-y-2 sm:space-y-1.5 md:space-y-2 text-gray-400 text-xs sm:text-xs md:text-sm">
               <li>
-                <a href="mailto:contact@techhubupe.com" className="hover:text-cyan-400 transition-colors inline-block flex items-center gap-1">
+                <a href="mailto:contacto@techhupbupe.com" className="hover:text-cyan-400 transition-colors inline-flex items-center gap-1 flex-wrap">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
-                  <span>contact@techhubupe.com</span>
+                  <span className="break-words">contacto@techhupbupe.com</span>
                 </a>
               </li>
               <li><Link to="/support" className="hover:text-cyan-400 transition-colors inline-block">Soporte</Link></li>
