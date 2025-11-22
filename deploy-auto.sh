@@ -105,6 +105,19 @@ check_dependencies() {
         log_success "Vercel CLI $(vercel --version)"
     fi
 
+    # Comprobar que el usuario está autenticado en Vercel antes de continuar
+    if ! $VERCEL_CMD whoami >/dev/null 2>&1; then
+        log_error "No estás autenticado en Vercel o el token no es válido. Ejecuta 'npx vercel login' o exporta 'VERCEL_TOKEN'."
+        echo "Ejecuta: npx vercel login"
+        exit 1
+    else
+        # Mostrar usuario autenticado (silencioso en caso de npx)
+        AUTH_USER=$($VERCEL_CMD whoami 2>/dev/null || true)
+        if [ -n "$AUTH_USER" ]; then
+            log_success "Autenticado en Vercel como: ${CYAN}$AUTH_USER${NC}"
+        fi
+    fi
+
     echo ""
 }
 
