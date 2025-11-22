@@ -262,13 +262,29 @@ deploy_backend() {
     log_info "Iniciando deploy del backend..."
     echo ""
 
+    # Si se proporcionó project id/nombre vía variable, linkear el directorio al proyecto
+    if [ -n "$VERCEL_PROJECT_BACKEND" ]; then
+        log_info "Enlazando backend al proyecto Vercel: ${CYAN}$VERCEL_PROJECT_BACKEND${NC}"
+        $VERCEL_CMD link --project "$VERCEL_PROJECT_BACKEND" --yes || true
+    elif [ -n "$VERCEL_PROJECT" ]; then
+        log_info "Usando VERCEL_PROJECT para backend: ${CYAN}$VERCEL_PROJECT${NC}"
+        $VERCEL_CMD link --project "$VERCEL_PROJECT" --yes || true
+    fi
+
     # Hacer deploy con Vercel CLI (usa $VERCEL_CMD, que puede ser 'vercel' o 'npx vercel')
     if $VERCEL_CMD --prod --yes; then
         echo ""
         log_success "Backend desplegado exitosamente"
 
         # Intentar obtener URL del último deployment
-        BACKEND_URL=$($VERCEL_CMD ls --prod 2>/dev/null | grep "backend" | head -1 | awk '{print $2}')
+        # Intentar inferir URL por nombre de proyecto si es posible
+        if [ -n "$VERCEL_PROJECT_BACKEND" ]; then
+            BACKEND_URL=$($VERCEL_CMD ls --prod 2>/dev/null | grep "$VERCEL_PROJECT_BACKEND" | head -1 | awk '{print $2}')
+        elif [ -n "$VERCEL_PROJECT" ]; then
+            BACKEND_URL=$($VERCEL_CMD ls --prod 2>/dev/null | grep "$VERCEL_PROJECT" | head -1 | awk '{print $2}')
+        else
+            BACKEND_URL=$($VERCEL_CMD ls --prod 2>/dev/null | grep "backend" | head -1 | awk '{print $2}')
+        fi
         if [ -n "$BACKEND_URL" ]; then
             log_success "Backend URL: ${CYAN}https://$BACKEND_URL${NC}"
             echo "https://$BACKEND_URL" > "$PROJECT_ROOT/.backend-url"
@@ -309,13 +325,28 @@ EOF
     log_info "Iniciando deploy del frontend..."
     echo ""
 
+    # Si se proporcionó project id/nombre vía variable, linkear el directorio al proyecto
+    if [ -n "$VERCEL_PROJECT_FRONTEND" ]; then
+        log_info "Enlazando frontend al proyecto Vercel: ${CYAN}$VERCEL_PROJECT_FRONTEND${NC}"
+        $VERCEL_CMD link --project "$VERCEL_PROJECT_FRONTEND" --yes || true
+    elif [ -n "$VERCEL_PROJECT" ]; then
+        log_info "Usando VERCEL_PROJECT para frontend: ${CYAN}$VERCEL_PROJECT${NC}"
+        $VERCEL_CMD link --project "$VERCEL_PROJECT" --yes || true
+    fi
+
     # Hacer deploy con Vercel CLI (usa $VERCEL_CMD, que puede ser 'vercel' o 'npx vercel')
     if $VERCEL_CMD --prod --yes; then
         echo ""
         log_success "Frontend desplegado exitosamente"
 
         # Intentar obtener URL del último deployment
-        FRONTEND_URL=$($VERCEL_CMD ls --prod 2>/dev/null | grep "frontend" | head -1 | awk '{print $2}')
+        if [ -n "$VERCEL_PROJECT_FRONTEND" ]; then
+            FRONTEND_URL=$($VERCEL_CMD ls --prod 2>/dev/null | grep "$VERCEL_PROJECT_FRONTEND" | head -1 | awk '{print $2}')
+        elif [ -n "$VERCEL_PROJECT" ]; then
+            FRONTEND_URL=$($VERCEL_CMD ls --prod 2>/dev/null | grep "$VERCEL_PROJECT" | head -1 | awk '{print $2}')
+        else
+            FRONTEND_URL=$($VERCEL_CMD ls --prod 2>/dev/null | grep "frontend" | head -1 | awk '{print $2}')
+        fi
         if [ -n "$FRONTEND_URL" ]; then
             log_success "Frontend URL: ${CYAN}https://$FRONTEND_URL${NC}"
         fi
@@ -392,6 +423,11 @@ main() {
     case $option in
         1)
             log_info "Deploy completo seleccionado"
+            # Establecer proyectos Vercel por defecto si no están definidos (no sobrescribir valores existentes)
+            export VERCEL_PROJECT_FRONTEND="${VERCEL_PROJECT_FRONTEND:-prj_vUcRfPGTIi52ibIGKlQWemjpobTC}"
+            export VERCEL_PROJECT_BACKEND="${VERCEL_PROJECT_BACKEND:-prj_vUcRfPGTIi52ibIGKlQWemjpobTC}"
+            log_info "VERCEL_PROJECT_FRONTEND=${CYAN}$VERCEL_PROJECT_FRONTEND${NC}"
+            log_info "VERCEL_PROJECT_BACKEND=${CYAN}$VERCEL_PROJECT_BACKEND${NC}"
             check_dependencies
             handle_git
             prepare_backend
