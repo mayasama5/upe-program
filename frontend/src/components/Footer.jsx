@@ -12,12 +12,12 @@ export default function Footer() {
             <img src={techHubLogo} alt="TechHub UPE" className="logo-img logo-footer" />
           </div>
           <p className="text-gray-400 text-xs sm:text-sm leading-relaxed max-w-md">
-            La plataforma educativa y laboral para estudiantes de Paraguay y Latinoamérica.
+            La plataforma de cpnexión educativa y laboral que necesitas.
           </p>
         </div>
 
-        {/* Grid: 1 columna en móvil, 3 en pantallas pequeñas en adelante */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+        {/* Grid de 3 columnas en todos los dispositivos */}
+        <div className="grid grid-cols-3 gap-4 sm:gap-6 md:gap-8">
           {/* Recursos */}
           <div>
             <h4 className="text-white font-semibold mb-3 sm:mb-3 md:mb-4 text-sm sm:text-sm md:text-base">Recursos</h4>
@@ -43,14 +43,6 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-semibold mb-3 sm:mb-3 md:mb-4 text-sm sm:text-sm md:text-base">Contacto</h4>
             <ul className="space-y-2 sm:space-y-1.5 md:space-y-2 text-gray-400 text-xs sm:text-xs md:text-sm">
-              <li>
-                <a href="mailto:contacto@techhupbupe.com" className="hover:text-cyan-400 transition-colors inline-flex items-center gap-1 flex-wrap">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  <span className="break-words">contacto@techhupbupe.com</span>
-                </a>
-              </li>
               <li><Link to="/support" className="hover:text-cyan-400 transition-colors inline-block">Soporte</Link></li>
               <li><Link to="/terms" className="hover:text-cyan-400 transition-colors inline-block">Términos</Link></li>
               <li><Link to="/privacy" className="hover:text-cyan-400 transition-colors inline-block">Privacidad</Link></li>
@@ -60,7 +52,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="border-t border-slate-700 mt-6 sm:mt-8 pt-6 sm:pt-8 text-center text-gray-400 text-xs sm:text-sm">
-          <p>&copy; 2024 TechHub UPE. Todos los derechos reservados.</p>
+          <p>&copy; 2025 TechHub UPE. Todos los derechos reservados.</p>
         </div>
       </div>
     </footer>
