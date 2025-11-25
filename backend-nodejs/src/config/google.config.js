@@ -21,8 +21,13 @@ const getOAuth2Client = () => {
  * Genera la URL de autorización de Google
  * @param {string} role - Rol del usuario (opcional: 'estudiante' o 'empresa')
  */
-const getAuthUrl = (role = 'estudiante') => {
-  const oauth2Client = getOAuth2Client();
+const getAuthUrl = (role = 'estudiante', redirectUri = null) => {
+  // Allow passing a redirectUri at runtime (useful when env is not set in production)
+  const oauth2Client = new google.auth.OAuth2(
+    GOOGLE_CONFIG.clientId,
+    GOOGLE_CONFIG.clientSecret,
+    redirectUri || GOOGLE_CONFIG.redirectUri
+  );
 
   const scopes = [
     'https://www.googleapis.com/auth/userinfo.email',
