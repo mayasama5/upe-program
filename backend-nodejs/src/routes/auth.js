@@ -311,10 +311,6 @@ router.post('/set-role', authenticateJWT, async (req, res) => {
   }
 });
 
-/**
- * GET /api/auth/check
- * Check if current session is valid
- */
 router.get('/check', authenticateJWT, (req, res) => {
   res.json({
     authenticated: true,
@@ -412,7 +408,9 @@ router.get('/google', (req, res) => {
       });
     }
 
-    const authUrl = getAuthUrl(role);
+    // Build a redirectUri fallback using the current host if env var is not set
+    const computedRedirect = process.env.GOOGLE_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+    const authUrl = getAuthUrl(role, computedRedirect);
     res.json({ url: authUrl });
   } catch (error) {
     console.error('Google auth initiation error:', error);
@@ -429,11 +427,14 @@ router.get('/google', (req, res) => {
  */
 router.get('/google/callback', async (req, res) => {
   try {
+    // Log key values and provide fallbacks for missing envs
+    const computedFrontend = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
+    const computedRedirect = process.env.GOOGLE_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
     console.log('Google callback received:', {
       code: req.query.code ? 'present' : 'missing',
       state: req.query.state,
-      frontendUrl: process.env.FRONTEND_URL,
-      redirectUri: process.env.GOOGLE_REDIRECT_URI
+      frontendUrl: process.env.FRONTEND_URL ? process.env.FRONTEND_URL : '(computed)',
+      redirectUri: process.env.GOOGLE_REDIRECT_URI ? process.env.GOOGLE_REDIRECT_URI : '(computed)'
     });
 
     const { code, state } = req.query;
@@ -497,7 +498,9 @@ router.get('/google/callback', async (req, res) => {
     console.log('JWT token generated, redirecting to frontend...');
 
     // Use meta refresh for instant redirect (avoids serverless redirect issues with long URLs)
-    const redirectUrl = `${process.env.FRONTEND_URL}/auth/callback?token=${encodeURIComponent(token)}`;
+    // Use FRONTEND_URL env var if set, otherwise fallback to request origin
+    const redirectBase = process.env.FRONTEND_URL || computedFrontend;
+    const redirectUrl = `${redirectBase.replace(/\/$/, '')}/auth/callback?token=${encodeURIComponent(token)}`;
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=${redirectUrl}"></head><body></body></html>`;
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
