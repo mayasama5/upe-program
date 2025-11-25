@@ -203,7 +203,7 @@ export default function PublicCourses() {
           <BookOpen className="w-16 h-16 text-cyan-400 mx-auto mb-4" />
           <h1 className="text-4xl font-bold text-white mb-4">Cursos Gratuitos</h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-6">
-            Accede a miles de cursos gratuitos en español de las mejores plataformas educativas
+            Accede a miles de cursos gratuitos de las mejores plataformas educativas
           </p>
         </div>
 

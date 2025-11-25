@@ -36,7 +36,7 @@ TechHub UPE es una plataforma educativa integral diseñada para estudiantes y em
 - **Database**: PostgreSQL con Prisma ORM
 - **Authentication**: JWT + Cookies
 - **File Upload**: Multer
-- **Security**: Helmet, CORS, Rate Limiting...
+- **Security**: Helmet, CORS, Rate Limiting
 - **Validation**: Express Validator + Joi
 
 ### Base de Datos (PostgreSQL + Supabase + Prisma)

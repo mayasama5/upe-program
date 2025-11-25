@@ -69,7 +69,7 @@ const StudentSignUp = () => {
                       <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2 flex-shrink-0"></div>
                       <div>
                         <h4 className="text-white font-semibold text-base mb-1">Acceso ilimitado a cursos</h4>
-                        <p className="text-gray-400 text-sm">Miles de cursos gratuitos en tecnología, diseño, negocios y más</p>
+                        <p className="text-gray-400 text-sm">Cursos gratuitos en tecnología, diseño, negocios y más</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">

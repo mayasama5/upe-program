@@ -384,7 +384,7 @@ export default function PublicJobs() {
           <Briefcase className="w-16 h-16 text-orange-400 mx-auto mb-4" />
           <h1 className="text-4xl font-bold text-white mb-4">Vacantes Laborales</h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-6">
-            Oportunidades de empleo en Paraguay y Latinoamérica
+            Oportunidades de empleo en Ciudad del Este (Incluso oportunidades remotas fuera del país)
           </p>
         </div>
 
