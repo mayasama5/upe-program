@@ -311,10 +311,6 @@ router.post('/set-role', authenticateJWT, async (req, res) => {
   }
 });
 
-/**
- * GET /api/auth/check
- * Check if current session is valid
- */
 router.get('/check', authenticateJWT, (req, res) => {
   res.json({
     authenticated: true,
