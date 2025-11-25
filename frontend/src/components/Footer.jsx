@@ -52,7 +52,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="border-t border-slate-700 mt-6 sm:mt-8 pt-6 sm:pt-8 text-center text-gray-400 text-xs sm:text-sm">
-          <p>&copy; 2025 TechHub UPE. Todos los derechos reservados.</p>
+          <p>&copy; 2025 TechHub UPE. Todos los derechos reservados</p>
         </div>
       </div>
     </footer>
