@@ -50,13 +50,39 @@ const normalizeObjectUrls = (obj, req, imageFields = ['picture', 'logo_url', 'im
     }
   });
 
-  // Handle arrays of file paths
+  // Handle arrays of file objects
   if (normalized.certificate_files && Array.isArray(normalized.certificate_files)) {
-    normalized.certificate_files = normalized.certificate_files.map(url => normalizeImageUrl(url, req));
+    normalized.certificate_files = normalized.certificate_files.map(file => {
+      // If it's a string, normalize it directly
+      if (typeof file === 'string') {
+        return normalizeImageUrl(file, req);
+      }
+      // If it's an object with a url property, normalize the url
+      if (file && typeof file === 'object' && file.url) {
+        return {
+          ...file,
+          url: normalizeImageUrl(file.url, req)
+        };
+      }
+      return file;
+    });
   }
 
   if (normalized.degree_files && Array.isArray(normalized.degree_files)) {
-    normalized.degree_files = normalized.degree_files.map(url => normalizeImageUrl(url, req));
+    normalized.degree_files = normalized.degree_files.map(file => {
+      // If it's a string, normalize it directly
+      if (typeof file === 'string') {
+        return normalizeImageUrl(file, req);
+      }
+      // If it's an object with a url property, normalize the url
+      if (file && typeof file === 'object' && file.url) {
+        return {
+          ...file,
+          url: normalizeImageUrl(file.url, req)
+        };
+      }
+      return file;
+    });
   }
 
   return normalized;
