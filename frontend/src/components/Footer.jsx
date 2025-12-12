@@ -12,11 +12,7 @@ export default function Footer() {
             <img src={techHubLogo} alt="TechHub UPE" className="logo-img logo-footer" />
           </div>
           <p className="text-gray-400 text-xs sm:text-sm leading-relaxed max-w-md">
-<<<<<<< Updated upstream
             La plataforma de conexión educativa, laboral y de noticias que necesitas.
-=======
-            La Plataforma que todo estudiante necesita.
->>>>>>> Stashed changes
           </p>
         </div>
 
@@ -56,11 +52,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="border-t border-slate-700 mt-6 sm:mt-8 pt-6 sm:pt-8 text-center text-gray-400 text-xs sm:text-sm">
-<<<<<<< Updated upstream
-          <p>&copy; 2025 TechHub UPE. Todos los derechos reservados</p>
-=======
           <p>&copy; 2025 TechHub UPE. Todos los derechos reservados.</p>
->>>>>>> Stashed changes
         </div>
       </div>
     </footer>
