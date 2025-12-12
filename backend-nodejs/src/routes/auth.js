@@ -214,6 +214,7 @@ router.get('/me', authenticateJWT, async (req, res) => {
         company_name: true,
         contact_name: true,
         cv_file_path: true,
+        certificate_files: true,
         degree_files: true,
         created_at: true,
         updated_at: true
