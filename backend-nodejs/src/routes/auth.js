@@ -504,7 +504,6 @@ router.get('/google/callback', async (req, res) => {
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=${redirectUrl}"></head><body></body></html>`;
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Content-Length', Buffer.byteLength(html));
     return res.status(200).send(html);
 
   } catch (error) {
