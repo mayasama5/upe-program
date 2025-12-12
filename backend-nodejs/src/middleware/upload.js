@@ -17,12 +17,12 @@ const storage = multer.memoryStorage();
 // Mapeo de campos a categorías de archivo
 const FIELD_CATEGORIES = {
   'cv': 'pdf',
-  'certificate': 'pdf',
-  'degree': 'pdf',
+  'certificate': 'document', // Acepta PDFs e imágenes
+  'certificates': 'document', // Acepta PDFs e imágenes (plural)
+  'degree': 'document', // Acepta PDFs e imágenes
+  'degrees': 'document', // Acepta PDFs e imágenes (plural)
   'company_document': 'pdf',
   'picture': 'image',
-  'certificates': 'image', // múltiples certificados pueden ser imágenes
-  'degrees': 'image',
   'university_logo': 'image',
   'faculty_logo': 'image',
   'techhub_logo': 'image'
