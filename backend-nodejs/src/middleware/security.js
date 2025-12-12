@@ -217,6 +217,16 @@ const validateOrigin = (req, res, next) => {
  * Middleware para prevenir inyección SQL/NoSQL
  */
 const preventInjection = (req, res, next) => {
+  // Excluir rutas de OAuth que contienen códigos seguros
+  const excludedPaths = [
+    '/api/auth/google/callback',
+    '/api/auth/google'
+  ];
+
+  if (excludedPaths.some(path => req.path.startsWith(path))) {
+    return next();
+  }
+
   const checkInjection = (value) => {
     if (typeof value !== 'string') return false;
 
