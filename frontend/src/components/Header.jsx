@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { BookOpen, Calendar, Briefcase, Building } from 'lucide-react';
 import { Button } from './ui/button';
 import techHubLogo from '../images/LOGO_TECH_HUB(1).png';
-import facultadLogo from '../images/logo_upe_infor(1).png';
-import upeLogo from '../images/LOGO_UPE(1).png';
+import facultadLogo from '../images/logo_upe_infor_1(1).png';
+import upeLogo from '../images/icon_upe-300x300.png';
 
 export default function Header({ user, logout }) {
   const navigate = useNavigate();

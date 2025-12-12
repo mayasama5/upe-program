@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useToast } from '../hooks/use-toast';
 import { Building, MapPin, Users, Briefcase, Globe, Phone } from 'lucide-react';
 import techHubLogo from '../images/LOGO_TECH_HUB(1).png';
-import facultadLogo from '../images/logo_upe_infor(1).png';
-import upeLogo from '../images/LOGO_UPE(1).png';
+import facultadLogo from '../images/logo_upe_infor_1(1).png';
+import upeLogo from '../images/icon_upe-300x300.png';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL ||
   (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' :

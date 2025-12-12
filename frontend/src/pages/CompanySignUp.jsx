@@ -4,8 +4,8 @@ import { Card, CardHeader, CardTitle, CardDescription } from '../components/ui/c
 import { Button } from '../components/ui/button';
 import { Building, ArrowLeft } from 'lucide-react';
 import techHubLogo from '../images/LOGO_TECH_HUB(1).png';
-import facultadLogo from '../images/logo_upe_infor(1).png';
-import upeLogo from '../images/LOGO_UPE(1).png';
+import facultadLogo from '../images/logo_upe_infor_1(1).png';
+import upeLogo from '../images/icon_upe-300x300.png';
 
 const CompanySignUp = () => {
   const navigate = useNavigate();
