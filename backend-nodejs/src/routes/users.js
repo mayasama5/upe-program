@@ -1,7 +1,7 @@
 const express = require('express');
 const prisma = require('../config/prisma');
 const { requireAuth, requireCompany } = require('../middleware/auth');
-const { upload, handleMulterError, getFileUrl, verifyFileContent } = require('../middleware/upload');
+const { upload, handleMulterError, getFileUrl, verifyFileContent, uploadToSupabase } = require('../middleware/upload');
 const { validateSingleFile, validateMultipleFiles } = require('../utils/fileValidator');
 const Joi = require('joi');
 
@@ -176,7 +176,13 @@ router.post('/cv', requireAuth, upload.single('cv'), verifyFileContent, validate
       });
     }
 
-    const fileUrl = getFileUrl(req, req.file.path);
+    // Upload to Supabase Storage
+    const { url: fileUrl, path: filePath } = await uploadToSupabase(
+      req.file.buffer,
+      req.file.originalname,
+      req.user.id,
+      req.file.mimetype
+    );
 
     // Update user's CV path with Prisma
     const updatedUser = await prisma.user.update({
@@ -188,7 +194,7 @@ router.post('/cv', requireAuth, upload.single('cv'), verifyFileContent, validate
       message: 'CV uploaded successfully',
       cv_url: fileUrl,
       file_info: {
-        filename: req.file.filename,
+        filename: filePath,
         originalname: req.file.originalname,
         size: req.file.size
       }
@@ -198,7 +204,7 @@ router.post('/cv', requireAuth, upload.single('cv'), verifyFileContent, validate
     console.error('CV upload error:', error);
     res.status(500).json({
       error: 'Internal server error',
-      message: 'An error occurred while uploading CV'
+      message: error.message || 'An error occurred while uploading CV'
     });
   }
 });

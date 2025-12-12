@@ -3,6 +3,7 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs').promises;
 const fsSync = require('fs');
+const { supabase } = require('../config/supabase.config');
 const {
   generateSafeFilename,
   verifyFileSignature,
@@ -10,27 +11,8 @@ const {
   ALLOWED_EXTENSIONS
 } = require('../utils/fileValidator');
 
-// Configure storage
-const storage = multer.diskStorage({
-  destination: async (req, file, cb) => {
-    try {
-      const userId = req.user?.id || 'anonymous';
-      const uploadDir = path.join(__dirname, '../../uploads', userId);
-      
-      // Create directory if it doesn't exist
-      await fs.mkdir(uploadDir, { recursive: true });
-      
-      cb(null, uploadDir);
-    } catch (error) {
-      cb(error);
-    }
-  },
-  filename: (req, file, cb) => {
-    // Generate safe unique filename
-    const safeName = generateSafeFilename(file.originalname);
-    cb(null, safeName);
-  }
-});
+// Configure storage - Use memory storage for Vercel compatibility
+const storage = multer.memoryStorage();
 
 // Mapeo de campos a categorías de archivo
 const FIELD_CATEGORIES = {
@@ -125,24 +107,86 @@ const handleMulterError = (error, req, res, next) => {
   next(error);
 };
 
-// Helper function to get file URL
-const getFileUrl = (req, filePath) => {
-  // In production, use FRONTEND_URL or construct from request
-  let baseUrl;
-  if (process.env.NODE_ENV === 'production' && process.env.FRONTEND_URL) {
-    baseUrl = process.env.FRONTEND_URL;
-  } else {
-    baseUrl = `${req.protocol}://${req.get('host')}`;
+/**
+ * Upload file to Supabase Storage
+ * @param {Buffer} fileBuffer - File buffer from multer
+ * @param {string} fileName - Original filename
+ * @param {string} userId - User ID for organizing files
+ * @param {string} mimeType - File MIME type
+ * @returns {Promise<{url: string, path: string}>}
+ */
+const uploadToSupabase = async (fileBuffer, fileName, userId, mimeType) => {
+  if (!supabase) {
+    throw new Error('Supabase not configured');
   }
-  const relativePath = path.relative(path.join(__dirname, '../../'), filePath);
-  return `${baseUrl}/${relativePath.replace(/\\/g, '/')}`;
+
+  const safeName = generateSafeFilename(fileName);
+  const filePath = `${userId}/${safeName}`;
+
+  const { data, error } = await supabase.storage
+    .from('uploads')
+    .upload(filePath, fileBuffer, {
+      contentType: mimeType,
+      upsert: false
+    });
+
+  if (error) {
+    console.error('Supabase upload error:', error);
+    throw new Error(`Failed to upload file: ${error.message}`);
+  }
+
+  // Get public URL
+  const { data: urlData } = supabase.storage
+    .from('uploads')
+    .getPublicUrl(filePath);
+
+  return {
+    url: urlData.publicUrl,
+    path: filePath
+  };
+};
+
+// Helper function to get file URL (for backwards compatibility)
+const getFileUrl = (req, filePath) => {
+  if (!supabase) {
+    // Fallback to local file URL
+    let baseUrl;
+    if (process.env.NODE_ENV === 'production' && process.env.FRONTEND_URL) {
+      baseUrl = process.env.FRONTEND_URL;
+    } else {
+      baseUrl = `${req.protocol}://${req.get('host')}`;
+    }
+    const relativePath = path.relative(path.join(__dirname, '../../'), filePath);
+    return `${baseUrl}/${relativePath.replace(/\\/g, '/')}`;
+  }
+
+  // Return Supabase URL
+  const { data } = supabase.storage
+    .from('uploads')
+    .getPublicUrl(filePath);
+
+  return data.publicUrl;
 };
 
 // Helper function to delete file
 const deleteFile = async (filePath) => {
   try {
-    await fs.unlink(filePath);
-    return true;
+    if (supabase && !filePath.includes('/uploads/')) {
+      // Delete from Supabase
+      const { error } = await supabase.storage
+        .from('uploads')
+        .remove([filePath]);
+
+      if (error) {
+        console.error('Error deleting file from Supabase:', error);
+        return false;
+      }
+      return true;
+    } else {
+      // Delete from local filesystem (fallback)
+      await fs.unlink(filePath);
+      return true;
+    }
   } catch (error) {
     console.error('Error deleting file:', error);
     return false;
@@ -162,14 +206,11 @@ const verifyFileContent = async (req, res, next) => {
     const filesToVerify = req.file ? [req.file] : (req.files || []);
 
     for (const file of filesToVerify) {
-      // Leer los primeros bytes del archivo
-      const buffer = fsSync.readFileSync(file.path);
+      // With memory storage, buffer is already available
+      const buffer = file.buffer;
       const isValid = verifyFileSignature(buffer, file.mimetype);
 
       if (!isValid) {
-        // Eliminar archivo no válido
-        fsSync.unlinkSync(file.path);
-
         return res.status(400).json({
           success: false,
           error: 'Archivo corrupto o tipo incorrecto',
@@ -195,5 +236,6 @@ module.exports = {
   getFileUrl,
   deleteFile,
   verifyFileContent,
+  uploadToSupabase,
   FIELD_CATEGORIES
 };
