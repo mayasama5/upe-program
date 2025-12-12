@@ -26,6 +26,16 @@ const ALLOWED_MIME_TYPES = {
     'image/svg+xml'
   ],
 
+  // Documentos e imágenes (para certificados y títulos)
+  document: [
+    'application/pdf',
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/gif',
+    'image/webp'
+  ],
+
   // Archivos comprimidos
   archive: [
     'application/zip',
@@ -43,6 +53,7 @@ const ALLOWED_EXTENSIONS = {
   word: ['.doc', '.docx'],
   excel: ['.xls', '.xlsx'],
   image: ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'],
+  document: ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp'],
   archive: ['.zip', '.rar', '.7z']
 };
 
@@ -54,6 +65,7 @@ const MAX_FILE_SIZES = {
   word: 10 * 1024 * 1024,     // 10 MB
   excel: 10 * 1024 * 1024,    // 10 MB
   image: 5 * 1024 * 1024,     // 5 MB
+  document: 10 * 1024 * 1024, // 10 MB (PDFs e imágenes)
   archive: 50 * 1024 * 1024,  // 50 MB
   default: 10 * 1024 * 1024   // 10 MB por defecto
 };

@@ -169,6 +169,16 @@ router.post('/picture', requireAuth, upload.single('picture'), verifyFileContent
 // Upload CV
 router.post('/cv', requireAuth, upload.single('cv'), verifyFileContent, validateSingleFile('pdf'), async (req, res) => {
   try {
+    console.log('CV Upload attempt:', {
+      hasFile: !!req.file,
+      user: req.user?.id,
+      file: req.file ? {
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size
+      } : 'no file'
+    });
+
     if (!req.file) {
       return res.status(400).json({
         error: 'No file uploaded',
@@ -210,7 +220,7 @@ router.post('/cv', requireAuth, upload.single('cv'), verifyFileContent, validate
 });
 
 // Upload certificates
-router.post('/certificates', requireAuth, upload.array('certificate', 5), verifyFileContent, validateMultipleFiles('image', 5), async (req, res) => {
+router.post('/certificates', requireAuth, upload.array('certificate', 5), verifyFileContent, validateMultipleFiles('document', 5), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
@@ -256,7 +266,7 @@ router.post('/certificates', requireAuth, upload.array('certificate', 5), verify
 });
 
 // Upload degrees
-router.post('/degrees', requireAuth, upload.array('degree', 5), verifyFileContent, validateMultipleFiles('image', 5), async (req, res) => {
+router.post('/degrees', requireAuth, upload.array('degree', 5), verifyFileContent, validateMultipleFiles('document', 5), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
