@@ -127,7 +127,13 @@ router.post('/picture', requireAuth, upload.single('picture'), verifyFileContent
       });
     }
 
-    const fileUrl = getFileUrl(req, req.file.path);
+    // Upload to Supabase Storage
+    const { url: fileUrl, path: filePath } = await uploadToSupabase(
+      req.file.buffer,
+      req.file.originalname,
+      req.user.id,
+      req.file.mimetype
+    );
 
     // Update user's picture with Prisma
     const updatedUser = await prisma.user.update({
@@ -161,7 +167,7 @@ router.post('/picture', requireAuth, upload.single('picture'), verifyFileContent
     console.error('Picture upload error:', error);
     res.status(500).json({
       error: 'Internal server error',
-      message: 'An error occurred while uploading picture'
+      message: error.message || 'An error occurred while uploading picture'
     });
   }
 });
@@ -229,12 +235,18 @@ router.post('/certificates', requireAuth, upload.array('certificate', 5), verify
       });
     }
 
-    const certificates = req.files.map(file => ({
+    // Upload all files to Supabase
+    const uploadPromises = req.files.map(file =>
+      uploadToSupabase(file.buffer, file.originalname, req.user.id, file.mimetype)
+    );
+    const uploadedFiles = await Promise.all(uploadPromises);
+
+    const certificates = uploadedFiles.map((uploaded, index) => ({
       id: require('uuid').v4(),
-      filename: file.filename,
-      originalname: file.originalname,
-      url: getFileUrl(req, file.path),
-      size: file.size,
+      filename: uploaded.path,
+      originalname: req.files[index].originalname,
+      url: uploaded.url,
+      size: req.files[index].size,
       uploaded_at: new Date()
     }));
 
@@ -260,7 +272,7 @@ router.post('/certificates', requireAuth, upload.array('certificate', 5), verify
     console.error('Certificate upload error:', error);
     res.status(500).json({
       error: 'Internal server error',
-      message: 'An error occurred while uploading certificates'
+      message: error.message || 'An error occurred while uploading certificates'
     });
   }
 });
@@ -275,12 +287,18 @@ router.post('/degrees', requireAuth, upload.array('degree', 5), verifyFileConten
       });
     }
 
-    const degrees = req.files.map(file => ({
+    // Upload all files to Supabase
+    const uploadPromises = req.files.map(file =>
+      uploadToSupabase(file.buffer, file.originalname, req.user.id, file.mimetype)
+    );
+    const uploadedFiles = await Promise.all(uploadPromises);
+
+    const degrees = uploadedFiles.map((uploaded, index) => ({
       id: require('uuid').v4(),
-      filename: file.filename,
-      originalname: file.originalname,
-      url: getFileUrl(req, file.path),
-      size: file.size,
+      filename: uploaded.path,
+      originalname: req.files[index].originalname,
+      url: uploaded.url,
+      size: req.files[index].size,
       uploaded_at: new Date()
     }));
 
@@ -290,7 +308,7 @@ router.post('/degrees', requireAuth, upload.array('degree', 5), verifyFileConten
     });
 
     // Add degrees to user's degree_files array with Prisma
-    const updatedUser = await prisma.user.update({
+    await prisma.user.update({
       where: { id: req.user.id },
       data: {
         degree_files: [...(currentUser.degree_files || []), ...degrees]
@@ -306,7 +324,7 @@ router.post('/degrees', requireAuth, upload.array('degree', 5), verifyFileConten
     console.error('Degree upload error:', error);
     res.status(500).json({
       error: 'Internal server error',
-      message: 'An error occurred while uploading degrees'
+      message: error.message || 'An error occurred while uploading degrees'
     });
   }
 });
@@ -321,10 +339,16 @@ router.post('/company-document', requireCompany, upload.single('company_document
       });
     }
 
-    const fileUrl = getFileUrl(req, req.file.path);
+    // Upload to Supabase Storage
+    const { url: fileUrl, path: filePath } = await uploadToSupabase(
+      req.file.buffer,
+      req.file.originalname,
+      req.user.id,
+      req.file.mimetype
+    );
 
     // Update user's company document with Prisma
-    const updatedUser = await prisma.user.update({
+    await prisma.user.update({
       where: { id: req.user.id },
       data: { company_document: fileUrl }
     });
@@ -333,7 +357,7 @@ router.post('/company-document', requireCompany, upload.single('company_document
       message: 'Company document uploaded successfully',
       document_url: fileUrl,
       file_info: {
-        filename: req.file.filename,
+        filename: filePath,
         originalname: req.file.originalname,
         size: req.file.size
       }
@@ -343,7 +367,7 @@ router.post('/company-document', requireCompany, upload.single('company_document
     console.error('Company document upload error:', error);
     res.status(500).json({
       error: 'Internal server error',
-      message: 'An error occurred while uploading company document'
+      message: error.message || 'An error occurred while uploading company document'
     });
   }
 });
