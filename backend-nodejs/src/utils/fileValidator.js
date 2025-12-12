@@ -150,11 +150,7 @@ const validateSingleFile = (category) => {
     const validation = validateFile(req.file, category);
 
     if (!validation.valid) {
-      // Eliminar el archivo si fue subido pero no es válido
-      if (req.file.path && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
-
+      // With memory storage, no file cleanup needed
       return res.status(400).json({
         success: false,
         message: validation.error
@@ -181,13 +177,7 @@ const validateMultipleFiles = (category, maxFiles = 10) => {
     }
 
     if (req.files.length > maxFiles) {
-      // Eliminar archivos subidos
-      req.files.forEach(file => {
-        if (file.path && fs.existsSync(file.path)) {
-          fs.unlinkSync(file.path);
-        }
-      });
-
+      // With memory storage, no file cleanup needed
       return res.status(400).json({
         success: false,
         message: `Máximo ${maxFiles} archivos permitidos`
@@ -207,13 +197,7 @@ const validateMultipleFiles = (category, maxFiles = 10) => {
     });
 
     if (invalidFiles.length > 0) {
-      // Eliminar todos los archivos subidos
-      req.files.forEach(file => {
-        if (file.path && fs.existsSync(file.path)) {
-          fs.unlinkSync(file.path);
-        }
-      });
-
+      // With memory storage, no file cleanup needed
       return res.status(400).json({
         success: false,
         message: 'Algunos archivos no son válidos',
