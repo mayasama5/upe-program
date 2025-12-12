@@ -68,7 +68,7 @@ const CompanySignUp = () => {
                   Registro de Empresa
                 </h1>
                 <p className="text-gray-400 text-lg">
-                  Registra tu empresa y encuentra el mejor talento de la UPE para tus vacantes y proyectos.
+                  Registra tu empresa y encuentra el mejor talento de Ciudad del Este.
                 </p>
               </div>
 
