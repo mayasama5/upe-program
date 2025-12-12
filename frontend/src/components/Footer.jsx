@@ -12,7 +12,7 @@ export default function Footer() {
             <img src={techHubLogo} alt="TechHub UPE" className="logo-img logo-footer" />
           </div>
           <p className="text-gray-400 text-xs sm:text-sm leading-relaxed max-w-md">
-            La plataforma de conexión educativa y laboral que necesitas.
+            La plataforma de conexión educativa, laboral y de noticias que necesitas.
           </p>
         </div>
 
